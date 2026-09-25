@@ -49,7 +49,6 @@
       flex-direction: column;
     }
 
-    /* 到着時ショックフラッシュ */
     #arrival-flash-overlay {
       position: absolute;
       top: 0;
@@ -70,7 +69,6 @@
       100% { opacity: 0; }
     }
 
-    /* 言語切り替えボタンスタイル（メイン右上） */
     .lang-toggle-btn {
       position: absolute;
       top: max(env(safe-area-inset-top), 20px);
@@ -91,7 +89,6 @@
       color: #000;
     }
 
-    /* 上部：正円マップ（インカメラ回避） */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -180,7 +177,7 @@
     #map {
       width: 100%;
       height: 100%;
-      transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.25, 1);
       transform-origin: center center;
     }
 
@@ -431,9 +428,7 @@
       margin-top: 2px;
     }
 
-    /* ===================================================
-       スライド画面
-    =================================================== */
+    /* スライド画面 */
     .slide-page {
       position: absolute;
       top: 0;
@@ -619,8 +614,6 @@
 
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
-
-    <!-- 手動言語切り替えトグル -->
     <button class="lang-toggle-btn" id="lang-toggle-btn">EN / JP</button>
 
     <div id="toast-banner">
@@ -680,7 +673,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252231</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252236</span></span>
       </div>
     </div>
 
@@ -727,7 +720,7 @@
 
   <script>
     // ===================================================
-    // 0. 国際化（日英多言語対応辞書）
+    // 0. 国際化（日英辞書）
     // ===================================================
     const I18N = {
       ja: {
@@ -812,7 +805,6 @@
       }
     };
 
-    // 言語の自動検出（保存設定優先、なければブラウザ言語判定）
     let currentLang = localStorage.getItem('sheikah_lang');
     if (!currentLang) {
       const userSysLang = (navigator.language || '').toLowerCase();
@@ -846,8 +838,6 @@
 
       const pauseBtn = document.getElementById('pause-toggle-btn');
       pauseBtn.textContent = appState.isPaused ? t.resumeSensor : t.pauseSensor;
-
-      // 言語トグルボタン表示
       document.getElementById('lang-toggle-btn').textContent = lang === 'ja' ? 'EN' : 'JP';
 
       renderKeywordsList();
@@ -859,7 +849,7 @@
     });
 
     // ===================================================
-    // 1. Web Audio API 音源（消音モード連携）
+    // 1. Web Audio API 音源
     // ===================================================
     let audioCtx = null;
 
@@ -883,7 +873,7 @@
     window.addEventListener('click', () => { initAudio(); }, { once: true });
 
     function playBeep(freq = 1800, duration = 0.12) {
-      if (appState.isMuted) return; // 消音モード時は音を出さない
+      if (appState.isMuted) return;
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -918,7 +908,7 @@
         navigator.vibrate([200, 100, 300, 100, 600]);
       }
 
-      if (appState.isMuted) return; // 消音モード時は音を出さない
+      if (appState.isMuted) return;
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -945,7 +935,7 @@
     }
 
     // ===================================================
-    // 2. 状態管理
+    // 2. 状態管理（直進安定化ヒステリシス）
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
     let radiusIndex = 2; // 3km
@@ -953,14 +943,19 @@
     let appState = {
       isTracking: false,
       isPaused: false,
-      isMuted: false, // 消音モードフラグ
+      isMuted: false,
       currentPos: null,
       prevPos: null,
       lastSearchedPos: null,
       currentHeading: 0,
       visualMapRotation: 0,
+      lastCompassHeading: null,
+
+      // 【直進安定化フラグ】
       isWalking: false,
-      lastMoveTimestamp: 0,
+      lastWalkTimestamp: 0,        // 最後に歩行移動を確定した時刻
+      walkBufferStreak: 0,         // 連続移動カウント
+
       activeKeyword: "マクドナルド",
       selectedKeywordForHistory: null,
       places: []
@@ -1220,7 +1215,7 @@
     }
 
     // ===================================================
-    // 5. ハイブリッド方向追従 ＆ 移動に伴う動的再検索
+    // 5. 【改善】歩行中直進安定化 ＆ 停止時コンパス追従
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -1235,6 +1230,7 @@
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
+    // 電子コンパス（その場旋回用）
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
 
@@ -1248,37 +1244,62 @@
       if (compassHeading === null || isNaN(compassHeading)) return;
 
       const now = Date.now();
-      if (!appState.isWalking || (now - appState.lastMoveTimestamp > 2500)) {
+
+      // 【直進中ロック判定】
+      // 最後に歩行移動してから「4秒間」はコンパスを完全に遮断（歩行時の腕振り・手ブレによる回転を防止）
+      const isCompletelyStopped = (now - appState.lastWalkTimestamp > 4000);
+
+      if (isCompletelyStopped) {
+        // 微小なジッター（手ブレ5度未満）は無視
+        if (appState.lastCompassHeading !== null) {
+          let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
+          if (cDiff > 180) cDiff = 360 - cDiff;
+          if (cDiff < 5.0) return;
+        }
+
+        appState.isWalking = false;
+        appState.lastCompassHeading = compassHeading;
         appState.currentHeading = compassHeading;
         rotateMapSmoothly(compassHeading);
         evaluateSensorCycle();
       }
     }
 
+    // GPS位置更新（直進中判定）
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
-      const hasGpsHeading = (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.speed > 0.6);
+      const now = Date.now();
+      const speed = pos.coords.speed; // m/s
+      const gpsHeading = pos.coords.heading;
 
-      if (hasGpsHeading) {
+      let calculatedHeading = null;
+
+      // 1. GPSハードウェアから十分な速度と進行方位が取れる場合
+      if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 0.45) {
+        calculatedHeading = gpsHeading;
         appState.isWalking = true;
-        appState.lastMoveTimestamp = Date.now();
-        appState.currentHeading = pos.coords.heading;
-        appState.prevPos = newPos;
-        rotateMapSmoothly(appState.currentHeading);
-      } else if (appState.prevPos) {
+        appState.lastWalkTimestamp = now;
+      }
+      // 2. 移動距離によるベクトル計算（2.0m以上の確実な移動）
+      else if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        if (moved >= 2.5) {
+        if (moved >= 2.0) {
+          calculatedHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
           appState.isWalking = true;
-          appState.lastMoveTimestamp = Date.now();
-          appState.currentHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-          appState.prevPos = newPos;
-          rotateMapSmoothly(appState.currentHeading);
+          appState.lastWalkTimestamp = now;
         }
-      } else {
+      }
+
+      if (calculatedHeading !== null) {
+        // 移動中は直進ベクトルで滑らかに回転し、正面をキープ
+        appState.currentHeading = calculatedHeading;
+        appState.prevPos = newPos;
+        rotateMapSmoothly(calculatedHeading);
+      } else if (!appState.prevPos) {
         appState.prevPos = newPos;
       }
 
@@ -1286,6 +1307,7 @@
         map.setCenter(newPos);
       }
 
+      // 移動に伴う低頻度な再検索
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
       const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
 
@@ -1355,7 +1377,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ 消音モード切り替え
+    // 6. UI制御 ＆ 消音切り替え
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -1385,7 +1407,6 @@
       }
     }
 
-    // 【新機能】消音モードの切り替えボタン
     document.getElementById('mute-toggle-btn').addEventListener('click', () => {
       appState.isMuted = !appState.isMuted;
       const muteBtn = document.getElementById('mute-toggle-btn');
@@ -1397,7 +1418,7 @@
         initAudio();
         muteBtn.textContent = t.soundOn;
         muteBtn.classList.remove('active');
-        playBeep(2000, 0.08); // 解除確認音
+        playBeep(2000, 0.08);
       }
     });
 
@@ -1645,7 +1666,6 @@
     document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
-    // 初期言語設定をUIに適用
     applyLanguage(currentLang);
   </script>
 </body>
