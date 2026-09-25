@@ -138,7 +138,6 @@
       padding-top: max(env(safe-area-inset-top), 32px);
     }
 
-    /* 【改善】地図円枠と完全に太さ・質感・光沢を一致させた仕切り線 */
     .sheikah-divider-bar {
       width: 100%;
       height: 6px;
@@ -336,7 +335,6 @@
       display: flex;
     }
 
-    /* 【改善】ポップアップ選択可能なRADIUS計器UI */
     .dial-lock {
       width: 72px;
       height: 46px;
@@ -362,7 +360,6 @@
       color: var(--sheikah-cyan);
     }
 
-    /* 透明セレクトボックス（タップでOS標準ピッカー/ポップアップ起動） */
     .dial-select-overlay {
       position: absolute;
       top: 0;
@@ -534,7 +531,7 @@
     }
 
     /* ===================================================
-       スライド画面共通
+       【改善】滑らかな横スライドアニメーション画面
     =================================================== */
     .slide-page {
       position: absolute;
@@ -544,11 +541,18 @@
       height: 100%;
       background: var(--sheikah-bg);
       z-index: 100;
-      display: none;
+      display: flex;
       flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+      pointer-events: none;
+      visibility: hidden;
+      box-shadow: -6px 0 25px rgba(0,0,0,0.85);
     }
     .slide-page.open {
-      display: flex;
+      transform: translateX(0);
+      pointer-events: auto;
+      visibility: visible;
     }
 
     .page-header {
@@ -583,7 +587,6 @@
       color: #000;
     }
 
-    /* 【改善】横幅を広げ押しやすくしたホームショートカットボタン */
     .btn-home-shortcut {
       color: var(--sheikah-gold);
       background: rgba(197, 160, 89, 0.12);
@@ -943,7 +946,7 @@
       </div>
     </div>
 
-    <!-- 立体ゴールドモールドライン（円枠と完全一致） -->
+    <!-- 立体ゴールドモールドライン -->
     <div class="sheikah-divider-bar"></div>
 
     <!-- 下部：操作パネル -->
@@ -954,7 +957,6 @@
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
 
-        <!-- 【改善】ポップアップ選択形式のRADIUS計器ボタン -->
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
           <div class="dial-value" id="radius-val">3km</div>
@@ -1011,7 +1013,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.260825</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260831</span></span>
       </div>
     </div>
 
@@ -1416,6 +1418,13 @@
     let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
     let savedLastKeyword = localStorage.getItem('sheikah_last_keyword') || "マクドナルド";
 
+    // 最後に確認された位置（東京駅デフォルト）
+    let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
+    try {
+      const cached = localStorage.getItem('sheikah_last_pos');
+      if (cached) lastKnownPos = JSON.parse(cached);
+    } catch(e) {}
+
     let appState = {
       isTracking: false,
       isPaused: false,
@@ -1457,20 +1466,49 @@
     }
 
     // ===================================================
-    // 3. Google Maps
+    // 3. Google Maps（起動時自動初期化対応）
     // ===================================================
     let map = null;
 
     function initMap(lat, lng) {
       if (typeof google === 'undefined' || !google.maps) return;
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat, lng },
-        zoom: 17,
-        disableDefaultUI: true,
-        styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal,
-        gestureHandling: 'none'
-      });
-      placesService = new google.maps.places.PlacesService(map);
+      const centerPos = { lat, lng };
+
+      if (!map) {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: centerPos,
+          zoom: 17,
+          disableDefaultUI: true,
+          styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal,
+          gestureHandling: 'none'
+        });
+        placesService = new google.maps.places.PlacesService(map);
+      } else {
+        map.setCenter(centerPos);
+      }
+    }
+
+    // 【新仕様】起動時に自動で地図・Placesサービス・位置権限を準備
+    function bootstrapMapAndLocation() {
+      // 1. 直近位置またはデフォルト位置で地図とPlacesServiceを即座に有効化
+      initMap(lastKnownPos.lat, lastKnownPos.lng);
+
+      // 2. ブラウザの位置情報権限を自動取得・測位開始
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            appState.currentPos = p;
+            lastKnownPos = p;
+            localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
+            if (map) map.setCenter(p);
+          },
+          (err) => {
+            console.warn("初期位置測位エラー（通常起動）:", err.message);
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
     }
 
     // ===================================================
@@ -1769,6 +1807,8 @@
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
+      lastKnownPos = newPos;
+      localStorage.setItem('sheikah_last_pos', JSON.stringify(newPos));
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
@@ -1890,7 +1930,6 @@
     document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     document.getElementById('radius-select').value = radiusIndex.toString();
 
-    // 【新仕様】セレクトボックスポップアップによるRADIUS変更
     document.getElementById('radius-select').addEventListener('change', (e) => {
       radiusIndex = parseInt(e.target.value, 10);
       document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
@@ -2253,9 +2292,11 @@
         a.name.toLowerCase().includes(filterText)
       );
 
-      if (appState.currentPos) {
+      // 距離を計算してプロパティ付与（現在地または直近既知位置基準）
+      const basePos = appState.currentPos || lastKnownPos;
+      if (basePos) {
         items.forEach(item => {
-          item.calcDistance = getDistance(appState.currentPos.lat, appState.currentPos.lng, item.lat, item.lng);
+          item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng);
         });
       }
 
@@ -2371,7 +2412,7 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：ミニマップ ＋ Googleマップ写真ビューア
+    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル）
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2425,6 +2466,11 @@
       `;
       gallery.appendChild(mapWrap);
 
+      // PlacesServiceが存在しない場合は即座に初期化
+      if (!placesService) {
+        initMap(item.lat, item.lng);
+      }
+
       if (placesService && item.id) {
         placesService.getDetails({
           placeId: item.id,
@@ -2473,7 +2519,7 @@
                 strokeColor: "#ffffff"
               }
             });
-          }, 100);
+          }, 80);
         });
       } else {
         photosBox.innerHTML = '';
@@ -2504,7 +2550,13 @@
     document.getElementById('history-filter').addEventListener('input', renderHistoryList);
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
+    // ===================================================
+    // 起動時の初期化実行
+    // ===================================================
     applyLanguage(currentLang);
+    window.addEventListener('load', () => {
+      bootstrapMapAndLocation();
+    });
   </script>
 </body>
 </html>
