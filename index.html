@@ -34,7 +34,6 @@
       justify-content: center;
     }
 
-    /* 縦画面コンテナ */
     #app-container {
       width: 100%;
       max-width: 480px;
@@ -48,12 +47,10 @@
       flex-direction: column;
     }
 
-    /* ===================================================
-       画面上部：正円マップ ＆ シーカーレリーフ枠
-    =================================================== */
+    /* 上部：正円マップエリア */
     .top-section {
       width: 100%;
-      height: 48vh;
+      height: 46vh;
       position: relative;
       background: radial-gradient(circle at center, #262c33 0%, #111417 100%);
       display: flex;
@@ -64,7 +61,6 @@
       overflow: hidden;
     }
 
-    /* シーカー風装飾ライン（背景） */
     .relic-circuit {
       position: absolute;
       width: 100%;
@@ -76,18 +72,16 @@
         radial-gradient(circle at 85% 80%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
-    /* 正円マップ外枠（古代金レリーフ調） */
     .circle-map-wrapper {
       position: relative;
-      width: 260px;
-      height: 260px;
+      width: 250px;
+      height: 250px;
       border-radius: 50%;
       padding: 6px;
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
       box-shadow: 0 0 25px rgba(0, 243, 255, 0.4), inset 0 0 10px #000;
     }
 
-    /* 正円マップコンテナ */
     #map-container {
       width: 100%;
       height: 100%;
@@ -102,7 +96,6 @@
       height: 100%;
     }
 
-    /* 中心自機アイコン（進行方向上向き） */
     .player-pointer {
       position: absolute;
       top: 50%;
@@ -118,7 +111,6 @@
       z-index: 5;
     }
 
-    /* レーダー波紋パルス */
     .radar-pulse-ring {
       position: absolute;
       top: 50%;
@@ -132,7 +124,7 @@
     }
 
     .pulse-anim {
-      animation: pulse-out-anim 0.5s ease-out forwards;
+      animation: pulse-out-anim 0.6s ease-out forwards;
     }
 
     @keyframes pulse-out-anim {
@@ -140,14 +132,12 @@
       100% { width: 240px; height: 240px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
-    /* ===================================================
-       画面下部：シーカーコンソール操作パネル
-    =================================================== */
+    /* 下部：操作コンソール */
     .bottom-section {
       width: 100%;
-      height: 52vh;
+      height: 54vh;
       background: var(--sheikah-panel);
-      padding: 16px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -155,9 +145,10 @@
       border-top: 1px solid rgba(197, 160, 89, 0.3);
     }
 
+    /* 入力行（キーワード ＋ 半径ダイヤル ＋ 検索ボタン） */
     .input-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
@@ -171,8 +162,8 @@
       background: rgba(3, 8, 14, 0.9);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-cyan);
-      padding: 10px 12px;
-      font-size: 1rem;
+      padding: 10px 10px;
+      font-size: 0.95rem;
       border-radius: 4px;
       outline: none;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
@@ -182,57 +173,82 @@
       box-shadow: 0 0 10px var(--sheikah-cyan-glow);
     }
 
-    /* シーカー風ダイヤル錠 */
     .dial-lock {
-      width: 80px;
-      height: 48px;
+      width: 72px;
+      height: 44px;
       background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
-      border: 2px solid var(--sheikah-gold);
-      border-radius: 6px;
+      border: 1.5px solid var(--sheikah-gold);
+      border-radius: 4px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      position: relative;
       box-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
     .dial-label {
-      font-size: 0.6rem;
+      font-size: 0.55rem;
       color: var(--sheikah-orange);
       letter-spacing: 1px;
     }
     .dial-value {
-      font-size: 1rem;
+      font-size: 0.85rem;
       font-weight: bold;
       color: var(--sheikah-cyan);
-      text-shadow: 0 0 5px var(--sheikah-cyan);
     }
 
-    /* 不明件数 ＆ ステータス */
+    /* 検索実行（SET）ボタン */
+    .btn-set {
+      height: 44px;
+      padding: 0 12px;
+      background: rgba(0, 243, 255, 0.1);
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
+    }
+    .btn-set:active {
+      background: var(--sheikah-cyan);
+      color: #000;
+    }
+
+    /* ステータス情報パネル */
     .status-panel {
       background: rgba(3, 8, 14, 0.6);
       border: 1px solid #334;
       border-radius: 6px;
-      padding: 10px 14px;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
+    .target-meta-info {
+      font-size: 0.7rem;
+      color: var(--sheikah-cyan);
+      margin-bottom: 2px;
+      opacity: 0.9;
+    }
+
     .unknown-badge {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       gap: 6px;
     }
     .unknown-count {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: bold;
       color: var(--sheikah-orange);
       text-shadow: 0 0 8px var(--sheikah-orange);
     }
 
-    /* アクションボタン */
+    /* 共通ボタン */
     .btn-sheikah {
       background: rgba(197, 160, 89, 0.1);
       border: 1.5px solid var(--sheikah-gold);
@@ -244,7 +260,6 @@
       border-radius: 4px;
       cursor: pointer;
       text-align: center;
-      transition: all 0.2s;
     }
     .btn-sheikah:active {
       background: var(--sheikah-gold);
@@ -261,9 +276,7 @@
       color: #000;
     }
 
-    /* ===================================================
-       スライド画面（リスト・履歴）
-    =================================================== */
+    /* スライド画面 */
     .slide-page {
       position: absolute;
       top: 0;
@@ -277,7 +290,6 @@
       flex-direction: column;
       box-shadow: -5px 0 25px rgba(0,0,0,0.9);
     }
-
     .slide-page.open {
       transform: translateX(-100%);
     }
@@ -336,11 +348,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    .list-item:active {
-      border-color: var(--sheikah-cyan);
-    }
 
-    /* トグルスイッチ */
     .toggle-radar {
       padding: 4px 8px;
       font-size: 0.75rem;
@@ -359,7 +367,6 @@
       background: transparent;
     }
 
-    /* 到着告知トースト */
     #toast-banner {
       position: absolute;
       top: 20px;
@@ -387,10 +394,10 @@
     <!-- 到着テロップ -->
     <div id="toast-banner">
       <div style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
-      <div id="toast-text" style="font-size: 1.1rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
+      <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 画面上部：正円マップ -->
+    <!-- 上部：正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper">
@@ -402,24 +409,26 @@
       </div>
     </div>
 
-    <!-- 画面下部：シーカーコンソール -->
+    <!-- 下部：操作パネル -->
     <div class="bottom-section">
-      <!-- 検索入力 ＆ ダイヤル錠 -->
+      <!-- キーワード ＋ 半径ダイヤル ＋ 検索実行ボタン -->
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="中華料理屋" placeholder="探す対象を入力...">
+          <input type="text" id="keyword-input" value="大学" placeholder="探す対象を入力...">
         </div>
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
-          <div class="dial-value" id="radius-val">1km</div>
+          <div class="dial-value" id="radius-val">100m</div>
         </div>
+        <button class="btn-set" id="set-btn">SET</button>
       </div>
 
-      <!-- 不明件数 ＆ センサー情報 -->
+      <!-- 不明件数（対象キーワード＆半径を常時表示） -->
       <div class="status-panel">
         <div>
-          <div style="font-size: 0.7rem; color: #889;">未踏の目的地</div>
+          <div class="target-meta-info" id="target-meta-info">[対象: 大学 / 範囲: 100m]</div>
           <div class="unknown-badge">
+            <span style="font-size: 0.75rem; color: #889;">未踏:</span>
             <span class="unknown-count" id="unknown-count">0</span>
             <span style="font-size: 0.8rem; color: #bbb;">件探知中</span>
           </div>
@@ -429,14 +438,12 @@
         </div>
       </div>
 
-      <!-- 起動 ＆ 到達リストボタン -->
+      <!-- 起動 ＆ リストボタン -->
       <button class="btn-sheikah btn-activate" id="activate-btn">SENSOR ACTIVATE</button>
       <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
     </div>
 
-    <!-- ===================================================
-         第2画面：検索キーワード履歴リスト
-    =================================================== -->
+    <!-- 第2画面：キーワード履歴 -->
     <div class="slide-page" id="page-keywords">
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
@@ -454,9 +461,7 @@
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
 
-    <!-- ===================================================
-         第3画面：各キーワードの到達履歴リスト
-    =================================================== -->
+    <!-- 第3画面：到達場所履歴 -->
     <div class="slide-page" id="page-history">
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ キーワード一覧</button>
@@ -474,41 +479,36 @@
     </div>
   </div>
 
-  <!-- Google Maps JavaScript API (※API_KEYがない場合は自動モックが起動します) -->
   <script src="https://maps.googleapis.com/maps/api/js?key=&libraries=places"></script>
 
   <script>
     // ===================================================
-    // 1. Web Audio API：シーカーセンサー音 ＆ 宝箱解放音
+    // 1. Web Audio API 音源（ピープ音・ファンファーレ）
     // ===================================================
     let audioCtx = null;
-
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // シーカーセンサー ピピ音
     function playBeep(freq = 1800) {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + 0.06);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.04, audioCtx.currentTime + 0.08);
 
-      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
 
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
+      osc.stop(audioCtx.currentTime + 0.12);
     }
 
-    // 宝箱オープン風の解放アルペジオファンファーレ
     function playTreasureFanfare() {
       if (!audioCtx) return;
-      // ゼルダ風アルペジオノート (ド・レ・ミ・ファ・ソ・ラ・シ・高ド...)
       const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
       notes.forEach((freq, idx) => {
         setTimeout(() => {
@@ -525,34 +525,31 @@
           gain.connect(audioCtx.destination);
           osc.start();
           osc.stop(audioCtx.currentTime + dur);
-        }, idx * 110);
+        }, idx * 115);
       });
     }
 
     // ===================================================
-    // 2. 状態管理・ローカルストレージ（図鑑・到達データ）
+    // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = 1; // 初期値: 1km
+    let radiusIndex = 0; // 初期値: 100m
 
     let appState = {
       isTracking: false,
       currentPos: null,
       prevPos: null,
-      currentHeading: 0, // 進行方位（度）
-      activeKeyword: "中華料理屋",
+      lastSearchedPos: null, // 前回検索を行った起点位置
+      currentHeading: 0,
+      activeKeyword: "大学",
       selectedKeywordForHistory: null,
-      places: [] // 現在索敵中のスポット
+      places: []
     };
 
-    // localStorageから保存データを読み込み
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
       if (data) return JSON.parse(data);
-      return {
-        keywordHistory: {}, // { "中華料理屋": { lastSearch: "...", lastArrival: "..." } }
-        arrivals: []        // [ { id, name, keyword, lat, lng, date, muted: true } ]
-      };
+      return { keywordHistory: {}, arrivals: [] };
     }
 
     function saveAppData(db) {
@@ -560,38 +557,36 @@
     }
 
     // ===================================================
-    // 3. Google Maps 初期化（正円・POI非表示・ダークスタイル）
+    // 3. Google Maps（文字・店舗・道路名を完全非表示化）
     // ===================================================
     let map = null;
-    let markers = {};
 
+    // 全てのラベルとアイコンを完全シャットアウトするスタイル
     const sheikahMapStyle = [
       { elementType: "geometry", stylers: [{ color: "#081018" }] },
-      { elementType: "labels.text.stroke", stylers: [{ visibility: "off" }] },
-      { elementType: "labels.text.fill", stylers: [{ color: "#32506d" }] },
-      { featureType: "poi", stylers: [{ visibility: "off" }] }, // 建物名・店舗非表示！
-      { featureType: "transit", stylers: [{ visibility: "off" }] },
+      { elementType: "labels", stylers: [{ visibility: "off" }] }, // 全体文字非表示
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] }, // 全アイコン非表示
+      { featureType: "administrative", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
       { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
-      { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#1f3950" }] },
+      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
     ];
 
     function initMap(lat, lng) {
-      if (typeof google === 'undefined' || !google.maps) {
-        console.warn("Google Maps SDK未読込のためモック動作します");
-        return;
-      }
+      if (typeof google === 'undefined' || !google.maps) return;
       map = new google.maps.Map(document.getElementById('map'), {
         center: { lat, lng },
         zoom: 17,
         disableDefaultUI: true,
         styles: sheikahMapStyle,
-        gestureHandling: 'none' // 正円内での手動操作を抑制
+        gestureHandling: 'none'
       });
     }
 
     // ===================================================
-    // 4. 地理・ベクトル計算 ＆ センサーロジック
+    // 4. 幾何計算 ＆ センサーロジック（周期を低速化）
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -617,17 +612,16 @@
       const db = loadSavedData();
       const activeTargets = appState.places.filter(p => {
         const item = db.arrivals.find(a => a.id === p.id);
-        return !item || !item.muted; // ミュート（到達済み）されていないもの
+        return !item || !item.muted;
       });
 
       document.getElementById('unknown-count').textContent = activeTargets.length;
       if (activeTargets.length === 0) {
-        document.getElementById('distance-info').textContent = "反応なし（未踏地なし）";
+        document.getElementById('distance-info').textContent = "反応なし";
         if (radarTimer) clearTimeout(radarTimer);
         return;
       }
 
-      // 各ターゲットまでの距離と方角差を計算
       let closestTarget = null;
       let minDistance = Infinity;
       let targetBearingDiff = 0;
@@ -646,37 +640,33 @@
 
       document.getElementById('distance-info').textContent = `最寄り: 約${Math.round(minDistance)}m`;
 
-      // 【到達判定】10m以内
+      // 10m以内で到着判定
       if (minDistance <= 10) {
         handleArrival(closestTarget);
         return;
       }
 
-      // 【接近判定】前回の距離より近づいているか？
+      // 接近判定
       const isApproaching = (lastEvaluatedDistance === null || minDistance < lastEvaluatedDistance);
       lastEvaluatedDistance = minDistance;
 
-      // センサー周期の計算
+      // 【修正】周期を全体的に低速化
       let interval = null;
-
       if (minDistance <= 200) {
-        // 200m以内
         if (targetBearingDiff <= 35) {
-          // 移動方向の正面に対象がある ➔ 高周期（激しく反応）
-          interval = 240;
+          // 移動方向の正面に対象がある ➔ 高周期（約0.65秒）
+          interval = 650;
         } else if (isApproaching) {
-          // 移動方向は逸れているが、距離自体は縮まっている ➔ 中周期
-          interval = 700;
+          // 距離が縮んでいる ➔ 中周期（約1.5秒）
+          interval = 1500;
         }
       } else {
-        // かなり離れているとき（200m超）
         if (isApproaching) {
-          // 距離が縮んでいれば ➔ 低周期
-          interval = 1600;
+          // 遠距離で距離が縮んでいる ➔ 低周期（約2.8秒）
+          interval = 2800;
         }
       }
 
-      // 音と波紋のスケジュール
       if (interval !== null) {
         scheduleRadarSound(interval);
       } else {
@@ -688,9 +678,8 @@
       if (radarTimer) clearTimeout(radarTimer);
       function pulse() {
         if (!appState.isTracking) return;
-        playBeep(interval < 300 ? 2100 : 1700);
+        playBeep(interval <= 700 ? 2100 : 1750);
 
-        // 波紋アニメーション
         const wave = document.getElementById('radar-pulse');
         wave.classList.remove('pulse-anim');
         void wave.offsetWidth;
@@ -701,15 +690,12 @@
       pulse();
     }
 
-    // 到達イベント（10m以内）
     function handleArrival(target) {
       appState.isTracking = false;
       if (radarTimer) clearTimeout(radarTimer);
 
-      // 解放ファンファーレ演奏
       playTreasureFanfare();
 
-      // 到達データを登録＆自動ミュート（レーダー無効化）
       const db = loadSavedData();
       const now = new Date().toISOString();
       const existing = db.arrivals.find(a => a.id === target.id);
@@ -721,7 +707,7 @@
           lat: target.lat,
           lng: target.lng,
           date: now,
-          muted: true // 到達時は自動で無効化
+          muted: true
         });
       }
       if (!db.keywordHistory[appState.activeKeyword]) {
@@ -731,7 +717,6 @@
       }
       saveAppData(db);
 
-      // マップ上に到着ピンを立てる
       if (map) {
         new google.maps.Marker({
           position: { lat: target.lat, lng: target.lng },
@@ -748,7 +733,6 @@
         });
       }
 
-      // 到達告知テロップ
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = `マップに「${target.name}」が記録されました`;
       toast.classList.add('show');
@@ -760,7 +744,7 @@
     }
 
     // ===================================================
-    // 5. GPS位置情報 ＆ 進行方向によるマップ自動回転補正
+    // 5. GPS位置情報 ＆ 移動に応じた自動再検索
     // ===================================================
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -770,7 +754,7 @@
 
       if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        // 2m以上の移動があれば進行方向を更新（信号待ち等では直前の方角を保持）
+        // 2m以上の移動で進行方向を更新
         if (moved >= 2.0) {
           appState.currentHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
           appState.prevPos = newPos;
@@ -779,7 +763,7 @@
         appState.prevPos = newPos;
       }
 
-      // マップの回転補正：自分の進行方向が常に「画面の上」になるようにマップ要素を回転
+      // マップを進行方向が上になるよう旋回
       if (map) {
         map.setCenter(newPos);
         const mapDiv = document.getElementById('map');
@@ -787,42 +771,59 @@
         mapDiv.style.transformOrigin = 'center center';
       }
 
-      // テスト用：周辺スポットが存在しない場合、現在地の周囲にダミースポットを生成
-      if (appState.places.length === 0) {
-        generateMockPlaces(newPos);
+      // 【修正】しばらく移動した場合（50m以上移動）は、その地点からの検索結果に自動更新
+      if (appState.lastSearchedPos) {
+        const movedSinceSearch = getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng);
+        if (movedSinceSearch >= 50) {
+          executeSearch();
+        }
+      } else {
+        executeSearch();
       }
 
       evaluateSensorCycle();
     }
 
-    // モックスポット生成（API未接続時でも動作可能）
-    function generateMockPlaces(pos) {
+    // 検索実行処理（Places API または モック）
+    function executeSearch() {
+      if (!appState.currentPos) return;
+      appState.lastSearchedPos = { ...appState.currentPos };
+      const currentRadius = RADIUS_OPTIONS[radiusIndex];
+
+      // ステータス表示の更新
+      const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
+      document.getElementById('target-meta-info').textContent = `[対象: ${appState.activeKeyword} / 範囲: ${rText}]`;
+
+      // モックデータ生成（現在の半径に合わせて配置）
+      const rDeg = (currentRadius / 111000) * 0.7; // 半径に応じた緯度経度差
       appState.places = [
-        { id: "mock_1", name: "中華料理 龍鳳（路地裏店）", lat: pos.lat + 0.0008, lng: pos.lng + 0.0003 },
-        { id: "mock_2", name: "町中華 餃子館", lat: pos.lat - 0.0012, lng: pos.lng + 0.0015 },
-        { id: "mock_3", name: "四川風ラーメン 龍門", lat: pos.lat + 0.002, lng: pos.lng - 0.001 }
+        { id: `mock_1_${currentRadius}`, name: `${appState.activeKeyword} A地点`, lat: appState.currentPos.lat + rDeg * 0.8, lng: appState.currentPos.lng + rDeg * 0.3 },
+        { id: `mock_2_${currentRadius}`, name: `${appState.activeKeyword} B地点`, lat: appState.currentPos.lat - rDeg * 0.5, lng: appState.currentPos.lng + rDeg * 0.7 },
+        { id: `mock_3_${currentRadius}`, name: `${appState.activeKeyword} C地点`, lat: appState.currentPos.lat + rDeg * 0.4, lng: appState.currentPos.lng - rDeg * 0.6 }
       ];
+
       evaluateSensorCycle();
     }
 
     // ===================================================
-    // 6. UIイベント・ダイヤル錠・スライド画面
+    // 6. UIイベント・ボタン
     // ===================================================
-    // ダイヤル錠を回す（半径の切り替え）
+    function getRadiusText(r) {
+      return r >= 1000 ? `${r/1000}km` : `${r}m`;
+    }
+
+    // ダイヤル錠を回す
     document.getElementById('dial-btn').addEventListener('click', () => {
       radiusIndex = (radiusIndex + 1) % RADIUS_OPTIONS.length;
-      const r = RADIUS_OPTIONS[radiusIndex];
-      document.getElementById('radius-val').textContent = r >= 1000 ? `${r/1000}km` : `${r}m`;
-      if (appState.currentPos) generateMockPlaces(appState.currentPos);
+      document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     });
 
-    // センサー起動
-    document.getElementById('activate-btn').addEventListener('click', () => {
-      initAudio();
-      appState.activeKeyword = document.getElementById('keyword-input').value.trim() || "スポット";
-      appState.isTracking = true;
+    // 【修正】検索実行（SET）ボタンの処理
+    function applySearchSettings() {
+      const inputVal = document.getElementById('keyword-input').value.trim();
+      appState.activeKeyword = inputVal || "大学";
 
-      // キーワード検索日時の記録
+      // 履歴登録
       const db = loadSavedData();
       const now = new Date().toISOString();
       if (!db.keywordHistory[appState.activeKeyword]) {
@@ -831,6 +832,21 @@
         db.keywordHistory[appState.activeKeyword].lastSearch = now;
       }
       saveAppData(db);
+
+      // 検索を即座に再実行
+      executeSearch();
+    }
+
+    document.getElementById('set-btn').addEventListener('click', applySearchSettings);
+    document.getElementById('keyword-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') applySearchSettings();
+    });
+
+    // センサー起動ボタン
+    document.getElementById('activate-btn').addEventListener('click', () => {
+      initAudio();
+      applySearchSettings();
+      appState.isTracking = true;
 
       document.getElementById('activate-btn').textContent = "SEARCHING...";
 
@@ -841,7 +857,7 @@
       }
     });
 
-    // 画面遷移ハンドラー
+    // スライド画面遷移
     const pageKeywords = document.getElementById('page-keywords');
     const pageHistory = document.getElementById('page-history');
 
@@ -852,7 +868,7 @@
 
     document.getElementById('back-to-main').addEventListener('click', () => {
       pageKeywords.classList.remove('open');
-      evaluateSensorCycle(); // 戻った時にミュート状態を再計算
+      evaluateSensorCycle();
     });
 
     document.getElementById('back-to-keywords').addEventListener('click', () => {
@@ -860,22 +876,20 @@
       renderKeywordsList();
     });
 
-    // スワイプバック（左から右へのスワイプで戻る）
     function setupSwipeBack(el, backCallback) {
       let startX = 0;
       el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
       el.addEventListener('touchend', (e) => {
         const diffX = e.changedTouches[0].clientX - startX;
-        if (diffX > 80) backCallback(); // 右方向に80px以上スワイプで戻る
+        if (diffX > 80) backCallback();
       }, { passive: true });
     }
     setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・トグル操作
+    // 7. リスト表示・ソート・トグル
     // ===================================================
-    // キーワード一覧の描画
     function renderKeywordsList() {
       const db = loadSavedData();
       const container = document.getElementById('keywords-list-container');
@@ -922,7 +936,6 @@
       });
     }
 
-    // 各キーワードの到達場所履歴の描画
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
@@ -953,7 +966,6 @@
           </button>
         `;
 
-        // レーダー再オン/オフ切り替え
         div.querySelector('.toggle-radar').addEventListener('click', (e) => {
           e.stopPropagation();
           item.muted = !item.muted;
