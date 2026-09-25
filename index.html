@@ -69,7 +69,6 @@
       100% { opacity: 0; }
     }
 
-    /* マップ上部のアイコン群（左上：太陽アイコン、右上：言語トグル） */
     .top-left-ctrl {
       position: absolute;
       top: calc(max(env(safe-area-inset-top), 36px) + 6px);
@@ -570,40 +569,23 @@
       color: #000;
     }
 
-    /* 一発メイン画面へ戻るホームショートカットボタン */
+    /* モノトーン調ホームSVGショートカットボタン */
     .btn-home-shortcut {
       color: var(--sheikah-gold);
       background: rgba(197, 160, 89, 0.12);
       border: 1.5px solid var(--sheikah-gold);
-      font-size: 0.82rem;
-      font-weight: bold;
       cursor: pointer;
-      padding: 7px 12px;
+      padding: 7px 11px;
       border-radius: 20px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
       flex-shrink: 0;
+      transition: all 0.2s;
     }
     .btn-home-shortcut:active {
       background: var(--sheikah-gold);
       color: #000;
-    }
-
-    .btn-header-danger {
-      color: var(--sheikah-danger);
-      background: rgba(255, 77, 77, 0.1);
-      border: 1.5px solid var(--sheikah-danger);
-      font-size: 0.82rem;
-      font-weight: bold;
-      cursor: pointer;
-      padding: 7px 12px;
-      border-radius: 20px;
-      flex-shrink: 0;
-    }
-    .btn-header-danger:active {
-      background: var(--sheikah-danger);
-      color: #fff;
     }
 
     .page-title-text {
@@ -771,12 +753,23 @@
       background: rgba(197, 160, 89, 0.1);
     }
 
+    .btn-danger-sm {
+      border-color: var(--sheikah-danger);
+      color: var(--sheikah-danger);
+      background: rgba(255, 77, 77, 0.12);
+    }
+    .btn-danger-sm:active {
+      background: var(--sheikah-danger);
+      color: #fff;
+    }
+
     .action-button-row {
       display: flex;
       gap: 8px;
       justify-content: flex-end;
       padding-top: 6px;
       border-top: 1px dashed rgba(255,255,255,0.08);
+      flex-wrap: wrap;
     }
 
     /* ===================================================
@@ -822,7 +815,6 @@
       scroll-snap-type: x mandatory;
     }
     
-    /* ギャラリー1枚目：シーカー調正円ミニマップコンテナ */
     .gallery-minimap-wrap {
       flex: 0 0 85%;
       height: 220px;
@@ -905,7 +897,7 @@
 
     <!-- 左上：道路コントラスト切り替え（太陽アイコン） -->
     <div class="top-left-ctrl">
-      <button class="top-icon-btn" id="map-style-toggle-btn" title="Map High Contrast">
+      <button class="top-icon-btn" id="map-style-toggle-btn" title="Map Contrast">
         <svg class="svg-icon" id="svg-map-contrast" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
       </button>
     </div>
@@ -992,7 +984,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.260046</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260056</span></span>
       </div>
     </div>
 
@@ -1001,7 +993,9 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
         <div class="page-title-text" id="title-page-keywords">図鑑キーワード</div>
-        <button class="btn-home-shortcut" id="home-from-keywords">🏠</button>
+        <button class="btn-home-shortcut" id="home-from-keywords" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -1025,10 +1019,9 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
         <div class="page-title-text" id="history-header-title">到達履歴</div>
-        <div style="display: flex; gap: 6px;">
-          <button class="btn-home-shortcut" id="home-from-history">🏠</button>
-          <button class="btn-header-danger" id="btn-delete-current-keyword">削除</button>
-        </div>
+        <button class="btn-home-shortcut" id="home-from-history" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -1042,6 +1035,10 @@
           <option value="name_asc" id="opt-hsort-name">名称あいうえお順</option>
         </select>
       </div>
+      <!-- 第2画面と同様に並び順の下部に一括削除ボタンを配置 -->
+      <div class="action-sub-bar">
+        <button class="btn-clean-zero" id="btn-delete-current-keyword">このキーワードの履歴を一括削除</button>
+      </div>
       <div class="list-scroll" id="history-list-container"></div>
     </div>
 
@@ -1050,15 +1047,19 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
         <div class="page-title-text" id="detail-header-title">スポット詳細</div>
-        <button class="btn-home-shortcut" id="home-from-detail">🏠</button>
+        <button class="btn-home-shortcut" id="home-from-detail" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="spot-detail-content">
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
-            <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET (ピンポイント探索)</button>
-            <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">名称コピー</button>
+            <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
+            <button class="btn-sheikah-sm" id="detail-btn-toggle-radar">レーダーON</button>
+            <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">コピー</button>
+            <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
           </div>
         </div>
 
@@ -1105,6 +1106,7 @@
         sortArrival: "到達日時順",
         sortCount: "到達件数降順",
         cleanZeroBtn: "到達0件の履歴を一括削除",
+        deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
         backToKeywords: "◀ 履歴一覧",
         backToHistory: "◀ 到達リスト",
         spotDetailTitle: "スポット詳細",
@@ -1126,8 +1128,6 @@
         radarOn: "レーダーON",
         radarOff: "レーダーOFF",
         copyBtn: "コピー",
-        btnPinpointSet: "SET (ピンポイント探索)",
-        btnNameCopy: "名称コピー",
         galleryHeader: "現地ギャラリー (Google Places)",
         loadingPhotos: "写真を取得中...",
         loadingAddress: "住所情報を照会中...",
@@ -1136,6 +1136,7 @@
         minimapBadge: "位置マップ",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
+        confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
       },
       en: {
@@ -1164,6 +1165,7 @@
         sortArrival: "By Discovery Date",
         sortCount: "By Discovery Count",
         cleanZeroBtn: "Delete Zero-Hit Records",
+        deleteCurrentKeyBtn: "Delete This Keyword's History",
         backToKeywords: "◀ Keywords",
         backToHistory: "◀ Places",
         spotDetailTitle: "Place Details",
@@ -1185,8 +1187,6 @@
         radarOn: "RADAR ON",
         radarOff: "RADAR OFF",
         copyBtn: "COPY",
-        btnPinpointSet: "SET (Pinpoint Radar)",
-        btnNameCopy: "Copy Name",
         galleryHeader: "Place Gallery (Google Places)",
         loadingPhotos: "Loading photos...",
         loadingAddress: "Querying address...",
@@ -1195,6 +1195,7 @@
         minimapBadge: "Location Map",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
+        confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
         noZeroKeywords: "No zero-discovery keywords found."
       }
     };
@@ -1248,13 +1249,13 @@
       document.getElementById('opt-sort-arrival').textContent = t.sortArrival;
       document.getElementById('opt-sort-count').textContent = t.sortCount;
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
+      document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
       document.getElementById('back-to-history-list').textContent = t.backToHistory;
       document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
-      document.getElementById('detail-btn-pinpoint-set').textContent = t.btnPinpointSet;
-      document.getElementById('detail-btn-copy').textContent = t.btnNameCopy;
+      document.getElementById('detail-btn-copy').textContent = t.copyBtn;
+      document.getElementById('detail-btn-delete-single').textContent = t.deleteBtn;
       document.getElementById('detail-gallery-header').textContent = t.galleryHeader;
-      document.getElementById('btn-delete-current-keyword').textContent = t.deleteBtn;
       document.getElementById('opt-hsort-near').textContent = t.sortHNear;
       document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
@@ -1271,18 +1272,15 @@
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
     });
 
-    // 画面左上：太陽アイコンによる道路コントラスト切り替え
     const mapContrastBtn = document.getElementById('map-style-toggle-btn');
     const svgMapContrast = document.getElementById('svg-map-contrast');
 
     function updateMapStyleUI() {
       if (currentMapStyleMode === 'high') {
         mapContrastBtn.classList.add('active');
-        // ハイコントラスト時：月／星アイコン
         svgMapContrast.innerHTML = '<path d="M12.3 2a10 10 0 0 0-1.9 19.8 10 10 0 0 0 11.4-11.4A10 10 0 0 0 12.3 2z"/>';
       } else {
         mapContrastBtn.classList.remove('active');
-        // 通常時：太陽アイコン
         svgMapContrast.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
       }
     }
@@ -1933,7 +1931,6 @@
         labelSensor.textContent = t.sensorActive;
       }
 
-      // サウンドボタン
       const muteBtn = document.getElementById('mute-toggle-btn');
       const svgSound = document.getElementById('svg-sound');
       const labelSound = document.getElementById('label-sound-state');
@@ -1947,7 +1944,6 @@
         labelSound.textContent = t.soundOn;
       }
 
-      // 画面点灯維持
       const wakeBtn = document.getElementById('wakelock-toggle-btn');
       const svgWake = document.getElementById('svg-wake');
       const labelWake = document.getElementById('label-wake-state');
@@ -2078,7 +2074,6 @@
     const pageHistory = document.getElementById('page-history');
     const pageSpotDetail = document.getElementById('page-spot-detail');
 
-    // メイン画面へ一発で戻る共通関数
     function navigateToMain() {
       pageSpotDetail.classList.remove('open');
       pageHistory.classList.remove('open');
@@ -2107,6 +2102,7 @@
 
     document.getElementById('back-to-history-list').addEventListener('click', () => {
       pageSpotDetail.classList.remove('open');
+      renderHistoryList();
     });
 
     function setupSwipeBack(el, backCallback) {
@@ -2122,7 +2118,7 @@
     setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・詳細画面・写真＆ミニマップ
+    // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -2344,26 +2340,56 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：ミニマップ ＋ Googleマップ写真ビューア
+    // 第4画面：Googleマップ詳細・写真・完全固定ミニマップ
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
+      const db = loadSavedData();
 
       document.getElementById('detail-spot-name').textContent = item.name;
       document.getElementById('detail-spot-address').textContent = t.loadingAddress;
       const photosBox = document.getElementById('detail-photos-container');
       photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
 
+      // 第4画面アクションボタンの同期
       document.getElementById('detail-btn-pinpoint-set').onclick = () => setPinpointTargetAndStart(item);
       document.getElementById('detail-btn-copy').onclick = () => copyPlaceNameToClipboard(item.name);
 
+      // 第4画面 レーダーON/OFFボタン
+      const radarBtn = document.getElementById('detail-btn-toggle-radar');
+      function updateDetailRadarBtn() {
+        if (item.muted) {
+          radarBtn.textContent = t.radarOff;
+          radarBtn.className = "btn-sheikah-sm off";
+        } else {
+          radarBtn.textContent = t.radarOn;
+          radarBtn.className = "btn-sheikah-sm active";
+        }
+      }
+      updateDetailRadarBtn();
+
+      radarBtn.onclick = () => {
+        item.muted = !item.muted;
+        saveAppData(db);
+        updateDetailRadarBtn();
+      };
+
+      // 第4画面 個別削除ボタン
+      document.getElementById('detail-btn-delete-single').onclick = () => {
+        if (confirm(t.confirmDeleteSingle(item.name))) {
+          db.arrivals = db.arrivals.filter(a => a.id !== item.id);
+          saveAppData(db);
+          pageSpotDetail.classList.remove('open');
+          renderHistoryList();
+        }
+      };
+
       pageSpotDetail.classList.add('open');
 
-      // ギャラリーカルーセルコンテナを構築
       const gallery = document.createElement('div');
       gallery.className = 'photo-gallery-scroll';
 
-      // 1枚目：シーカー調正円ミニマップ
+      // 1枚目：操作完全固定のシーカーミニマップ
       const mapWrap = document.createElement('div');
       mapWrap.className = 'gallery-minimap-wrap';
       mapWrap.innerHTML = `
@@ -2372,7 +2398,6 @@
       `;
       gallery.appendChild(mapWrap);
 
-      // Place Details APIで写真と住所を取得
       if (placesService && item.id) {
         placesService.getDetails({
           placeId: item.id,
@@ -2396,14 +2421,17 @@
           photosBox.innerHTML = '';
           photosBox.appendChild(gallery);
 
-          // ミニマップをレンダリング（メイン画面と同じシーカー調スタイル）
+          // ミニマップを完全固定（指2本スクロール・探索無効化）で描画
           setTimeout(() => {
             detailMinimapInstance = new google.maps.Map(document.getElementById('detail-minimap'), {
               center: { lat: item.lat, lng: item.lng },
               zoom: 17,
               disableDefaultUI: true,
               styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal,
-              gestureHandling: 'cooperative'
+              gestureHandling: 'none',   // 操作・スクロール完全無効
+              draggable: false,          // ドラッグ不可
+              scrollwheel: false,
+              disableDoubleClickZoom: true
             });
 
             new google.maps.Marker({
@@ -2427,6 +2455,7 @@
       }
     }
 
+    // 第3画面：キーワード全体の履歴を一括削除
     document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
       const targetKey = appState.selectedKeywordForHistory;
       if (!targetKey) return;
