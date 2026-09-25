@@ -47,7 +47,6 @@
       flex-direction: column;
     }
 
-    /* 上部：正円マップ（インカメラ回避） */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -140,7 +139,6 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
-    /* 下部：操作パネル */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -459,7 +457,7 @@
     <div class="bottom-section">
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="大学" placeholder="探す対象を入力...">
+          <input type="text" id="keyword-input" value="マクドナルド" placeholder="探す対象を入力...">
         </div>
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
@@ -470,7 +468,7 @@
 
       <div class="status-panel">
         <div>
-          <div class="target-meta-info" id="target-meta-info">[対象: 大学 / 範囲: 3km]</div>
+          <div class="target-meta-info" id="target-meta-info">[対象: マクドナルド / 範囲: 3km]</div>
           <div class="unknown-badge">
             <span style="font-size: 0.75rem; color: #889;">未踏:</span>
             <span class="unknown-count" id="unknown-count">0</span>
@@ -492,7 +490,7 @@
 
       <div class="app-version-footer">
         <span style="color: #c5a059;">※消音スイッチ解除で音が出ます</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252153</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252202</span></span>
       </div>
     </div>
 
@@ -536,7 +534,7 @@
 
   <script>
     // ===================================================
-    // 1. Web Audio API 音源（iOS Safari 強力アンロック実装）
+    // 1. Web Audio API 音源
     // ===================================================
     let audioCtx = null;
 
@@ -544,24 +542,18 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      // iOS Safariがsuspended（一時停止）になっている場合は強制再開
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-
-      // iOSでオーディオパイプラインを物理的に開通させるための無音バッファ再生
       try {
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
         source.connect(audioCtx.destination);
         source.start(0);
-      } catch (e) {
-        console.warn("Audio unlock dummy buffer failed:", e);
-      }
+      } catch (e) {}
     }
 
-    // 画面のどこかを最初に触った時にも自動でオーディオロックを解除
     window.addEventListener('touchstart', () => { initAudio(); }, { once: true });
     window.addEventListener('click', () => { initAudio(); }, { once: true });
 
@@ -576,7 +568,6 @@
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + 0.08);
 
-        // 音量を少し上げて存在感をアップ
         gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
 
@@ -584,9 +575,7 @@
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.12);
-      } catch (e) {
-        console.error("playBeep Error:", e);
-      }
+      } catch (e) {}
     }
 
     function playTreasureFanfare() {
@@ -617,7 +606,7 @@
     // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = 2; // 初期値: 3km
+    let radiusIndex = 2; // 3km
 
     let appState = {
       isTracking: false,
@@ -629,7 +618,7 @@
       visualMapRotation: 0,
       isWalking: false,
       lastMoveTimestamp: 0,
-      activeKeyword: "大学",
+      activeKeyword: "マクドナルド",
       selectedKeywordForHistory: null,
       places: []
     };
@@ -697,11 +686,12 @@
     }
 
     let radarTimer = null;
+    let currentScheduledInterval = null; // 現在予約中の再生間隔
     let lastEvaluatedDistance = null;
 
     function evaluateSensorCycle() {
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
-        if (radarTimer) clearTimeout(radarTimer);
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         return;
       }
 
@@ -716,7 +706,7 @@
         if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
           document.getElementById('distance-info').textContent = "未踏スポットなし";
         }
-        if (radarTimer) clearTimeout(radarTimer);
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         return;
       }
 
@@ -738,7 +728,8 @@
 
       document.getElementById('distance-info').textContent = `最寄り: 約${Math.round(minDistance)}m`;
 
-      if (minDistance <= 10) {
+      // 【修正1】到着判定を20mに緩和（GPSの誤差や店舗重心のズレを吸収）
+      if (minDistance <= 20) {
         handleArrival(closestTarget);
         return;
       }
@@ -749,26 +740,36 @@
       let interval = null;
       if (minDistance <= 200) {
         if (targetBearingDiff <= 35) {
-          interval = 650;
+          interval = 600; // 正面接近（高周期）
         } else if (isApproaching) {
-          interval = 1500;
+          interval = 1400; // 接近中（中周期）
         }
       } else {
-        // 遠距離の場合：対象が存在していれば定期的（約2.5秒）に探知音を発する
-        interval = 2500;
+        interval = 2500; // 遠距離（低周期）
       }
 
       if (interval !== null) {
         scheduleRadarSound(interval);
       } else {
-        if (radarTimer) clearTimeout(radarTimer);
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
       }
     }
 
+    // 【修正2】回転時の超連射を防ぐ防護リミッター
     function scheduleRadarSound(interval) {
+      // すでに同じ周期のタイマーが動いている場合は、回転イベントによる再発火をスキップ（連射防止）
+      if (radarTimer && currentScheduledInterval === interval) {
+        return;
+      }
+
       if (radarTimer) clearTimeout(radarTimer);
+      currentScheduledInterval = interval;
+
       function pulse() {
-        if (!appState.isTracking || appState.isPaused) return;
+        if (!appState.isTracking || appState.isPaused) {
+          radarTimer = null;
+          return;
+        }
         playBeep(interval <= 700 ? 2100 : 1750);
 
         const wave = document.getElementById('radar-pulse');
@@ -783,8 +784,9 @@
 
     function handleArrival(target) {
       appState.isTracking = false;
-      if (radarTimer) clearTimeout(radarTimer);
+      if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
 
+      // 宝箱解放アルペジオファンファーレ
       playTreasureFanfare();
 
       const db = loadSavedData();
@@ -827,7 +829,7 @@
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = `マップに「${target.name}」が記録されました`;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 4500);
+      setTimeout(() => toast.classList.remove('show'), 5000);
 
       updateSearchStatusUI(false);
       document.getElementById('distance-info').textContent = "到達完了！";
@@ -988,9 +990,8 @@
     }
 
     async function startSearchFromSet() {
-      // ユーザーのタップ契機で確実にオーディオをアンロック
       initAudio();
-      playBeep(2200); // 起動確認音（ピピッ）
+      playBeep(2200);
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
@@ -1008,7 +1009,7 @@
       }
 
       const inputVal = document.getElementById('keyword-input').value.trim();
-      appState.activeKeyword = inputVal || "大学";
+      appState.activeKeyword = inputVal || "マクドナルド";
       appState.isTracking = true;
       appState.isPaused = false;
 
@@ -1050,7 +1051,7 @@
 
       appState.isPaused = !appState.isPaused;
       if (appState.isPaused) {
-        if (radarTimer) clearTimeout(radarTimer);
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         updateSearchStatusUI(false);
       } else {
         updateSearchStatusUI(true);
