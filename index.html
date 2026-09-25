@@ -47,10 +47,12 @@
       flex-direction: column;
     }
 
-    /* 上部：正円マップエリア */
+    /* ===================================================
+       上部：画面横幅いっぱいの正円マップエリア
+    =================================================== */
     .top-section {
       width: 100%;
-      height: 46vh;
+      height: 52vh; /* マップの表示エリアを拡大 */
       position: relative;
       background: radial-gradient(circle at center, #262c33 0%, #111417 100%);
       display: flex;
@@ -68,18 +70,19 @@
       pointer-events: none;
       opacity: 0.35;
       background: 
-        radial-gradient(circle at 15% 20%, var(--sheikah-orange) 2px, transparent 3px),
-        radial-gradient(circle at 85% 80%, var(--sheikah-cyan) 2px, transparent 3px);
+        radial-gradient(circle at 10% 15%, var(--sheikah-orange) 2px, transparent 3px),
+        radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
+    /* 横幅フル（画面幅94%）の正円外枠 */
     .circle-map-wrapper {
       position: relative;
-      width: 250px;
-      height: 250px;
+      width: min(94vw, 360px);
+      height: min(94vw, 360px);
       border-radius: 50%;
       padding: 6px;
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
-      box-shadow: 0 0 25px rgba(0, 243, 255, 0.4), inset 0 0 10px #000;
+      box-shadow: 0 0 28px rgba(0, 243, 255, 0.45), inset 0 0 10px #000;
     }
 
     #map-container {
@@ -96,17 +99,22 @@
       height: 100%;
     }
 
+    /* Googleマップの残存ラベル・テキストをブラウザ側でも強制非表示 */
+    .gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] {
+      display: none !important;
+    }
+
     .player-pointer {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 18px;
-      height: 18px;
-      border-left: 9px solid transparent;
-      border-right: 9px solid transparent;
-      border-bottom: 18px solid var(--sheikah-cyan);
-      filter: drop-shadow(0 0 8px var(--sheikah-cyan));
+      width: 20px;
+      height: 20px;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid var(--sheikah-cyan);
+      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
       pointer-events: none;
       z-index: 5;
     }
@@ -124,18 +132,20 @@
     }
 
     .pulse-anim {
-      animation: pulse-out-anim 0.6s ease-out forwards;
+      animation: pulse-out-anim 0.65s ease-out forwards;
     }
 
     @keyframes pulse-out-anim {
-      0% { width: 20px; height: 20px; opacity: 1; border-color: #fff; }
-      100% { width: 240px; height: 240px; opacity: 0; border-color: var(--sheikah-cyan); }
+      0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
-    /* 下部：操作コンソール */
+    /* ===================================================
+       下部：操作パネル
+    =================================================== */
     .bottom-section {
       width: 100%;
-      height: 54vh;
+      height: 48vh;
       background: var(--sheikah-panel);
       padding: 14px 16px;
       display: flex;
@@ -145,7 +155,6 @@
       border-top: 1px solid rgba(197, 160, 89, 0.3);
     }
 
-    /* 入力行（キーワード ＋ 半径ダイヤル ＋ 検索ボタン） */
     .input-row {
       display: flex;
       gap: 8px;
@@ -162,7 +171,7 @@
       background: rgba(3, 8, 14, 0.9);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-cyan);
-      padding: 10px 10px;
+      padding: 9px 10px;
       font-size: 0.95rem;
       border-radius: 4px;
       outline: none;
@@ -174,8 +183,8 @@
     }
 
     .dial-lock {
-      width: 72px;
-      height: 44px;
+      width: 68px;
+      height: 42px;
       background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
       border: 1.5px solid var(--sheikah-gold);
       border-radius: 4px;
@@ -197,43 +206,41 @@
       color: var(--sheikah-cyan);
     }
 
-    /* 検索実行（SET）ボタン */
     .btn-set {
-      height: 44px;
-      padding: 0 12px;
-      background: rgba(0, 243, 255, 0.1);
+      height: 42px;
+      padding: 0 14px;
+      background: rgba(0, 243, 255, 0.15);
       border: 1.5px solid var(--sheikah-cyan);
       color: var(--sheikah-cyan);
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: bold;
       border-radius: 4px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
     }
     .btn-set:active {
       background: var(--sheikah-cyan);
       color: #000;
     }
 
-    /* ステータス情報パネル */
     .status-panel {
-      background: rgba(3, 8, 14, 0.6);
+      background: rgba(3, 8, 14, 0.65);
       border: 1px solid #334;
       border-radius: 6px;
-      padding: 8px 12px;
+      padding: 9px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .target-meta-info {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: var(--sheikah-cyan);
-      margin-bottom: 2px;
-      opacity: 0.9;
+      margin-bottom: 3px;
+      opacity: 0.95;
     }
 
     .unknown-badge {
@@ -242,41 +249,73 @@
       gap: 6px;
     }
     .unknown-count {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: bold;
       color: var(--sheikah-orange);
       text-shadow: 0 0 8px var(--sheikah-orange);
     }
 
-    /* 共通ボタン */
+    .search-status-badge {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .status-indicator {
+      font-size: 0.75rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .status-indicator.active {
+      color: var(--sheikah-cyan);
+      animation: blink-anim 1.5s infinite;
+    }
+    .status-indicator.paused {
+      color: #889;
+    }
+
+    @keyframes blink-anim {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
     .btn-sheikah {
       background: rgba(197, 160, 89, 0.1);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      padding: 12px;
-      font-size: 0.95rem;
+      padding: 11px;
+      font-size: 0.92rem;
       font-weight: bold;
       letter-spacing: 1px;
       border-radius: 4px;
       cursor: pointer;
       text-align: center;
+      transition: all 0.2s;
     }
     .btn-sheikah:active {
       background: var(--sheikah-gold);
       color: #000;
     }
 
-    .btn-activate {
+    .btn-pause-toggle {
+      border-color: var(--sheikah-orange);
+      color: var(--sheikah-orange);
+      box-shadow: 0 0 8px rgba(255, 157, 0, 0.2);
+    }
+    .btn-pause-toggle.paused {
       border-color: var(--sheikah-cyan);
       color: var(--sheikah-cyan);
       box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
     }
-    .btn-activate:active {
-      background: var(--sheikah-cyan);
-      color: #000;
-    }
 
-    /* スライド画面 */
     .slide-page {
       position: absolute;
       top: 0;
@@ -391,13 +430,12 @@
 <body>
 
   <div id="app-container">
-    <!-- 到着テロップ -->
     <div id="toast-banner">
       <div style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 上部：正円マップ -->
+    <!-- 上部：横幅最大の正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper">
@@ -411,7 +449,6 @@
 
     <!-- 下部：操作パネル -->
     <div class="bottom-section">
-      <!-- キーワード ＋ 半径ダイヤル ＋ 検索実行ボタン -->
       <div class="input-row">
         <div class="keyword-input-wrap">
           <input type="text" id="keyword-input" value="大学" placeholder="探す対象を入力...">
@@ -423,7 +460,6 @@
         <button class="btn-set" id="set-btn">SET</button>
       </div>
 
-      <!-- 不明件数（対象キーワード＆半径を常時表示） -->
       <div class="status-panel">
         <div>
           <div class="target-meta-info" id="target-meta-info">[対象: 大学 / 範囲: 100m]</div>
@@ -433,14 +469,18 @@
             <span style="font-size: 0.8rem; color: #bbb;">件探知中</span>
           </div>
         </div>
-        <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); text-align: right;">
-          待機中...
+        <div class="search-status-badge">
+          <div class="status-indicator paused" id="status-indicator">STANDBY</div>
+          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan);">
+            --
+          </div>
         </div>
       </div>
 
-      <!-- 起動 ＆ リストボタン -->
-      <button class="btn-sheikah btn-activate" id="activate-btn">SENSOR ACTIVATE</button>
-      <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
+      <div class="btn-group">
+        <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
+        <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
+      </div>
     </div>
 
     <!-- 第2画面：キーワード履歴 -->
@@ -483,7 +523,7 @@
 
   <script>
     // ===================================================
-    // 1. Web Audio API 音源（ピープ音・ファンファーレ）
+    // 1. Web Audio API 音源
     // ===================================================
     let audioCtx = null;
     function initAudio() {
@@ -533,18 +573,21 @@
     // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = 0; // 初期値: 100m
+    let radiusIndex = 0;
 
     let appState = {
       isTracking: false,
+      isPaused: false,
       currentPos: null,
       prevPos: null,
-      lastSearchedPos: null, // 前回検索を行った起点位置
+      lastSearchedPos: null,
       currentHeading: 0,
       activeKeyword: "大学",
       selectedKeywordForHistory: null,
       places: []
     };
+
+    let watchId = null;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -557,21 +600,57 @@
     }
 
     // ===================================================
-    // 3. Google Maps（文字・店舗・道路名を完全非表示化）
+    // 3. Google Maps（建物名・店舗・文字を完全シャットアウト）
     // ===================================================
     let map = null;
 
-    // 全てのラベルとアイコンを完全シャットアウトするスタイル
     const sheikahMapStyle = [
-      { elementType: "geometry", stylers: [{ color: "#081018" }] },
-      { elementType: "labels", stylers: [{ visibility: "off" }] }, // 全体文字非表示
-      { elementType: "labels.icon", stylers: [{ visibility: "off" }] }, // 全アイコン非表示
-      { featureType: "administrative", elementType: "labels", stylers: [{ visibility: "off" }] },
-      { featureType: "poi", stylers: [{ visibility: "off" }] },
-      { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
-      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-      { featureType: "transit", stylers: [{ visibility: "off" }] },
-      { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
+      {
+        featureType: "all",
+        elementType: "labels",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "all",
+        elementType: "labels.text",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "all",
+        elementType: "labels.icon",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "poi",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "administrative",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "transit",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        featureType: "road",
+        elementType: "labels",
+        stylers: [{ visibility: "off" }]
+      },
+      {
+        elementType: "geometry",
+        stylers: [{ color: "#081018" }]
+      },
+      {
+        featureType: "road",
+        elementType: "geometry",
+        stylers: [{ color: "#142433" }]
+      },
+      {
+        featureType: "water",
+        elementType: "geometry",
+        stylers: [{ color: "#02070d" }]
+      }
     ];
 
     function initMap(lat, lng) {
@@ -586,7 +665,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ センサーロジック（周期を低速化）
+    // 4. 幾何計算 ＆ センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -607,7 +686,10 @@
     let lastEvaluatedDistance = null;
 
     function evaluateSensorCycle() {
-      if (!appState.isTracking || !appState.currentPos) return;
+      if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
+        if (radarTimer) clearTimeout(radarTimer);
+        return;
+      }
 
       const db = loadSavedData();
       const activeTargets = appState.places.filter(p => {
@@ -617,7 +699,7 @@
 
       document.getElementById('unknown-count').textContent = activeTargets.length;
       if (activeTargets.length === 0) {
-        document.getElementById('distance-info').textContent = "反応なし";
+        document.getElementById('distance-info').textContent = "未踏スポットなし";
         if (radarTimer) clearTimeout(radarTimer);
         return;
       }
@@ -640,29 +722,23 @@
 
       document.getElementById('distance-info').textContent = `最寄り: 約${Math.round(minDistance)}m`;
 
-      // 10m以内で到着判定
       if (minDistance <= 10) {
         handleArrival(closestTarget);
         return;
       }
 
-      // 接近判定
       const isApproaching = (lastEvaluatedDistance === null || minDistance < lastEvaluatedDistance);
       lastEvaluatedDistance = minDistance;
 
-      // 【修正】周期を全体的に低速化
       let interval = null;
       if (minDistance <= 200) {
         if (targetBearingDiff <= 35) {
-          // 移動方向の正面に対象がある ➔ 高周期（約0.65秒）
           interval = 650;
         } else if (isApproaching) {
-          // 距離が縮んでいる ➔ 中周期（約1.5秒）
           interval = 1500;
         }
       } else {
         if (isApproaching) {
-          // 遠距離で距離が縮んでいる ➔ 低周期（約2.8秒）
           interval = 2800;
         }
       }
@@ -677,7 +753,7 @@
     function scheduleRadarSound(interval) {
       if (radarTimer) clearTimeout(radarTimer);
       function pulse() {
-        if (!appState.isTracking) return;
+        if (!appState.isTracking || appState.isPaused) return;
         playBeep(interval <= 700 ? 2100 : 1750);
 
         const wave = document.getElementById('radar-pulse');
@@ -738,13 +814,13 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 4500);
 
-      document.getElementById('activate-btn').textContent = "SEARCH AGAIN";
+      updateSearchStatusUI(false);
       document.getElementById('distance-info').textContent = "到達完了！";
       document.getElementById('unknown-count').textContent = "0";
     }
 
     // ===================================================
-    // 5. GPS位置情報 ＆ 移動に応じた自動再検索
+    // 5. GPS位置情報 ＆ 移動自動再検索
     // ===================================================
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -754,7 +830,6 @@
 
       if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        // 2m以上の移動で進行方向を更新
         if (moved >= 2.0) {
           appState.currentHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
           appState.prevPos = newPos;
@@ -763,7 +838,6 @@
         appState.prevPos = newPos;
       }
 
-      // マップを進行方向が上になるよう旋回
       if (map) {
         map.setCenter(newPos);
         const mapDiv = document.getElementById('map');
@@ -771,7 +845,6 @@
         mapDiv.style.transformOrigin = 'center center';
       }
 
-      // 【修正】しばらく移動した場合（50m以上移動）は、その地点からの検索結果に自動更新
       if (appState.lastSearchedPos) {
         const movedSinceSearch = getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng);
         if (movedSinceSearch >= 50) {
@@ -784,18 +857,15 @@
       evaluateSensorCycle();
     }
 
-    // 検索実行処理（Places API または モック）
     function executeSearch() {
       if (!appState.currentPos) return;
       appState.lastSearchedPos = { ...appState.currentPos };
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
-      // ステータス表示の更新
       const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
       document.getElementById('target-meta-info').textContent = `[対象: ${appState.activeKeyword} / 範囲: ${rText}]`;
 
-      // モックデータ生成（現在の半径に合わせて配置）
-      const rDeg = (currentRadius / 111000) * 0.7; // 半径に応じた緯度経度差
+      const rDeg = (currentRadius / 111000) * 0.7;
       appState.places = [
         { id: `mock_1_${currentRadius}`, name: `${appState.activeKeyword} A地点`, lat: appState.currentPos.lat + rDeg * 0.8, lng: appState.currentPos.lng + rDeg * 0.3 },
         { id: `mock_2_${currentRadius}`, name: `${appState.activeKeyword} B地点`, lat: appState.currentPos.lat - rDeg * 0.5, lng: appState.currentPos.lng + rDeg * 0.7 },
@@ -806,24 +876,42 @@
     }
 
     // ===================================================
-    // 6. UIイベント・ボタン
+    // 6. UI制御
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
     }
 
-    // ダイヤル錠を回す
     document.getElementById('dial-btn').addEventListener('click', () => {
       radiusIndex = (radiusIndex + 1) % RADIUS_OPTIONS.length;
       document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     });
 
-    // 【修正】検索実行（SET）ボタンの処理
-    function applySearchSettings() {
+    function updateSearchStatusUI(active) {
+      const indicator = document.getElementById('status-indicator');
+      const pauseBtn = document.getElementById('pause-toggle-btn');
+
+      if (active) {
+        indicator.textContent = "SEARCHING...";
+        indicator.className = "status-indicator active";
+        pauseBtn.textContent = "PAUSE SENSOR";
+        pauseBtn.className = "btn-sheikah btn-pause-toggle";
+      } else {
+        indicator.textContent = "PAUSED";
+        indicator.className = "status-indicator paused";
+        pauseBtn.textContent = "RESUME SENSOR";
+        pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
+      }
+    }
+
+    function startSearchFromSet() {
+      initAudio();
+
       const inputVal = document.getElementById('keyword-input').value.trim();
       appState.activeKeyword = inputVal || "大学";
+      appState.isTracking = true;
+      appState.isPaused = false;
 
-      // 履歴登録
       const db = loadSavedData();
       const now = new Date().toISOString();
       if (!db.keywordHistory[appState.activeKeyword]) {
@@ -833,31 +921,39 @@
       }
       saveAppData(db);
 
-      // 検索を即座に再実行
-      executeSearch();
-    }
+      updateSearchStatusUI(true);
 
-    document.getElementById('set-btn').addEventListener('click', applySearchSettings);
-    document.getElementById('keyword-input').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') applySearchSettings();
-    });
-
-    // センサー起動ボタン
-    document.getElementById('activate-btn').addEventListener('click', () => {
-      initAudio();
-      applySearchSettings();
-      appState.isTracking = true;
-
-      document.getElementById('activate-btn').textContent = "SEARCHING...";
-
-      if ('geolocation' in navigator) {
-        navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
+      if (!watchId && 'geolocation' in navigator) {
+        watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
           document.getElementById('distance-info').textContent = "GPSエラー: " + err.message;
         }, { enableHighAccuracy: true });
+      } else {
+        executeSearch();
+      }
+    }
+
+    document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
+    document.getElementById('keyword-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') startSearchFromSet();
+    });
+
+    document.getElementById('pause-toggle-btn').addEventListener('click', () => {
+      if (!appState.isTracking) {
+        startSearchFromSet();
+        return;
+      }
+
+      appState.isPaused = !appState.isPaused;
+      if (appState.isPaused) {
+        if (radarTimer) clearTimeout(radarTimer);
+        updateSearchStatusUI(false);
+      } else {
+        initAudio();
+        updateSearchStatusUI(true);
+        evaluateSensorCycle();
       }
     });
 
-    // スライド画面遷移
     const pageKeywords = document.getElementById('page-keywords');
     const pageHistory = document.getElementById('page-history');
 
