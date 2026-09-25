@@ -174,10 +174,11 @@
       background: #03080e;
     }
 
+    /* 滑らかな回転イージング補間 */
     #map {
       width: 100%;
       height: 100%;
-      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.25, 1);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       transform-origin: center center;
     }
 
@@ -673,7 +674,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252236</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252246</span></span>
       </div>
     </div>
 
@@ -935,7 +936,7 @@
     }
 
     // ===================================================
-    // 2. 状態管理（直進安定化ヒステリシス）
+    // 2. 状態管理（移動履歴バッファ ＆ 平滑化）
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
     let radiusIndex = 2; // 3km
@@ -945,16 +946,17 @@
       isPaused: false,
       isMuted: false,
       currentPos: null,
-      prevPos: null,
       lastSearchedPos: null,
+
+      // 方向・回転制御
       currentHeading: 0,
       visualMapRotation: 0,
       lastCompassHeading: null,
 
-      // 【直進安定化フラグ】
+      // 直進平滑化用バッファ（直近5地点の履歴）
+      locationHistory: [],
       isWalking: false,
-      lastWalkTimestamp: 0,        // 最後に歩行移動を確定した時刻
-      walkBufferStreak: 0,         // 連続移動カウント
+      lastWalkTimestamp: 0,
 
       activeKeyword: "マクドナルド",
       selectedKeywordForHistory: null,
@@ -1215,7 +1217,7 @@
     }
 
     // ===================================================
-    // 5. 【改善】歩行中直進安定化 ＆ 停止時コンパス追従
+    // 5. 【平滑化＆直進安定化】移動ベクトルのフィルタリング
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -1230,7 +1232,44 @@
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
-    // 電子コンパス（その場旋回用）
+    // 移動履歴から加重平均された丸め進行角度を計算
+    function calculateSmoothedHeading(newPos) {
+      appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
+      if (appState.locationHistory.length > 5) {
+        appState.locationHistory.shift(); // 直近5点を保持
+      }
+
+      if (appState.locationHistory.length < 2) return null;
+
+      // 最も古い基準点と直近地点との全体移動量を計算
+      const oldest = appState.locationHistory[0];
+      const totalMoved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
+      if (totalMoved < 2.5) {
+        return null; // ジッター（揺れ）とみなして更新しない
+      }
+
+      // 各区間ベクトルの加重平均（最新の区間ほど重視）
+      let sinSum = 0;
+      let cosSum = 0;
+      for (let i = 1; i < appState.locationHistory.length; i++) {
+        const p1 = appState.locationHistory[i - 1];
+        const p2 = appState.locationHistory[i];
+        const d = getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+        if (d > 0.5) {
+          const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
+          const rad = b * Math.PI / 180;
+          const weight = i; // 新しい点ほど重みを増やす
+          sinSum += Math.sin(rad) * weight;
+          cosSum += Math.cos(rad) * weight;
+        }
+      }
+
+      if (sinSum === 0 && cosSum === 0) return null;
+      let smoothed = (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
+      return smoothed;
+    }
+
+    // 電子コンパス（完全停止時のみ動作）
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
 
@@ -1244,20 +1283,16 @@
       if (compassHeading === null || isNaN(compassHeading)) return;
 
       const now = Date.now();
-
-      // 【直進中ロック判定】
-      // 最後に歩行移動してから「4秒間」はコンパスを完全に遮断（歩行時の腕振り・手ブレによる回転を防止）
-      const isCompletelyStopped = (now - appState.lastWalkTimestamp > 4000);
+      // 歩行が途絶えてから「5秒以上」完全静止している時だけコンパスを許可
+      const isCompletelyStopped = (!appState.isWalking && (now - appState.lastWalkTimestamp > 5000));
 
       if (isCompletelyStopped) {
-        // 微小なジッター（手ブレ5度未満）は無視
         if (appState.lastCompassHeading !== null) {
           let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
           if (cDiff > 180) cDiff = 360 - cDiff;
-          if (cDiff < 5.0) return;
+          if (cDiff < 6.0) return; // 6度未満の手ブレは不感帯で無視
         }
 
-        appState.isWalking = false;
         appState.lastCompassHeading = compassHeading;
         appState.currentHeading = compassHeading;
         rotateMapSmoothly(compassHeading);
@@ -1265,7 +1300,7 @@
       }
     }
 
-    // GPS位置更新（直進中判定）
+    // GPS位置更新
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
@@ -1276,31 +1311,38 @@
       const speed = pos.coords.speed; // m/s
       const gpsHeading = pos.coords.heading;
 
-      let calculatedHeading = null;
+      let determinedHeading = null;
 
-      // 1. GPSハードウェアから十分な速度と進行方位が取れる場合
-      if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 0.45) {
-        calculatedHeading = gpsHeading;
+      // 1. 車や自転車など高速移動かつGPS方位が安定している場合
+      if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 1.2) {
+        determinedHeading = gpsHeading;
         appState.isWalking = true;
         appState.lastWalkTimestamp = now;
-      }
-      // 2. 移動距離によるベクトル計算（2.0m以上の確実な移動）
-      else if (appState.prevPos) {
-        const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        if (moved >= 2.0) {
-          calculatedHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
+      } else {
+        // 2. 歩行時：移動履歴から滑らかに丸めたベクトルを計算
+        const smoothed = calculateSmoothedHeading(newPos);
+        if (smoothed !== null) {
+          determinedHeading = smoothed;
           appState.isWalking = true;
           appState.lastWalkTimestamp = now;
         }
       }
 
-      if (calculatedHeading !== null) {
-        // 移動中は直進ベクトルで滑らかに回転し、正面をキープ
-        appState.currentHeading = calculatedHeading;
-        appState.prevPos = newPos;
-        rotateMapSmoothly(calculatedHeading);
-      } else if (!appState.prevPos) {
-        appState.prevPos = newPos;
+      // 【直進中のぐらぐら防止：不感帯フィルター】
+      if (determinedHeading !== null) {
+        let diffFromCurrent = Math.abs(determinedHeading - appState.currentHeading);
+        if (diffFromCurrent > 180) diffFromCurrent = 360 - diffFromCurrent;
+
+        // 7度以上の明確な方向転換があった時だけ旋回（直進中の細かなブレをカット）
+        if (diffFromCurrent >= 7.0 || appState.currentHeading === 0) {
+          appState.currentHeading = determinedHeading;
+          rotateMapSmoothly(determinedHeading);
+        }
+      } else {
+        // 停止と判定
+        if (now - appState.lastWalkTimestamp > 5000) {
+          appState.isWalking = false;
+        }
       }
 
       if (map) {
