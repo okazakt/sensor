@@ -114,6 +114,7 @@
         radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
+    /* 正円外枠（本家BotW準拠：4段階波紋ゲージ連動） */
     .circle-map-wrapper {
       position: relative;
       width: min(86vw, 330px);
@@ -126,43 +127,48 @@
       transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
 
+    /* 圏外・背後：完全沈黙（消灯） */
     .circle-map-wrapper.signal-idle {
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
       animation: none;
     }
+    /* レベル1：内側の波紋 */
     .circle-map-wrapper.signal-level1 {
-      box-shadow: 0 0 25px var(--sheikah-cyan-glow), inset 0 0 12px var(--sheikah-cyan);
-      animation: ring-pulse-slow 2.5s infinite ease-in-out;
+      box-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
+      animation: ring-pulse-1 2.5s infinite ease-in-out;
     }
+    /* レベル2：2本目の波紋 */
     .circle-map-wrapper.signal-level2 {
-      box-shadow: 0 0 35px var(--sheikah-cyan), inset 0 0 16px #fff;
-      animation: ring-pulse-medium 1.4s infinite ease-in-out;
+      box-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
+      animation: ring-pulse-2 1.5s infinite ease-in-out;
     }
+    /* レベル3：3本目（外側）の波紋 */
     .circle-map-wrapper.signal-level3 {
-      box-shadow: 0 0 45px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
-      animation: ring-pulse-fast 0.65s infinite ease-in-out;
+      box-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
+      animation: ring-pulse-3 0.8s infinite ease-in-out;
     }
+    /* レベル4：正面直進・至近の全点滅オーバードライブ */
     .circle-map-wrapper.signal-level4 {
-      box-shadow: 0 0 55px var(--sheikah-orange), 0 0 28px var(--sheikah-cyan), inset 0 0 24px #fff;
-      animation: ring-overdrive-double 0.45s infinite ease-in-out;
+      box-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
+      animation: ring-pulse-4 0.45s infinite ease-in-out;
       border: 2px solid #fff;
     }
 
-    @keyframes ring-pulse-slow {
+    @keyframes ring-pulse-1 {
       0%, 100% { transform: scale(1); filter: brightness(1); }
-      50% { transform: scale(1.015); filter: brightness(1.25); }
+      50% { transform: scale(1.01); filter: brightness(1.2); }
     }
-    @keyframes ring-pulse-medium {
+    @keyframes ring-pulse-2 {
       0%, 100% { transform: scale(1); filter: brightness(1.1); }
-      50% { transform: scale(1.025); filter: brightness(1.4); }
+      50% { transform: scale(1.02); filter: brightness(1.35); }
     }
-    @keyframes ring-pulse-fast {
+    @keyframes ring-pulse-3 {
       0%, 100% { transform: scale(1); filter: brightness(1.2); }
-      50% { transform: scale(1.035); filter: brightness(1.6); }
+      50% { transform: scale(1.03); filter: brightness(1.55); }
     }
-    @keyframes ring-overdrive-double {
-      0%, 100% { transform: scale(1.01); filter: brightness(1.3) contrast(1.2); }
-      50% { transform: scale(1.05); filter: brightness(1.8) contrast(1.5); }
+    @keyframes ring-pulse-4 {
+      0%, 100% { transform: scale(1.01); filter: brightness(1.4) contrast(1.2); }
+      50% { transform: scale(1.05); filter: brightness(1.9) contrast(1.5); }
     }
 
     #map-container {
@@ -174,7 +180,6 @@
       background: #03080e;
     }
 
-    /* 滑らかな回転イージング補間 */
     #map {
       width: 100%;
       height: 100%;
@@ -674,7 +679,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252246</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252259</span></span>
       </div>
     </div>
 
@@ -898,10 +903,10 @@
 
     function playDoubleBeep() {
       if (appState.isMuted) return;
-      playBeep(2300, 0.08);
+      playBeep(2300, 0.07);
       setTimeout(() => {
-        playBeep(2450, 0.08);
-      }, 95);
+        playBeep(2450, 0.07);
+      }, 85);
     }
 
     function playTreasureFanfare() {
@@ -936,7 +941,7 @@
     }
 
     // ===================================================
-    // 2. 状態管理（移動履歴バッファ ＆ 平滑化）
+    // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
     let radiusIndex = 2; // 3km
@@ -948,12 +953,10 @@
       currentPos: null,
       lastSearchedPos: null,
 
-      // 方向・回転制御
       currentHeading: 0,
       visualMapRotation: 0,
       lastCompassHeading: null,
 
-      // 直進平滑化用バッファ（直近5地点の履歴）
       locationHistory: [],
       isWalking: false,
       lastWalkTimestamp: 0,
@@ -1009,7 +1012,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ センサーロジック
+    // 4. 幾何計算 ＆ 本家BotW準拠センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -1028,7 +1031,6 @@
 
     let radarTimer = null;
     let scheduledInterval = null;
-    let lastEvaluatedDistance = null;
 
     function updateVisualRing(level) {
       const ring = document.getElementById('circle-map-wrapper');
@@ -1036,6 +1038,7 @@
       ring.className = `circle-map-wrapper signal-${level}`;
     }
 
+    // ★ 本家BotW準拠：方向と距離の掛け合わせ評価ロジック
     function evaluateSensorCycle() {
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
@@ -1075,52 +1078,59 @@
           const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
           let diff = Math.abs(appState.currentHeading - bearing);
           if (diff > 180) diff = 360 - diff;
-          targetBearingDiff = diff;
+          targetBearingDiff = diff; // 0度(真正面)〜180度(真後ろ)
         }
       });
 
-      if (!document.getElementById('distance-info').textContent.includes("API")) {
-        document.getElementById('distance-info').textContent = t.spotDetected;
-      }
-
+      // 到着判定（20m以内）
       if (minDistance <= 20) {
         handleArrival(closestTarget);
         return;
       }
 
-      const isApproaching = (lastEvaluatedDistance === null || minDistance < lastEvaluatedDistance);
-      lastEvaluatedDistance = minDistance;
-
+      // ========================================================
+      // 本家アルゴリズム：向き（角度差）と距離による4段階レベル決定
+      // ========================================================
       let interval = null;
       let level = 'idle';
 
-      if (minDistance <= 50 && targetBearingDiff <= 30) {
-        interval = 500;
+      // 【本家仕様 1】背後（角度差90度以上）を向いている時は完全に沈黙（消灯・無音）
+      if (targetBearingDiff >= 90) {
+        level = 'idle';
+        interval = null;
+      } 
+      // 【本家仕様 2】最上感度（LEVEL 4）：至近距離(50m以内) かつ 真正面直進(±20度以内)
+      else if (minDistance <= 50 && targetBearingDiff <= 20) {
         level = 'level4';
-      } else if (minDistance <= 200) {
-        if (targetBearingDiff <= 35) {
-          interval = 700;
-          level = 'level3';
-        } else if (isApproaching) {
-          interval = 1400;
-          level = 'level2';
-        } else {
-          interval = 2200;
-          level = 'level1';
-        }
-      } else {
-        interval = 2600;
+        interval = 450; // 最速2連シグナル
+      }
+      // 【本家仕様 3】強反応（LEVEL 3）：距離120m以内かつ正面(±35度以内)、または50m以内で視野角内(±55度以内)
+      else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
+        level = 'level3';
+        interval = 800; // 高速・高音ピピ音
+      }
+      // 【本家仕様 4】中反応（LEVEL 2）：距離300m以内かつ正面方向(±50度以内)
+      else if (minDistance <= 300 && targetBearingDiff <= 55) {
+        level = 'level2';
+        interval = 1500; // 中速ピピ音
+      }
+      // 【本家仕様 5】弱反応（LEVEL 1）：圏内かつ対象の前方半円(±85度以内)を捉えている時
+      else if (targetBearingDiff < 85) {
         level = 'level1';
+        interval = 2600; // 緩やかなピピ音
       }
 
       updateVisualRing(level);
+
+      if (!document.getElementById('distance-info').textContent.includes("API")) {
+        document.getElementById('distance-info').textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
+      }
 
       if (interval !== null) {
         scheduleRadarSound(interval, level === 'level4');
       } else {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
-        updateVisualRing('idle');
       }
     }
 
@@ -1142,7 +1152,8 @@
         if (isDoubleBeep) {
           playDoubleBeep();
         } else {
-          playBeep(interval <= 750 ? 2100 : 1750);
+          // LEVEL 3 は高音(2100Hz)、LEVEL 1/2 は通常音(1750Hz)
+          playBeep(interval <= 900 ? 2100 : 1750);
         }
 
         const wave = document.getElementById('radar-pulse');
@@ -1210,14 +1221,13 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 5000);
 
-      lastEvaluatedDistance = null;
       setTimeout(() => {
         evaluateSensorCycle();
       }, 1500);
     }
 
     // ===================================================
-    // 5. 【平滑化＆直進安定化】移動ベクトルのフィルタリング
+    // 5. 直進安定化（移動履歴バッファ ＆ 平滑化）
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -1232,23 +1242,20 @@
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
-    // 移動履歴から加重平均された丸め進行角度を計算
     function calculateSmoothedHeading(newPos) {
       appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
       if (appState.locationHistory.length > 5) {
-        appState.locationHistory.shift(); // 直近5点を保持
+        appState.locationHistory.shift();
       }
 
       if (appState.locationHistory.length < 2) return null;
 
-      // 最も古い基準点と直近地点との全体移動量を計算
       const oldest = appState.locationHistory[0];
       const totalMoved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
       if (totalMoved < 2.5) {
-        return null; // ジッター（揺れ）とみなして更新しない
+        return null;
       }
 
-      // 各区間ベクトルの加重平均（最新の区間ほど重視）
       let sinSum = 0;
       let cosSum = 0;
       for (let i = 1; i < appState.locationHistory.length; i++) {
@@ -1258,18 +1265,16 @@
         if (d > 0.5) {
           const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
           const rad = b * Math.PI / 180;
-          const weight = i; // 新しい点ほど重みを増やす
+          const weight = i;
           sinSum += Math.sin(rad) * weight;
           cosSum += Math.cos(rad) * weight;
         }
       }
 
       if (sinSum === 0 && cosSum === 0) return null;
-      let smoothed = (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
-      return smoothed;
+      return (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
     }
 
-    // 電子コンパス（完全停止時のみ動作）
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
 
@@ -1283,14 +1288,13 @@
       if (compassHeading === null || isNaN(compassHeading)) return;
 
       const now = Date.now();
-      // 歩行が途絶えてから「5秒以上」完全静止している時だけコンパスを許可
       const isCompletelyStopped = (!appState.isWalking && (now - appState.lastWalkTimestamp > 5000));
 
       if (isCompletelyStopped) {
         if (appState.lastCompassHeading !== null) {
           let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
           if (cDiff > 180) cDiff = 360 - cDiff;
-          if (cDiff < 6.0) return; // 6度未満の手ブレは不感帯で無視
+          if (cDiff < 6.0) return;
         }
 
         appState.lastCompassHeading = compassHeading;
@@ -1300,7 +1304,6 @@
       }
     }
 
-    // GPS位置更新
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
@@ -1308,18 +1311,16 @@
       if (!map) initMap(newPos.lat, newPos.lng);
 
       const now = Date.now();
-      const speed = pos.coords.speed; // m/s
+      const speed = pos.coords.speed;
       const gpsHeading = pos.coords.heading;
 
       let determinedHeading = null;
 
-      // 1. 車や自転車など高速移動かつGPS方位が安定している場合
       if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 1.2) {
         determinedHeading = gpsHeading;
         appState.isWalking = true;
         appState.lastWalkTimestamp = now;
       } else {
-        // 2. 歩行時：移動履歴から滑らかに丸めたベクトルを計算
         const smoothed = calculateSmoothedHeading(newPos);
         if (smoothed !== null) {
           determinedHeading = smoothed;
@@ -1328,18 +1329,15 @@
         }
       }
 
-      // 【直進中のぐらぐら防止：不感帯フィルター】
       if (determinedHeading !== null) {
         let diffFromCurrent = Math.abs(determinedHeading - appState.currentHeading);
         if (diffFromCurrent > 180) diffFromCurrent = 360 - diffFromCurrent;
 
-        // 7度以上の明確な方向転換があった時だけ旋回（直進中の細かなブレをカット）
         if (diffFromCurrent >= 7.0 || appState.currentHeading === 0) {
           appState.currentHeading = determinedHeading;
           rotateMapSmoothly(determinedHeading);
         }
       } else {
-        // 停止と判定
         if (now - appState.lastWalkTimestamp > 5000) {
           appState.isWalking = false;
         }
@@ -1349,7 +1347,6 @@
         map.setCenter(newPos);
       }
 
-      // 移動に伴う低頻度な再検索
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
       const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
 
