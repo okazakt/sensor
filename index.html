@@ -102,7 +102,6 @@
       padding-top: max(env(safe-area-inset-top), 32px);
     }
 
-    /* 上下分断の立体ゴールドライン */
     .sheikah-divider-bar {
       width: 100%;
       height: 6px;
@@ -432,14 +431,22 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 7px;
     }
     .btn-sheikah:active {
       background: var(--sheikah-gold);
       color: #000;
     }
 
-    /* アイコン付き直感状態ボタンスタイル */
+    .svg-icon {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
     .btn-pause-toggle {
       background: rgba(0, 243, 255, 0.12);
       border-color: var(--sheikah-cyan);
@@ -476,7 +483,7 @@
       margin-top: 2px;
     }
 
-    /* スライド画面（非表示時はdisplay:noneで影の漏れを完全遮断） */
+    /* スライド画面 */
     .slide-page {
       position: absolute;
       top: 0;
@@ -508,10 +515,10 @@
       color: var(--sheikah-cyan);
       background: rgba(0, 243, 255, 0.1);
       border: 1.5px solid var(--sheikah-cyan);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: bold;
       cursor: pointer;
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 20px;
       display: flex;
       align-items: center;
@@ -529,7 +536,7 @@
       font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 20px;
     }
     .btn-header-danger:active {
@@ -544,22 +551,24 @@
       letter-spacing: 1px;
     }
 
+    /* 見切れ対策：均等フレックス幅 */
     .filter-bar {
-      padding: 10px 16px;
+      padding: 10px 14px;
       background: rgba(0,0,0,0.4);
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
     .filter-bar input, .filter-bar select {
+      flex: 1;
+      min-width: 0;
       background: #111;
       border: 1.5px solid var(--sheikah-border);
       color: #eee;
-      padding: 9px 12px;
+      padding: 9px 8px;
       border-radius: 6px;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       outline: none;
     }
-    .filter-bar select { flex: 1; }
 
     .action-sub-bar {
       padding: 6px 16px 10px 16px;
@@ -584,7 +593,7 @@
     .list-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -598,29 +607,50 @@
       border-radius: 6px;
       cursor: pointer;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      gap: 8px;
     }
     .list-item:active {
       background: rgba(45, 55, 65, 0.95);
     }
 
+    .list-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
     .list-item-left {
       flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
 
     .list-item-title {
       font-weight: bold;
       font-size: 1.05rem;
       color: #fff;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
+      display: block;
     }
+
+    /* タップで流れる横スクロール（マーキーアニメーション） */
+    .list-item-title.marquee {
+      text-overflow: clip;
+      animation: marquee-anim 6s linear infinite;
+    }
+    @keyframes marquee-anim {
+      0% { transform: translateX(0); }
+      15% { transform: translateX(0); }
+      85% { transform: translateX(-60%); }
+      100% { transform: translateX(0); }
+    }
+
     .list-item-sub {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #99a;
       margin-top: 3px;
     }
@@ -628,13 +658,13 @@
     .item-right-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
-    .btn-reset-search {
-      padding: 6px 14px;
-      font-size: 0.78rem;
+    .btn-sheikah-sm {
+      padding: 6px 11px;
+      font-size: 0.75rem;
       font-weight: bold;
       background: rgba(0, 243, 255, 0.12);
       border: 1.5px solid var(--sheikah-cyan);
@@ -643,9 +673,33 @@
       cursor: pointer;
       flex-shrink: 0;
     }
-    .btn-reset-search:active {
+    .btn-sheikah-sm:active {
       background: var(--sheikah-cyan);
       color: #000;
+    }
+    .btn-sheikah-sm.off {
+      border-color: #666;
+      color: #888;
+      background: transparent;
+    }
+
+    .btn-copy-sm {
+      border-color: var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      background: rgba(197, 160, 89, 0.1);
+    }
+    .btn-copy-sm:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
+
+    /* 到達履歴のインライン操作ボタングループ */
+    .action-button-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(255,255,255,0.08);
     }
 
     #toast-banner {
@@ -657,7 +711,7 @@
       border: 2px solid var(--sheikah-cyan);
       box-shadow: 0 0 25px var(--sheikah-cyan-glow);
       color: #fff;
-      padding: 16px;
+      padding: 14px;
       border-radius: 8px;
       text-align: center;
       z-index: 200;
@@ -677,7 +731,7 @@
 
     <div id="toast-banner">
       <div id="toast-title" style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
-      <div id="toast-text" style="font-size: 1.1rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
+      <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 5px; color: var(--sheikah-cyan);"></div>
     </div>
 
     <!-- 上部：正円マップ -->
@@ -692,7 +746,7 @@
       </div>
     </div>
 
-    <!-- 上下を分断する立体装飾モールドライン -->
+    <!-- 立体ゴールドモールドライン -->
     <div class="sheikah-divider-bar"></div>
 
     <!-- 下部：操作パネル -->
@@ -727,36 +781,43 @@
       </div>
 
       <div class="btn-group">
-        <!-- 状態明示型アイコンボタン -->
+        <!-- SVGモノクロベクターアイコン付きボタン -->
         <button class="btn-sheikah btn-pause-toggle paused" id="pause-toggle-btn">
-          <span id="icon-sensor">⏸</span> <span id="label-sensor-state">SENSOR: STANDBY</span>
+          <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          <span id="label-sensor-state">SENSOR: STANDBY</span>
         </button>
         <div class="dual-btn-row">
           <button class="btn-sheikah btn-sub-control active" id="mute-toggle-btn">
-            <span id="icon-sound">🔊</span> <span id="label-sound-state">SOUND: ON</span>
+            <svg class="svg-icon" id="svg-sound" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <span id="label-sound-state">SOUND: ON</span>
           </button>
           <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">
-            <span id="icon-wake">🔆</span> <span id="label-wake-state">WAKE LOCK: ON</span>
+            <svg class="svg-icon" id="svg-wake" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
+            <span id="label-wake-state">WAKE LOCK: ON</span>
           </button>
         </div>
-        <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
+        <button class="btn-sheikah" id="open-keywords-btn">
+          <!-- 履歴・図鑑アイコン -->
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+          <span id="label-compendium-btn">到達済みリスト (図鑑)</span>
+        </button>
       </div>
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252345</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260008</span></span>
       </div>
     </div>
 
-    <!-- 第2画面：キーワード履歴 -->
+    <!-- 第2画面：図鑑キーワード -->
     <div class="slide-page" id="page-keywords">
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
-        <div class="page-title-text" id="title-page-keywords">キーワード履歴</div>
+        <div class="page-title-text" id="title-page-keywords">図鑑キーワード</div>
         <div style="width: 70px;"></div>
       </div>
       <div class="filter-bar">
-        <input type="text" id="keyword-filter" placeholder="キーワード絞り込み..." style="flex: 1;">
+        <input type="text" id="keyword-filter" placeholder="キーワード絞り込み...">
         <select id="sort-keywords">
           <option value="recent_search" id="opt-sort-search">検索日時順</option>
           <option value="recent_arrival" id="opt-sort-arrival">到達日時順</option>
@@ -773,12 +834,14 @@
     <div class="slide-page" id="page-history">
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
-        <div class="page-title-text" id="history-header-title" style="color: var(--sheikah-cyan);">到達履歴</div>
+        <!-- タイトル色をゴールドに統一 -->
+        <div class="page-title-text" id="history-header-title">到達履歴</div>
         <button class="btn-header-danger" id="btn-delete-current-keyword">削除</button>
       </div>
       <div class="filter-bar">
-        <input type="text" id="history-filter" placeholder="到達スポット絞り込み..." style="flex: 1;">
+        <input type="text" id="history-filter" placeholder="到達スポット絞り込み...">
         <select id="sort-history">
+          <option value="near_asc" id="opt-hsort-near">現在地から近い順</option>
           <option value="date_desc" id="opt-hsort-desc">到達日時が新しい順</option>
           <option value="date_asc" id="opt-hsort-asc">到達日時が古い順</option>
           <option value="name_asc" id="opt-hsort-name">名称あいうえお順</option>
@@ -813,7 +876,7 @@
         compendiumBtn: "到達済みリスト (図鑑)",
         footerTip: "※消音時も円周の光とフラッシュで反応",
         backToMain: "◀ メイン",
-        keywordsTitle: "キーワード履歴",
+        keywordsTitle: "図鑑キーワード",
         filterKeywordsPlaceholder: "キーワード絞り込み...",
         filterHistoryPlaceholder: "到達スポット絞り込み...",
         sortSearch: "検索日時順",
@@ -822,6 +885,7 @@
         cleanZeroBtn: "到達0件の履歴を一括削除",
         backToKeywords: "◀ 履歴一覧",
         deleteBtn: "削除",
+        sortHNear: "現在地から近い順",
         sortHDesc: "到達日時が新しい順",
         sortHAsc: "到達日時が古い順",
         sortHName: "名称あいうえお順",
@@ -830,10 +894,14 @@
         emptyHistory: "このキーワードでの到達実績はまだありません。",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `マップに「${name}」が記録されました`,
+        toastCopied: (name) => `「${name}」をコピーしました`,
         targetMeta: (k, r) => `[対象: ${k} / 範囲: ${r}]`,
         targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
         arrivalCount: (c) => `到達数: ${c} 箇所`,
-        arrivalDate: (d) => `到達: ${d}`,
+        arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
+        radarOn: "レーダーON",
+        radarOff: "レーダーOFF",
+        copyBtn: "コピー",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
@@ -856,7 +924,7 @@
         compendiumBtn: "Discovered List (Atlas)",
         footerTip: "Visual ring pulses even in mute mode",
         backToMain: "◀ Main",
-        keywordsTitle: "Keywords History",
+        keywordsTitle: "Atlas Keywords",
         filterKeywordsPlaceholder: "Filter keywords...",
         filterHistoryPlaceholder: "Filter places...",
         sortSearch: "By Search Date",
@@ -865,6 +933,7 @@
         cleanZeroBtn: "Delete Zero-Hit Records",
         backToKeywords: "◀ Keywords",
         deleteBtn: "Delete",
+        sortHNear: "By Distance (Nearest)",
         sortHDesc: "Newest First",
         sortHAsc: "Oldest First",
         sortHName: "Alphabetical",
@@ -873,10 +942,14 @@
         emptyHistory: "No places discovered for this keyword yet.",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `Recorded "${name}" to slate map`,
+        toastCopied: (name) => `Copied "${name}"`,
         targetMeta: (k, r) => `[Target: ${k} / Range: ${r}]`,
         targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
         arrivalCount: (c) => `Discovered: ${c} spots`,
-        arrivalDate: (d) => `Date: ${d}`,
+        arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
+        radarOn: "RADAR ON",
+        radarOff: "RADAR OFF",
+        copyBtn: "COPY",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         noZeroKeywords: "No zero-discovery keywords found."
@@ -897,7 +970,7 @@
       document.getElementById('keyword-input').placeholder = t.inputPlaceholder;
       document.getElementById('label-unvisited').textContent = t.unvisited;
       document.getElementById('label-detecting').textContent = t.detecting;
-      document.getElementById('open-keywords-btn').textContent = t.compendiumBtn;
+      document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
       document.getElementById('label-footer-tip').textContent = t.footerTip;
       document.getElementById('back-to-main').textContent = t.backToMain;
       document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
@@ -909,6 +982,7 @@
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
       document.getElementById('btn-delete-current-keyword').textContent = t.deleteBtn;
+      document.getElementById('opt-hsort-near').textContent = t.sortHNear;
       document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
       document.getElementById('opt-hsort-name').textContent = t.sortHName;
@@ -1038,7 +1112,7 @@
       activeKeyword: savedLastKeyword,
       selectedKeywordForHistory: null,
       places: [],
-      pinpointTarget: null // ピンポイント到達モード用
+      pinpointTarget: null
     };
 
     let wakeLockSentinel = null;
@@ -1119,7 +1193,6 @@
       const distInfoEl = document.getElementById('distance-info');
       const t = I18N[currentLang];
 
-      // PAUSE中または停止中は件数をブランク（--）にし沈黙
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
@@ -1293,7 +1366,6 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 5000);
 
-      // ピンポイント探索時は完了後に通常探索へ戻す
       if (appState.pinpointTarget) {
         appState.pinpointTarget = null;
         executeSearch();
@@ -1496,7 +1568,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ ボタン状態明示化
+    // 6. UI制御 ＆ モノクロSVGボタン更新
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -1531,59 +1603,58 @@
       localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
     });
 
-    // 直感的なON/OFF状態表示の更新
     function updateButtonStateUI() {
       const t = I18N[currentLang];
       const indicator = document.getElementById('status-indicator');
       const pauseBtn = document.getElementById('pause-toggle-btn');
-      const iconSensor = document.getElementById('icon-sensor');
+      const svgSensor = document.getElementById('svg-sensor');
       const labelSensor = document.getElementById('label-sensor-state');
 
       if (!appState.isTracking) {
         indicator.textContent = t.standby;
         indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        iconSensor.textContent = "⏸";
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
         labelSensor.textContent = t.sensorStandby;
       } else if (appState.isPaused) {
         indicator.textContent = t.paused;
         indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        iconSensor.textContent = "⏸";
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
         labelSensor.textContent = t.sensorPaused;
       } else {
         indicator.textContent = t.searching;
         indicator.className = "status-indicator active";
         pauseBtn.className = "btn-sheikah btn-pause-toggle";
-        iconSensor.textContent = "▶";
+        svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
         labelSensor.textContent = t.sensorActive;
       }
 
       // サウンドボタン
       const muteBtn = document.getElementById('mute-toggle-btn');
-      const iconSound = document.getElementById('icon-sound');
+      const svgSound = document.getElementById('svg-sound');
       const labelSound = document.getElementById('label-sound-state');
       if (appState.isMuted) {
         muteBtn.className = "btn-sheikah btn-sub-control";
-        iconSound.textContent = "🔇";
+        svgSound.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
         labelSound.textContent = t.soundOff;
       } else {
         muteBtn.className = "btn-sheikah btn-sub-control active";
-        iconSound.textContent = "🔊";
+        svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
         labelSound.textContent = t.soundOn;
       }
 
       // 画面点灯ボタン
       const wakeBtn = document.getElementById('wakelock-toggle-btn');
-      const iconWake = document.getElementById('icon-wake');
+      const svgWake = document.getElementById('svg-wake');
       const labelWake = document.getElementById('label-wake-state');
       if (appState.wakeLockActive) {
         wakeBtn.className = "btn-sheikah btn-sub-control active";
-        iconWake.textContent = "🔆";
+        svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
         labelWake.textContent = t.wakeLockOn;
       } else {
         wakeBtn.className = "btn-sheikah btn-sub-control";
-        iconWake.textContent = "💤";
+        svgWake.innerHTML = '<path d="M12.3 2a10 10 0 0 0-1.9 19.8 10 10 0 0 0 11.4-11.4A10 10 0 0 0 12.3 2z"/>';
         labelWake.textContent = t.wakeLockOff;
       }
     }
@@ -1592,9 +1663,7 @@
       if ('wakeLock' in navigator && appState.wakeLockActive) {
         try {
           wakeLockSentinel = await navigator.wakeLock.request('screen');
-        } catch (err) {
-          console.warn("WakeLock Error:", err.name, err.message);
-        }
+        } catch (err) {}
       }
     }
 
@@ -1642,9 +1711,7 @@
             window.addEventListener('deviceorientation', onDeviceOrientation, true);
             compassActive = true;
           }
-        } catch (e) {
-          console.warn("コンパス許可エラー:", e);
-        }
+        } catch (e) {}
       } else if (!compassActive) {
         window.addEventListener('deviceorientation', onDeviceOrientation, true);
         compassActive = true;
@@ -1734,7 +1801,7 @@
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・ピンポイントSET・削除
+    // 7. リスト表示・ソート・アクション
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -1767,13 +1834,15 @@
         const div = document.createElement('div');
         div.className = 'list-item';
         div.innerHTML = `
-          <div class="list-item-left">
-            <div class="list-item-title">${k}</div>
-            <div class="list-item-sub">${t.arrivalCount(count)}</div>
-          </div>
-          <div class="item-right-actions">
-            <button class="btn-reset-search" data-key="${k}">SET</button>
-            <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
+          <div class="list-item-row">
+            <div class="list-item-left">
+              <span class="list-item-title">${k}</span>
+              <div class="list-item-sub">${t.arrivalCount(count)}</div>
+            </div>
+            <div class="item-right-actions">
+              <button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button>
+              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
+            </div>
           </div>
         `;
 
@@ -1820,7 +1889,7 @@
       }
     });
 
-    // 到達履歴画面（絞り込み ＆ ピンポイントSET対応）
+    // 到達履歴画面（近い順ソート・タップで流れる横スクロール・SET・レーダーON/OFF・コピー）
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
@@ -1835,10 +1904,23 @@
         a.name.toLowerCase().includes(filterText)
       );
 
+      // 距離を計算してプロパティ付与
+      if (appState.currentPos) {
+        items.forEach(item => {
+          item.calcDistance = getDistance(appState.currentPos.lat, appState.currentPos.lng, item.lat, item.lng);
+        });
+      }
+
       items.sort((a, b) => {
-        if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
-        if (sortType === 'date_asc') return new Date(a.date) - new Date(b.date);
-        if (sortType === 'name_asc') return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+        if (sortType === 'near_asc') {
+          return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
+        } else if (sortType === 'date_desc') {
+          return new Date(b.date) - new Date(a.date);
+        } else if (sortType === 'date_asc') {
+          return new Date(a.date) - new Date(b.date);
+        } else if (sortType === 'name_asc') {
+          return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+        }
       });
 
       if (items.length === 0) {
@@ -1852,19 +1934,35 @@
           const d = new Date(item.date);
           const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
 
+          let distStr = "";
+          if (item.calcDistance !== undefined) {
+            distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
+          }
+
           const div = document.createElement('div');
           div.className = 'list-item';
           div.innerHTML = `
             <div class="list-item-left">
-              <div class="list-item-title">${item.name}</div>
-              <div class="list-item-sub">${t.arrivalDate(dateStr)}</div>
+              <span class="list-item-title" title="${item.name}">${item.name}</span>
+              <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
             </div>
-            <div class="item-right-actions">
-              <button class="btn-reset-search btn-pinpoint-set">SET</button>
+            <!-- アクションボタングループ：SET / レーダーON/OFF / コピー -->
+            <div class="action-button-row">
+              <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
+              <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">
+                ${item.muted ? t.radarOff : t.radarOn}
+              </button>
+              <button class="btn-sheikah-sm btn-copy-sm">${t.copyBtn}</button>
             </div>
           `;
 
-          // ピンポイントSET（その登録場所の座標を直接追従）
+          // 【タップで流れる横スクロール】カードタップで長い店名が流れる
+          div.querySelector('.list-item-left').addEventListener('click', (e) => {
+            const titleEl = div.querySelector('.list-item-title');
+            titleEl.classList.toggle('marquee');
+          });
+
+          // ピンポイントSET
           div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
             e.stopPropagation();
             appState.pinpointTarget = {
@@ -1885,6 +1983,28 @@
             appState.isPaused = false;
             updateButtonStateUI();
             evaluateSensorCycle();
+          });
+
+          // レーダーON/OFFトグル
+          div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.muted = !item.muted;
+            saveAppData(db);
+            renderHistoryList();
+          });
+
+          // クリップボードコピー
+          div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+              await navigator.clipboard.writeText(item.name);
+              const toast = document.getElementById('toast-banner');
+              document.getElementById('toast-text').textContent = t.toastCopied(item.name);
+              toast.classList.add('show');
+              setTimeout(() => toast.classList.remove('show'), 2500);
+            } catch (err) {
+              prompt("Copy to clipboard:", item.name);
+            }
           });
 
           container.appendChild(div);
