@@ -9,7 +9,7 @@
       --sheikah-cyan: #00f3ff;
       --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
       --sheikah-orange: #ff9d00;
-      --sheikah-orange-glow: rgba(255, 157, 0, 0.8);
+      --sheikah-orange-glow: rgba(255, 157, 0, 0.85);
       --sheikah-gold: #c5a059;
       --sheikah-gold-dark: #6e5426;
       --sheikah-bg: #111417;
@@ -49,6 +49,48 @@
       flex-direction: column;
     }
 
+    /* 到着時ショックフラッシュ */
+    #arrival-flash-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 300;
+    }
+    .flash-anim {
+      animation: arrival-screen-flash 0.8s ease-out forwards;
+    }
+    @keyframes arrival-screen-flash {
+      0% { opacity: 0.85; background: var(--sheikah-cyan); }
+      30% { opacity: 0.5; background: #fff; }
+      100% { opacity: 0; }
+    }
+
+    /* 言語切り替えボタンスタイル（メイン右上） */
+    .lang-toggle-btn {
+      position: absolute;
+      top: max(env(safe-area-inset-top), 20px);
+      right: 16px;
+      z-index: 20;
+      background: rgba(3, 8, 14, 0.7);
+      border: 1px solid var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 5px 9px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .lang-toggle-btn:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
+
     /* 上部：正円マップ（インカメラ回避） */
     .top-section {
       width: 100%;
@@ -84,7 +126,7 @@
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
       margin-top: 8px;
-      transition: box-shadow 0.4s ease, border-color 0.4s ease;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
 
     .circle-map-wrapper.signal-idle {
@@ -100,8 +142,13 @@
       animation: ring-pulse-medium 1.4s infinite ease-in-out;
     }
     .circle-map-wrapper.signal-level3 {
-      box-shadow: 0 0 45px var(--sheikah-orange-glow), 0 0 20px var(--sheikah-cyan), inset 0 0 20px #fff;
-      animation: ring-pulse-fast 0.6s infinite ease-in-out;
+      box-shadow: 0 0 45px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
+      animation: ring-pulse-fast 0.65s infinite ease-in-out;
+    }
+    .circle-map-wrapper.signal-level4 {
+      box-shadow: 0 0 55px var(--sheikah-orange), 0 0 28px var(--sheikah-cyan), inset 0 0 24px #fff;
+      animation: ring-overdrive-double 0.45s infinite ease-in-out;
+      border: 2px solid #fff;
     }
 
     @keyframes ring-pulse-slow {
@@ -115,6 +162,10 @@
     @keyframes ring-pulse-fast {
       0%, 100% { transform: scale(1); filter: brightness(1.2); }
       50% { transform: scale(1.035); filter: brightness(1.6); }
+    }
+    @keyframes ring-overdrive-double {
+      0%, 100% { transform: scale(1.01); filter: brightness(1.3) contrast(1.2); }
+      50% { transform: scale(1.05); filter: brightness(1.8) contrast(1.5); }
     }
 
     #map-container {
@@ -167,10 +218,17 @@
     .pulse-anim {
       animation: pulse-out-anim 0.65s ease-out forwards;
     }
+    .pulse-double-anim {
+      animation: pulse-out-double 0.4s ease-out forwards;
+    }
 
     @keyframes pulse-out-anim {
       0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
+    }
+    @keyframes pulse-out-double {
+      0% { width: 30px; height: 30px; opacity: 1; border-color: var(--sheikah-orange); }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: #fff; }
     }
 
     /* 下部：操作パネル */
@@ -178,7 +236,7 @@
       width: 100%;
       height: 48vh;
       background: var(--sheikah-panel);
-      padding: 12px 16px 10px 16px;
+      padding: 10px 16px 8px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -202,8 +260,8 @@
       background: rgba(3, 8, 14, 0.9);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-cyan);
-      padding: 10px 12px;
-      font-size: 1rem;
+      padding: 9px 12px;
+      font-size: 0.95rem;
       border-radius: 6px;
       outline: none;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
@@ -215,7 +273,7 @@
 
     .dial-lock {
       width: 72px;
-      height: 46px;
+      height: 44px;
       background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
       border: 1.5px solid var(--sheikah-gold);
       border-radius: 6px;
@@ -232,13 +290,13 @@
       letter-spacing: 1px;
     }
     .dial-value {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: bold;
       color: var(--sheikah-cyan);
     }
 
     .btn-set {
-      height: 46px;
+      height: 44px;
       padding: 0 16px;
       background: rgba(0, 243, 255, 0.15);
       border: 1.5px solid var(--sheikah-cyan);
@@ -261,14 +319,14 @@
       background: rgba(3, 8, 14, 0.65);
       border: 1px solid #334;
       border-radius: 6px;
-      padding: 10px 14px;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .target-meta-info {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--sheikah-cyan);
       margin-bottom: 2px;
       opacity: 0.95;
@@ -280,7 +338,7 @@
       gap: 6px;
     }
     .unknown-count {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: bold;
       color: var(--sheikah-orange);
       text-shadow: 0 0 8px var(--sheikah-orange);
@@ -296,7 +354,7 @@
     }
 
     .status-indicator {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: bold;
       letter-spacing: 1px;
     }
@@ -316,15 +374,20 @@
     .btn-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+    }
+
+    .dual-btn-row {
+      display: flex;
+      gap: 8px;
     }
 
     .btn-sheikah {
       background: rgba(197, 160, 89, 0.1);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      padding: 12px;
-      font-size: 0.95rem;
+      padding: 10px;
+      font-size: 0.9rem;
       font-weight: bold;
       letter-spacing: 1px;
       border-radius: 6px;
@@ -338,20 +401,31 @@
     }
 
     .btn-pause-toggle {
+      flex: 1;
       border-color: var(--sheikah-orange);
       color: var(--sheikah-orange);
-      box-shadow: 0 0 8px rgba(255, 157, 0, 0.2);
     }
     .btn-pause-toggle.paused {
       border-color: var(--sheikah-cyan);
       color: var(--sheikah-cyan);
-      box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+    }
+
+    .btn-mute-toggle {
+      width: 130px;
+      border-color: #778899;
+      color: #99aabb;
+      font-size: 0.8rem;
+    }
+    .btn-mute-toggle.active {
+      border-color: var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.15);
     }
 
     .app-version-footer {
       display: flex;
       justify-content: space-between;
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       color: #556270;
       letter-spacing: 0.5px;
       margin-top: 2px;
@@ -401,7 +475,6 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
     }
     .back-btn:active {
       background: var(--sheikah-cyan);
@@ -415,7 +488,7 @@
       font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
-      padding: 8px 12px;
+      padding: 8px 14px;
       border-radius: 20px;
     }
     .btn-header-danger:active {
@@ -447,7 +520,6 @@
     }
     .filter-bar select { flex: 1; }
 
-    /* 一括削除バー */
     .action-sub-bar {
       padding: 6px 16px 10px 16px;
       background: rgba(0,0,0,0.4);
@@ -546,8 +618,13 @@
 <body>
 
   <div id="app-container">
+    <div id="arrival-flash-overlay"></div>
+
+    <!-- 手動言語切り替えトグル -->
+    <button class="lang-toggle-btn" id="lang-toggle-btn">EN / JP</button>
+
     <div id="toast-banner">
-      <div style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
+      <div id="toast-title" style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
       <div id="toast-text" style="font-size: 1.1rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
     </div>
 
@@ -580,9 +657,9 @@
         <div>
           <div class="target-meta-info" id="target-meta-info">[対象: マクドナルド / 範囲: 3km]</div>
           <div class="unknown-badge">
-            <span style="font-size: 0.8rem; color: #889;">未踏:</span>
+            <span id="label-unvisited" style="font-size: 0.8rem; color: #889;">未踏:</span>
             <span class="unknown-count" id="unknown-count">0</span>
-            <span style="font-size: 0.85rem; color: #bbb;">件探知中</span>
+            <span id="label-detecting" style="font-size: 0.85rem; color: #bbb;">件探知中</span>
           </div>
         </div>
         <div class="search-status-badge">
@@ -594,13 +671,16 @@
       </div>
 
       <div class="btn-group">
-        <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
+        <div class="dual-btn-row">
+          <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
+          <button class="btn-sheikah btn-mute-toggle" id="mute-toggle-btn">SOUND: ON</button>
+        </div>
         <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
       </div>
 
       <div class="app-version-footer">
-        <span style="color: #c5a059;">※消音時も円周の光と振動で反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252226</span></span>
+        <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252231</span></span>
       </div>
     </div>
 
@@ -608,15 +688,15 @@
     <div class="slide-page" id="page-keywords">
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
-        <div class="page-title-text">キーワード履歴</div>
+        <div class="page-title-text" id="title-page-keywords">キーワード履歴</div>
         <div style="width: 70px;"></div>
       </div>
       <div class="filter-bar">
         <input type="text" id="keyword-filter" placeholder="キーワード絞り込み..." style="flex: 1;">
         <select id="sort-keywords">
-          <option value="recent_search">検索日時順</option>
-          <option value="recent_arrival">到達日時順</option>
-          <option value="count_desc">到達件数降順</option>
+          <option value="recent_search" id="opt-sort-search">検索日時順</option>
+          <option value="recent_arrival" id="opt-sort-arrival">到達日時順</option>
+          <option value="count_desc" id="opt-sort-count">到達件数降順</option>
         </select>
       </div>
       <div class="action-sub-bar">
@@ -634,9 +714,9 @@
       </div>
       <div class="filter-bar">
         <select id="sort-history">
-          <option value="date_desc">到達日時が新しい順</option>
-          <option value="date_asc">到達日時が古い順</option>
-          <option value="name_asc">名称あいうえお順</option>
+          <option value="date_desc" id="opt-hsort-desc">到達日時が新しい順</option>
+          <option value="date_asc" id="opt-hsort-asc">到達日時が古い順</option>
+          <option value="name_asc" id="opt-hsort-name">名称あいうえお順</option>
         </select>
       </div>
       <div class="list-scroll" id="history-list-container"></div>
@@ -647,7 +727,139 @@
 
   <script>
     // ===================================================
-    // 1. Web Audio API 音源（堅牢化・常時復帰対応）
+    // 0. 国際化（日英多言語対応辞書）
+    // ===================================================
+    const I18N = {
+      ja: {
+        inputPlaceholder: "探す対象を入力...",
+        btnSet: "SET",
+        unvisited: "未踏:",
+        detecting: "件探知中",
+        standby: "STANDBY",
+        searching: "SEARCHING...",
+        paused: "PAUSED",
+        pauseSensor: "PAUSE SENSOR",
+        resumeSensor: "RESUME SENSOR",
+        soundOn: "SOUND: ON",
+        soundOff: "MUTE: ON",
+        compendiumBtn: "到達済みリスト (図鑑)",
+        footerTip: "※消音時も円周の光とフラッシュで反応",
+        backToMain: "◀ メイン",
+        keywordsTitle: "キーワード履歴",
+        filterKeywordsPlaceholder: "キーワード絞り込み...",
+        sortSearch: "検索日時順",
+        sortArrival: "到達日時順",
+        sortCount: "到達件数降順",
+        cleanZeroBtn: "到達0件の履歴を一括削除",
+        backToKeywords: "◀ 履歴一覧",
+        deleteBtn: "削除",
+        sortHDesc: "到達日時が新しい順",
+        sortHAsc: "到達日時が古い順",
+        sortHName: "名称あいうえお順",
+        noSpotsInRange: "範囲内に対象なし",
+        spotDetected: "探知反応あり",
+        emptyHistory: "このキーワードでの到達実績はまだありません。",
+        discoveryCompleted: "DISCOVERY COMPLETED",
+        toastRecorded: (name) => `マップに「${name}」が記録されました`,
+        targetMeta: (k, r) => `[対象: ${k} / 範囲: ${r}]`,
+        arrivalCount: (c) => `到達数: ${c} 箇所`,
+        arrivalDate: (d) => `到達: ${d}`,
+        radarOn: "レーダーON",
+        radarOff: "レーダーOFF",
+        confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
+        confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
+        noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
+      },
+      en: {
+        inputPlaceholder: "Enter search keyword...",
+        btnSet: "SET",
+        unvisited: "Left:",
+        detecting: " detected",
+        standby: "STANDBY",
+        searching: "SEARCHING...",
+        paused: "PAUSED",
+        pauseSensor: "PAUSE SENSOR",
+        resumeSensor: "RESUME SENSOR",
+        soundOn: "SOUND: ON",
+        soundOff: "MUTE: ON",
+        compendiumBtn: "Discovered List (Atlas)",
+        footerTip: "Visual ring pulses even in mute mode",
+        backToMain: "◀ Main",
+        keywordsTitle: "Keywords History",
+        filterKeywordsPlaceholder: "Filter keywords...",
+        sortSearch: "By Search Date",
+        sortArrival: "By Discovery Date",
+        sortCount: "By Discovery Count",
+        cleanZeroBtn: "Delete Zero-Hit Records",
+        backToKeywords: "◀ Keywords",
+        deleteBtn: "Delete",
+        sortHDesc: "Newest First",
+        sortHAsc: "Oldest First",
+        sortHName: "Alphabetical",
+        noSpotsInRange: "No targets in range",
+        spotDetected: "Target detected",
+        emptyHistory: "No places discovered for this keyword yet.",
+        discoveryCompleted: "DISCOVERY COMPLETED",
+        toastRecorded: (name) => `Recorded "${name}" to slate map`,
+        targetMeta: (k, r) => `[Target: ${k} / Range: ${r}]`,
+        arrivalCount: (c) => `Discovered: ${c} spots`,
+        arrivalDate: (d) => `Date: ${d}`,
+        radarOn: "RADAR ON",
+        radarOff: "RADAR OFF",
+        confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
+        confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
+        noZeroKeywords: "No zero-discovery keywords found."
+      }
+    };
+
+    // 言語の自動検出（保存設定優先、なければブラウザ言語判定）
+    let currentLang = localStorage.getItem('sheikah_lang');
+    if (!currentLang) {
+      const userSysLang = (navigator.language || '').toLowerCase();
+      currentLang = userSysLang.startsWith('ja') ? 'ja' : 'en';
+    }
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('sheikah_lang', lang);
+      const t = I18N[lang];
+
+      document.getElementById('keyword-input').placeholder = t.inputPlaceholder;
+      document.getElementById('label-unvisited').textContent = t.unvisited;
+      document.getElementById('label-detecting').textContent = t.detecting;
+      document.getElementById('open-keywords-btn').textContent = t.compendiumBtn;
+      document.getElementById('label-footer-tip').textContent = t.footerTip;
+      document.getElementById('back-to-main').textContent = t.backToMain;
+      document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
+      document.getElementById('keyword-filter').placeholder = t.filterKeywordsPlaceholder;
+      document.getElementById('opt-sort-search').textContent = t.sortSearch;
+      document.getElementById('opt-sort-arrival').textContent = t.sortArrival;
+      document.getElementById('opt-sort-count').textContent = t.sortCount;
+      document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
+      document.getElementById('back-to-keywords').textContent = t.backToKeywords;
+      document.getElementById('btn-delete-current-keyword').textContent = t.deleteBtn;
+      document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
+      document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
+      document.getElementById('opt-hsort-name').textContent = t.sortHName;
+      document.getElementById('toast-title').textContent = t.discoveryCompleted;
+      document.getElementById('mute-toggle-btn').textContent = appState.isMuted ? t.soundOff : t.soundOn;
+
+      const pauseBtn = document.getElementById('pause-toggle-btn');
+      pauseBtn.textContent = appState.isPaused ? t.resumeSensor : t.pauseSensor;
+
+      // 言語トグルボタン表示
+      document.getElementById('lang-toggle-btn').textContent = lang === 'ja' ? 'EN' : 'JP';
+
+      renderKeywordsList();
+      if (appState.selectedKeywordForHistory) renderHistoryList();
+    }
+
+    document.getElementById('lang-toggle-btn').addEventListener('click', () => {
+      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
+
+    // ===================================================
+    // 1. Web Audio API 音源（消音モード連携）
     // ===================================================
     let audioCtx = null;
 
@@ -670,7 +882,8 @@
     window.addEventListener('touchstart', () => { initAudio(); }, { once: true });
     window.addEventListener('click', () => { initAudio(); }, { once: true });
 
-    function playBeep(freq = 1800) {
+    function playBeep(freq = 1800, duration = 0.12) {
+      if (appState.isMuted) return; // 消音モード時は音を出さない
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -680,18 +893,24 @@
         const gain = audioCtx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
 
         gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.14);
-      } catch (e) {
-        console.warn("playBeep warning:", e);
-      }
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playDoubleBeep() {
+      if (appState.isMuted) return;
+      playBeep(2300, 0.08);
+      setTimeout(() => {
+        playBeep(2450, 0.08);
+      }, 95);
     }
 
     function playTreasureFanfare() {
@@ -699,6 +918,7 @@
         navigator.vibrate([200, 100, 300, 100, 600]);
       }
 
+      if (appState.isMuted) return; // 消音モード時は音を出さない
       if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -733,6 +953,7 @@
     let appState = {
       isTracking: false,
       isPaused: false,
+      isMuted: false, // 消音モードフラグ
       currentPos: null,
       prevPos: null,
       lastSearchedPos: null,
@@ -826,6 +1047,7 @@
         return;
       }
 
+      const t = I18N[currentLang];
       const db = loadSavedData();
       const activeTargets = appState.places.filter(p => {
         const item = db.arrivals.find(a => a.id === p.id);
@@ -835,8 +1057,8 @@
       document.getElementById('unknown-count').textContent = activeTargets.length;
 
       if (activeTargets.length === 0) {
-        if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
-          document.getElementById('distance-info').textContent = "範囲内に対象なし";
+        if (!document.getElementById('distance-info').textContent.includes("API")) {
+          document.getElementById('distance-info').textContent = t.noSpotsInRange;
         }
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
@@ -848,20 +1070,20 @@
       let minDistance = Infinity;
       let targetBearingDiff = 0;
 
-      activeTargets.forEach(t => {
-        const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, t.lat, t.lng);
+      activeTargets.forEach(tItem => {
+        const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
         if (d < minDistance) {
           minDistance = d;
-          closestTarget = t;
-          const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, t.lat, t.lng);
+          closestTarget = tItem;
+          const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
           let diff = Math.abs(appState.currentHeading - bearing);
           if (diff > 180) diff = 360 - diff;
           targetBearingDiff = diff;
         }
       });
 
-      if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
-        document.getElementById('distance-info').textContent = "探知反応あり";
+      if (!document.getElementById('distance-info').textContent.includes("API")) {
+        document.getElementById('distance-info').textContent = t.spotDetected;
       }
 
       if (minDistance <= 20) {
@@ -873,24 +1095,31 @@
       lastEvaluatedDistance = minDistance;
 
       let interval = null;
-      if (minDistance <= 200) {
+      let level = 'idle';
+
+      if (minDistance <= 50 && targetBearingDiff <= 30) {
+        interval = 500;
+        level = 'level4';
+      } else if (minDistance <= 200) {
         if (targetBearingDiff <= 35) {
-          interval = 600;
-          updateVisualRing('level3');
+          interval = 700;
+          level = 'level3';
         } else if (isApproaching) {
           interval = 1400;
-          updateVisualRing('level2');
+          level = 'level2';
         } else {
           interval = 2200;
-          updateVisualRing('level1');
+          level = 'level1';
         }
       } else {
-        interval = 2500;
-        updateVisualRing('level1');
+        interval = 2600;
+        level = 'level1';
       }
 
+      updateVisualRing(level);
+
       if (interval !== null) {
-        scheduleRadarSound(interval);
+        scheduleRadarSound(interval, level === 'level4');
       } else {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
@@ -898,7 +1127,7 @@
       }
     }
 
-    function scheduleRadarSound(interval) {
+    function scheduleRadarSound(interval, isDoubleBeep = false) {
       if (radarTimer && scheduledInterval === interval) {
         return;
       }
@@ -912,13 +1141,18 @@
           scheduledInterval = null;
           return;
         }
-        playBeep(interval <= 700 ? 2100 : 1750);
+
+        if (isDoubleBeep) {
+          playDoubleBeep();
+        } else {
+          playBeep(interval <= 750 ? 2100 : 1750);
+        }
 
         const wave = document.getElementById('radar-pulse');
         if (wave) {
-          wave.classList.remove('pulse-anim');
+          wave.className = 'radar-pulse-ring';
           void wave.offsetWidth;
-          wave.classList.add('pulse-anim');
+          wave.classList.add(isDoubleBeep ? 'pulse-double-anim' : 'pulse-anim');
         }
 
         radarTimer = setTimeout(pulse, interval);
@@ -927,6 +1161,13 @@
     }
 
     function handleArrival(target) {
+      const flash = document.getElementById('arrival-flash-overlay');
+      if (flash) {
+        flash.classList.remove('flash-anim');
+        void flash.offsetWidth;
+        flash.classList.add('flash-anim');
+      }
+
       playTreasureFanfare();
 
       const db = loadSavedData();
@@ -966,8 +1207,9 @@
         });
       }
 
+      const t = I18N[currentLang];
       const toast = document.getElementById('toast-banner');
-      document.getElementById('toast-text').textContent = `マップに「${target.name}」が記録されました`;
+      document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 5000);
 
@@ -1069,7 +1311,8 @@
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
       const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
-      document.getElementById('target-meta-info').textContent = `[対象: ${appState.activeKeyword} / 範囲: ${rText}]`;
+      const t = I18N[currentLang];
+      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, rText);
 
       if (placesService) {
         const queryWord = appState.activeKeyword.trim();
@@ -1101,7 +1344,7 @@
             appState.places = [];
             if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== google.maps.places.PlacesServiceStatus.OK) {
               console.warn("Places API Status:", status);
-              document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">APIエラー: ${status}</span>`;
+              document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
             }
           }
           evaluateSensorCycle();
@@ -1112,7 +1355,7 @@
     }
 
     // ===================================================
-    // 6. UI制御
+    // 6. UI制御 ＆ 消音モード切り替え
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -1126,20 +1369,37 @@
     function updateSearchStatusUI(active) {
       const indicator = document.getElementById('status-indicator');
       const pauseBtn = document.getElementById('pause-toggle-btn');
+      const t = I18N[currentLang];
 
       if (active) {
-        indicator.textContent = "SEARCHING...";
+        indicator.textContent = t.searching;
         indicator.className = "status-indicator active";
-        pauseBtn.textContent = "PAUSE SENSOR";
+        pauseBtn.textContent = t.pauseSensor;
         pauseBtn.className = "btn-sheikah btn-pause-toggle";
       } else {
-        indicator.textContent = "PAUSED";
+        indicator.textContent = t.paused;
         indicator.className = "status-indicator paused";
-        pauseBtn.textContent = "RESUME SENSOR";
+        pauseBtn.textContent = t.resumeSensor;
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
         updateVisualRing('idle');
       }
     }
+
+    // 【新機能】消音モードの切り替えボタン
+    document.getElementById('mute-toggle-btn').addEventListener('click', () => {
+      appState.isMuted = !appState.isMuted;
+      const muteBtn = document.getElementById('mute-toggle-btn');
+      const t = I18N[currentLang];
+      if (appState.isMuted) {
+        muteBtn.textContent = t.soundOff;
+        muteBtn.classList.add('active');
+      } else {
+        initAudio();
+        muteBtn.textContent = t.soundOn;
+        muteBtn.classList.remove('active');
+        playBeep(2000, 0.08); // 解除確認音
+      }
+    });
 
     async function startSearchFromSet() {
       initAudio();
@@ -1178,7 +1438,7 @@
 
       if (!watchId && 'geolocation' in navigator) {
         watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-          document.getElementById('distance-info').textContent = "GPSエラー: " + err.message;
+          document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
         }, { 
           enableHighAccuracy: true,
           maximumAge: 1000,
@@ -1248,6 +1508,7 @@
       const db = loadSavedData();
       const container = document.getElementById('keywords-list-container');
       container.innerHTML = '';
+      const t = I18N[currentLang];
 
       const filterText = document.getElementById('keyword-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-keywords').value;
@@ -1276,7 +1537,7 @@
         div.innerHTML = `
           <div>
             <div class="list-item-title">${k}</div>
-            <div class="list-item-sub">到達数: ${count} 箇所</div>
+            <div class="list-item-sub">${t.arrivalCount(count)}</div>
           </div>
           <div style="color: var(--sheikah-gold); font-size: 1.4rem;">▶</div>
         `;
@@ -1290,20 +1551,20 @@
       });
     }
 
-    // 【新機能】到達0件の履歴を一括削除
     document.getElementById('btn-delete-zero-keywords').addEventListener('click', () => {
       const db = loadSavedData();
+      const t = I18N[currentLang];
       const zeroKeys = Object.keys(db.keywordHistory).filter(k => {
         const count = db.arrivals.filter(item => item.keyword === k).length;
         return count === 0;
       });
 
       if (zeroKeys.length === 0) {
-        alert("削除対象となる到達0件の履歴はありません。");
+        alert(t.noZeroKeywords);
         return;
       }
 
-      if (confirm(`到達数0件の履歴（${zeroKeys.length}件）をすべて削除しますか？`)) {
+      if (confirm(t.confirmCleanZero(zeroKeys.length))) {
         zeroKeys.forEach(k => {
           delete db.keywordHistory[k];
         });
@@ -1316,6 +1577,7 @@
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
       container.innerHTML = '';
+      const t = I18N[currentLang];
 
       const sortType = document.getElementById('sort-history').value;
       let items = db.arrivals.filter(a => a.keyword === appState.selectedKeywordForHistory);
@@ -1323,13 +1585,13 @@
       items.sort((a, b) => {
         if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
         if (sortType === 'date_asc') return new Date(a.date) - new Date(b.date);
-        if (sortType === 'name_asc') return a.name.localeCompare(b.name, 'ja');
+        if (sortType === 'name_asc') return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
       });
 
       if (items.length === 0) {
         container.innerHTML = `
           <div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">
-            このキーワードでの到達実績はまだありません。
+            ${t.emptyHistory}
           </div>
         `;
       } else {
@@ -1342,10 +1604,10 @@
           div.innerHTML = `
             <div>
               <div class="list-item-title">${item.name}</div>
-              <div class="list-item-sub">到達: ${dateStr}</div>
+              <div class="list-item-sub">${t.arrivalDate(dateStr)}</div>
             </div>
             <button class="toggle-radar ${item.muted ? 'off' : 'active'}" data-id="${item.id}">
-              ${item.muted ? 'レーダーOFF' : 'レーダーON'}
+              ${item.muted ? t.radarOff : t.radarOn}
             </button>
           `;
 
@@ -1361,22 +1623,19 @@
       }
     }
 
-    // 【新機能】このキーワードの履歴を丸ごと削除
     document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
       const targetKey = appState.selectedKeywordForHistory;
       if (!targetKey) return;
+      const t = I18N[currentLang];
 
-      if (confirm(`キーワード「${targetKey}」の履歴と到達データをすべて削除しますか？`)) {
+      if (confirm(t.confirmDeleteKeyword(targetKey))) {
         const db = loadSavedData();
-        // キーワード履歴から削除
         if (db.keywordHistory[targetKey]) {
           delete db.keywordHistory[targetKey];
         }
-        // 到達リストからこのキーワードのスポットを全削除
         db.arrivals = db.arrivals.filter(item => item.keyword !== targetKey);
         saveAppData(db);
 
-        // 前の画面へ戻る
         pageHistory.classList.remove('open');
         renderKeywordsList();
       }
@@ -1385,6 +1644,9 @@
     document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
     document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
+
+    // 初期言語設定をUIに適用
+    applyLanguage(currentLang);
   </script>
 </body>
 </html>
