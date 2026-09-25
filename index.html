@@ -69,20 +69,22 @@
       100% { opacity: 0; }
     }
 
+    /* 言語切り替えトグル（押しやすく安全な位置へ配置） */
     .lang-toggle-btn {
       position: absolute;
-      top: max(env(safe-area-inset-top), 20px);
-      right: 16px;
-      z-index: 20;
-      background: rgba(3, 8, 14, 0.7);
-      border: 1px solid var(--sheikah-gold);
+      top: calc(max(env(safe-area-inset-top), 36px) + 6px);
+      right: 18px;
+      z-index: 25;
+      background: rgba(3, 8, 14, 0.85);
+      border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      font-size: 0.75rem;
+      font-size: 0.82rem;
       font-weight: bold;
-      padding: 5px 9px;
-      border-radius: 14px;
+      padding: 6px 14px;
+      border-radius: 18px;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      box-shadow: 0 0 10px rgba(0,0,0,0.9);
+      letter-spacing: 0.5px;
     }
     .lang-toggle-btn:active {
       background: var(--sheikah-gold);
@@ -114,7 +116,6 @@
         radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
-    /* 正円外枠（本家BotW準拠：4段階波紋ゲージ連動） */
     .circle-map-wrapper {
       position: relative;
       width: min(86vw, 330px);
@@ -127,27 +128,22 @@
       transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
 
-    /* 圏外・背後：完全沈黙（消灯） */
     .circle-map-wrapper.signal-idle {
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
       animation: none;
     }
-    /* レベル1：内側の波紋 */
     .circle-map-wrapper.signal-level1 {
       box-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
       animation: ring-pulse-1 2.5s infinite ease-in-out;
     }
-    /* レベル2：2本目の波紋 */
     .circle-map-wrapper.signal-level2 {
       box-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
       animation: ring-pulse-2 1.5s infinite ease-in-out;
     }
-    /* レベル3：3本目（外側）の波紋 */
     .circle-map-wrapper.signal-level3 {
       box-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
       animation: ring-pulse-3 0.8s infinite ease-in-out;
     }
-    /* レベル4：正面直進・至近の全点滅オーバードライブ */
     .circle-map-wrapper.signal-level4 {
       box-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
       animation: ring-pulse-4 0.45s infinite ease-in-out;
@@ -247,24 +243,30 @@
       border-top: 1px solid rgba(197, 160, 89, 0.3);
     }
 
+    /* 【改善】高さ46pxに完全統一した入力行 */
     .input-row {
       display: flex;
       gap: 8px;
       align-items: center;
+      height: 46px;
     }
 
     .keyword-input-wrap {
       flex: 1;
+      height: 100%;
       position: relative;
+      display: flex;
+      align-items: center;
     }
 
     .keyword-input-wrap input {
       width: 100%;
+      height: 100%;
       background: rgba(3, 8, 14, 0.9);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-cyan);
-      padding: 9px 12px;
-      font-size: 0.95rem;
+      padding: 0 38px 0 12px; /* クリアボタン用の右余白 */
+      font-size: 0.98rem;
       border-radius: 6px;
       outline: none;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
@@ -274,9 +276,29 @@
       box-shadow: 0 0 10px var(--sheikah-cyan-glow);
     }
 
+    /* 入力クリアボタン（✕） */
+    .btn-input-clear {
+      position: absolute;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.75rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-input-clear.show {
+      display: flex;
+    }
+
     .dial-lock {
       width: 72px;
-      height: 44px;
+      height: 46px;
       background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
       border: 1.5px solid var(--sheikah-gold);
       border-radius: 6px;
@@ -286,9 +308,10 @@
       justify-content: center;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      flex-shrink: 0;
     }
     .dial-label {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       color: var(--sheikah-orange);
       letter-spacing: 1px;
     }
@@ -299,7 +322,7 @@
     }
 
     .btn-set {
-      height: 44px;
+      height: 46px;
       padding: 0 16px;
       background: rgba(0, 243, 255, 0.15);
       border: 1.5px solid var(--sheikah-cyan);
@@ -312,6 +335,7 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+      flex-shrink: 0;
     }
     .btn-set:active {
       background: var(--sheikah-cyan);
@@ -377,7 +401,7 @@
     .btn-group {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .dual-btn-row {
@@ -389,8 +413,8 @@
       background: rgba(197, 160, 89, 0.1);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      padding: 10px;
-      font-size: 0.9rem;
+      padding: 9px;
+      font-size: 0.88rem;
       font-weight: bold;
       letter-spacing: 1px;
       border-radius: 6px;
@@ -413,16 +437,17 @@
       color: var(--sheikah-cyan);
     }
 
-    .btn-mute-toggle {
-      width: 130px;
-      border-color: #778899;
+    .btn-sub-control {
+      flex: 1;
+      border-color: #667788;
       color: #99aabb;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
     }
-    .btn-mute-toggle.active {
+    .btn-sub-control.active {
       border-color: var(--sheikah-cyan);
       color: var(--sheikah-cyan);
       background: rgba(0, 243, 255, 0.15);
+      box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
     }
 
     .app-version-footer {
@@ -554,7 +579,7 @@
       background: rgba(27, 34, 40, 0.95);
       border: 1px solid var(--sheikah-border);
       border-left: 5px solid var(--sheikah-gold);
-      padding: 14px 16px;
+      padding: 12px 14px;
       border-radius: 6px;
       cursor: pointer;
       display: flex;
@@ -567,13 +592,35 @@
 
     .list-item-title {
       font-weight: bold;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       color: #fff;
     }
     .list-item-sub {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #99a;
-      margin-top: 4px;
+      margin-top: 3px;
+    }
+
+    .item-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 履歴から再セットするボタン */
+    .btn-reset-search {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: rgba(0, 243, 255, 0.12);
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-reset-search:active {
+      background: var(--sheikah-cyan);
+      color: #000;
     }
 
     .toggle-radar {
@@ -620,7 +667,7 @@
 
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
-    <button class="lang-toggle-btn" id="lang-toggle-btn">EN / JP</button>
+    <button class="lang-toggle-btn" id="lang-toggle-btn">EN</button>
 
     <div id="toast-banner">
       <div id="toast-title" style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
@@ -644,6 +691,7 @@
       <div class="input-row">
         <div class="keyword-input-wrap">
           <input type="text" id="keyword-input" value="マクドナルド" placeholder="探す対象を入力...">
+          <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
@@ -670,16 +718,17 @@
       </div>
 
       <div class="btn-group">
+        <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
         <div class="dual-btn-row">
-          <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
-          <button class="btn-sheikah btn-mute-toggle" id="mute-toggle-btn">SOUND: ON</button>
+          <button class="btn-sheikah btn-sub-control" id="mute-toggle-btn">SOUND: ON</button>
+          <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">WAKE LOCK: ON</button>
         </div>
         <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
       </div>
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252259</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252320</span></span>
       </div>
     </div>
 
@@ -741,6 +790,8 @@
         resumeSensor: "RESUME SENSOR",
         soundOn: "SOUND: ON",
         soundOff: "MUTE: ON",
+        wakeLockOn: "WAKE LOCK: ON",
+        wakeLockOff: "WAKE LOCK: OFF",
         compendiumBtn: "到達済みリスト (図鑑)",
         footerTip: "※消音時も円周の光とフラッシュで反応",
         backToMain: "◀ メイン",
@@ -765,6 +816,7 @@
         arrivalDate: (d) => `到達: ${d}`,
         radarOn: "レーダーON",
         radarOff: "レーダーOFF",
+        btnSelectSearch: "セット",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
@@ -781,6 +833,8 @@
         resumeSensor: "RESUME SENSOR",
         soundOn: "SOUND: ON",
         soundOff: "MUTE: ON",
+        wakeLockOn: "WAKE LOCK: ON",
+        wakeLockOff: "WAKE LOCK: OFF",
         compendiumBtn: "Discovered List (Atlas)",
         footerTip: "Visual ring pulses even in mute mode",
         backToMain: "◀ Main",
@@ -805,6 +859,7 @@
         arrivalDate: (d) => `Date: ${d}`,
         radarOn: "RADAR ON",
         radarOff: "RADAR OFF",
+        btnSelectSearch: "SET",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         noZeroKeywords: "No zero-discovery keywords found."
@@ -841,6 +896,7 @@
       document.getElementById('opt-hsort-name').textContent = t.sortHName;
       document.getElementById('toast-title').textContent = t.discoveryCompleted;
       document.getElementById('mute-toggle-btn').textContent = appState.isMuted ? t.soundOff : t.soundOn;
+      document.getElementById('wakelock-toggle-btn').textContent = appState.wakeLockActive ? t.wakeLockOn : t.wakeLockOff;
 
       const pauseBtn = document.getElementById('pause-toggle-btn');
       pauseBtn.textContent = appState.isPaused ? t.resumeSensor : t.pauseSensor;
@@ -941,15 +997,20 @@
     }
 
     // ===================================================
-    // 2. 状態管理
+    // 2. 状態管理（リロード時復元対応）
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = 2; // 3km
+    
+    // 前回の検索設定をlocalStorageから復元
+    let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
+    let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
+    let savedLastKeyword = localStorage.getItem('sheikah_last_keyword') || "マクドナルド";
 
     let appState = {
       isTracking: false,
       isPaused: false,
       isMuted: false,
+      wakeLockActive: true, // 画面ロック防止フラグ（デフォルトON）
       currentPos: null,
       lastSearchedPos: null,
 
@@ -961,11 +1022,12 @@
       isWalking: false,
       lastWalkTimestamp: 0,
 
-      activeKeyword: "マクドナルド",
+      activeKeyword: savedLastKeyword,
       selectedKeywordForHistory: null,
       places: []
     };
 
+    let wakeLockSentinel = null;
     let watchId = null;
     let compassActive = false;
     let placesService = null;
@@ -1012,7 +1074,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ 本家BotW準拠センサーロジック
+    // 4. 幾何計算 ＆ 本家BotW探知ロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -1038,7 +1100,6 @@
       ring.className = `circle-map-wrapper signal-${level}`;
     }
 
-    // ★ 本家BotW準拠：方向と距離の掛け合わせ評価ロジック
     function evaluateSensorCycle() {
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
@@ -1078,46 +1139,33 @@
           const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
           let diff = Math.abs(appState.currentHeading - bearing);
           if (diff > 180) diff = 360 - diff;
-          targetBearingDiff = diff; // 0度(真正面)〜180度(真後ろ)
+          targetBearingDiff = diff;
         }
       });
 
-      // 到着判定（20m以内）
       if (minDistance <= 20) {
         handleArrival(closestTarget);
         return;
       }
 
-      // ========================================================
-      // 本家アルゴリズム：向き（角度差）と距離による4段階レベル決定
-      // ========================================================
       let interval = null;
       let level = 'idle';
 
-      // 【本家仕様 1】背後（角度差90度以上）を向いている時は完全に沈黙（消灯・無音）
       if (targetBearingDiff >= 90) {
         level = 'idle';
         interval = null;
-      } 
-      // 【本家仕様 2】最上感度（LEVEL 4）：至近距離(50m以内) かつ 真正面直進(±20度以内)
-      else if (minDistance <= 50 && targetBearingDiff <= 20) {
+      } else if (minDistance <= 50 && targetBearingDiff <= 20) {
         level = 'level4';
-        interval = 450; // 最速2連シグナル
-      }
-      // 【本家仕様 3】強反応（LEVEL 3）：距離120m以内かつ正面(±35度以内)、または50m以内で視野角内(±55度以内)
-      else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
+        interval = 450;
+      } else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
         level = 'level3';
-        interval = 800; // 高速・高音ピピ音
-      }
-      // 【本家仕様 4】中反応（LEVEL 2）：距離300m以内かつ正面方向(±50度以内)
-      else if (minDistance <= 300 && targetBearingDiff <= 55) {
+        interval = 800;
+      } else if (minDistance <= 300 && targetBearingDiff <= 55) {
         level = 'level2';
-        interval = 1500; // 中速ピピ音
-      }
-      // 【本家仕様 5】弱反応（LEVEL 1）：圏内かつ対象の前方半円(±85度以内)を捉えている時
-      else if (targetBearingDiff < 85) {
+        interval = 1500;
+      } else if (targetBearingDiff < 85) {
         level = 'level1';
-        interval = 2600; // 緩やかなピピ音
+        interval = 2600;
       }
 
       updateVisualRing(level);
@@ -1152,7 +1200,6 @@
         if (isDoubleBeep) {
           playDoubleBeep();
         } else {
-          // LEVEL 3 は高音(2100Hz)、LEVEL 1/2 は通常音(1750Hz)
           playBeep(interval <= 900 ? 2100 : 1750);
         }
 
@@ -1227,7 +1274,7 @@
     }
 
     // ===================================================
-    // 5. 直進安定化（移動履歴バッファ ＆ 平滑化）
+    // 5. 直進安定化（移動ベクトルの平滑化）
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -1416,15 +1463,41 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ 消音切り替え
+    // 6. UI制御 ＆ Screen Wake Lock (画面ロック防止)
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
     }
 
+    // 初期復元値のUI反映
+    document.getElementById('keyword-input').value = appState.activeKeyword;
+    document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+
+    // 入力クリアボタンの表示制御
+    const keywordInputEl = document.getElementById('keyword-input');
+    const inputClearBtn = document.getElementById('btn-input-clear');
+
+    function checkClearBtnVisibility() {
+      if (keywordInputEl.value.trim().length > 0) {
+        inputClearBtn.classList.add('show');
+      } else {
+        inputClearBtn.classList.remove('show');
+      }
+    }
+    keywordInputEl.addEventListener('input', checkClearBtnVisibility);
+    checkClearBtnVisibility();
+
+    inputClearBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      keywordInputEl.value = '';
+      checkClearBtnVisibility();
+      keywordInputEl.focus();
+    });
+
     document.getElementById('dial-btn').addEventListener('click', () => {
       radiusIndex = (radiusIndex + 1) % RADIUS_OPTIONS.length;
       document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+      localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
     });
 
     function updateSearchStatusUI(active) {
@@ -1446,6 +1519,47 @@
       }
     }
 
+    // 画面ロック防止（Wake Lock）
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator && appState.wakeLockActive) {
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.warn("WakeLock Error:", err.name, err.message);
+        }
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLockSentinel !== null) {
+        wakeLockSentinel.release();
+        wakeLockSentinel = null;
+      }
+    }
+
+    // タブ復帰時の自動再取得
+    document.addEventListener('visibilitychange', async () => {
+      if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    });
+
+    document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
+      appState.wakeLockActive = !appState.wakeLockActive;
+      const t = I18N[currentLang];
+      const btn = document.getElementById('wakelock-toggle-btn');
+
+      if (appState.wakeLockActive) {
+        await requestWakeLock();
+        btn.textContent = t.wakeLockOn;
+        btn.classList.add('active');
+      } else {
+        releaseWakeLock();
+        btn.textContent = t.wakeLockOff;
+        btn.classList.remove('active');
+      }
+    });
+
     document.getElementById('mute-toggle-btn').addEventListener('click', () => {
       appState.isMuted = !appState.isMuted;
       const muteBtn = document.getElementById('mute-toggle-btn');
@@ -1464,6 +1578,7 @@
     async function startSearchFromSet() {
       initAudio();
       playBeep(2200);
+      if (appState.wakeLockActive) requestWakeLock();
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
@@ -1484,6 +1599,10 @@
       appState.activeKeyword = inputVal || "マクドナルド";
       appState.isTracking = true;
       appState.isPaused = false;
+
+      // 直近のキーワードと半径を永続化（リロード時復元用）
+      localStorage.setItem('sheikah_last_keyword', appState.activeKeyword);
+      localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
 
       const db = loadSavedData();
       const now = new Date().toISOString();
@@ -1562,7 +1681,7 @@
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・削除機能
+    // 7. リスト表示・ソート・履歴再セット・削除
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -1599,14 +1718,30 @@
             <div class="list-item-title">${k}</div>
             <div class="list-item-sub">${t.arrivalCount(count)}</div>
           </div>
-          <div style="color: var(--sheikah-gold); font-size: 1.4rem;">▶</div>
+          <div class="item-right-actions">
+            <button class="btn-reset-search" data-key="${k}">${t.btnSelectSearch}</button>
+            <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
+          </div>
         `;
-        div.addEventListener('click', () => {
+
+        // 履歴行をタップした時は詳細画面（到達スポット一覧）へ
+        div.addEventListener('click', (e) => {
+          if (e.target.classList.contains('btn-reset-search')) return;
           appState.selectedKeywordForHistory = k;
           document.getElementById('history-header-title').textContent = `${k}`;
           renderHistoryList();
           pageHistory.classList.add('open');
         });
+
+        // 【新機能】「セット」ボタンタップで即座に探索再開
+        div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('keyword-input').value = k;
+          checkClearBtnVisibility();
+          pageKeywords.classList.remove('open');
+          startSearchFromSet();
+        });
+
         container.appendChild(div);
       });
     }
