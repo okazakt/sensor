@@ -69,25 +69,39 @@
       100% { opacity: 0; }
     }
 
-    .lang-toggle-btn {
+    /* マップ上のクイックコントロール（言語＆道路コントラスト） */
+    .map-top-bar {
       position: absolute;
       top: calc(max(env(safe-area-inset-top), 36px) + 6px);
-      right: 18px;
+      right: 14px;
       z-index: 25;
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-pill-btn {
       background: rgba(3, 8, 14, 0.85);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: bold;
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: 18px;
       cursor: pointer;
       box-shadow: 0 0 10px rgba(0,0,0,0.9);
-      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-    .lang-toggle-btn:active {
+    .top-pill-btn:active {
       background: var(--sheikah-gold);
       color: #000;
+    }
+    .top-pill-btn.active {
+      border-color: var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.15);
+      box-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
     }
 
     .top-section {
@@ -483,7 +497,9 @@
       margin-top: 2px;
     }
 
-    /* スライド画面 */
+    /* ===================================================
+       スライド画面共通
+    =================================================== */
     .slide-page {
       position: absolute;
       top: 0;
@@ -551,23 +567,53 @@
       letter-spacing: 1px;
     }
 
-    /* 見切れ対策：均等フレックス幅 */
+    /* 統一されたフィルター＆ソートバー */
     .filter-bar {
       padding: 10px 14px;
       background: rgba(0,0,0,0.4);
       display: flex;
       gap: 8px;
+      align-items: center;
+      height: 58px;
     }
-    .filter-bar input, .filter-bar select {
+
+    .sheikah-input-wrap {
       flex: 1;
-      min-width: 0;
-      background: #111;
-      border: 1.5px solid var(--sheikah-border);
-      color: #eee;
-      padding: 9px 8px;
+      height: 42px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .sheikah-input-wrap input {
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 8, 14, 0.9);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-cyan);
+      padding: 0 32px 0 10px;
+      font-size: 0.9rem;
       border-radius: 6px;
-      font-size: 0.88rem;
       outline: none;
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+    }
+    .sheikah-input-wrap input:focus {
+      border-color: var(--sheikah-cyan);
+      box-shadow: 0 0 8px var(--sheikah-cyan-glow);
+    }
+
+    /* シーカー計器調セレクトボックス */
+    .sheikah-select-box {
+      flex: 1;
+      height: 42px;
+      background: linear-gradient(180deg, #111 0%, #2b2214 50%, #111 100%);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-cyan);
+      padding: 0 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      outline: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
     }
 
     .action-sub-bar {
@@ -617,42 +663,30 @@
     .list-item-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
     }
 
     .list-item-left {
       flex: 1;
       min-width: 0;
-      overflow: hidden;
     }
 
+    /* 全文折り返し表示 */
     .list-item-title {
       font-weight: bold;
       font-size: 1.05rem;
       color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.35;
       display: block;
-    }
-
-    /* タップで流れる横スクロール（マーキーアニメーション） */
-    .list-item-title.marquee {
-      text-overflow: clip;
-      animation: marquee-anim 6s linear infinite;
-    }
-    @keyframes marquee-anim {
-      0% { transform: translateX(0); }
-      15% { transform: translateX(0); }
-      85% { transform: translateX(-60%); }
-      100% { transform: translateX(0); }
     }
 
     .list-item-sub {
       font-size: 0.78rem;
       color: #99a;
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
     .item-right-actions {
@@ -663,8 +697,8 @@
     }
 
     .btn-sheikah-sm {
-      padding: 6px 11px;
-      font-size: 0.75rem;
+      padding: 6px 12px;
+      font-size: 0.76rem;
       font-weight: bold;
       background: rgba(0, 243, 255, 0.12);
       border: 1.5px solid var(--sheikah-cyan);
@@ -688,18 +722,77 @@
       color: var(--sheikah-gold);
       background: rgba(197, 160, 89, 0.1);
     }
-    .btn-copy-sm:active {
-      background: var(--sheikah-gold);
-      color: #000;
-    }
 
-    /* 到達履歴のインライン操作ボタングループ */
     .action-button-row {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       justify-content: flex-end;
-      padding-top: 4px;
+      padding-top: 6px;
       border-top: 1px dashed rgba(255,255,255,0.08);
+    }
+
+    /* ===================================================
+       第4画面：スポット詳細（Googleマップ写真ビューア）
+    =================================================== */
+    #page-spot-detail {
+      z-index: 150;
+    }
+    .spot-detail-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .detail-card-panel {
+      background: rgba(27, 34, 40, 0.95);
+      border: 1.5px solid var(--sheikah-gold);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+    .spot-name-header {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #fff;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .spot-address-text {
+      font-size: 0.82rem;
+      color: #99aabb;
+      line-height: 1.4;
+    }
+    .photo-gallery-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+    }
+    .gallery-img-wrap {
+      flex: 0 0 85%;
+      height: 210px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--sheikah-cyan);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+      scroll-snap-align: center;
+      background: #000;
+    }
+    .gallery-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .no-photos-box {
+      padding: 30px 10px;
+      text-align: center;
+      color: #889;
+      font-size: 0.85rem;
+      border: 1px dashed #445;
+      border-radius: 6px;
     }
 
     #toast-banner {
@@ -714,7 +807,7 @@
       padding: 14px;
       border-radius: 8px;
       text-align: center;
-      z-index: 200;
+      z-index: 400;
       transform: translateY(-200%);
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
@@ -727,7 +820,19 @@
 
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
-    <button class="lang-toggle-btn" id="lang-toggle-btn">EN</button>
+
+    <!-- マップ上部バー（言語切り替え ＆ 道路コントラスト切り替え） -->
+    <div class="map-top-bar">
+      <button class="top-pill-btn" id="map-style-toggle-btn">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+        <span id="label-map-style">MAP: NORMAL</span>
+      </button>
+
+      <button class="top-pill-btn" id="lang-toggle-btn">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+        <span id="label-lang-switch">→EN</span>
+      </button>
+    </div>
 
     <div id="toast-banner">
       <div id="toast-title" style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
@@ -781,7 +886,6 @@
       </div>
 
       <div class="btn-group">
-        <!-- SVGモノクロベクターアイコン付きボタン -->
         <button class="btn-sheikah btn-pause-toggle paused" id="pause-toggle-btn">
           <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           <span id="label-sensor-state">SENSOR: STANDBY</span>
@@ -797,7 +901,6 @@
           </button>
         </div>
         <button class="btn-sheikah" id="open-keywords-btn">
-          <!-- 履歴・図鑑アイコン -->
           <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
           <span id="label-compendium-btn">到達済みリスト (図鑑)</span>
         </button>
@@ -805,7 +908,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.260008</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260028</span></span>
       </div>
     </div>
 
@@ -817,8 +920,11 @@
         <div style="width: 70px;"></div>
       </div>
       <div class="filter-bar">
-        <input type="text" id="keyword-filter" placeholder="キーワード絞り込み...">
-        <select id="sort-keywords">
+        <div class="sheikah-input-wrap">
+          <input type="text" id="keyword-filter" placeholder="キーワード絞り込み...">
+          <button class="btn-input-clear" id="btn-keyword-filter-clear">✕</button>
+        </div>
+        <select class="sheikah-select-box" id="sort-keywords">
           <option value="recent_search" id="opt-sort-search">検索日時順</option>
           <option value="recent_arrival" id="opt-sort-arrival">到達日時順</option>
           <option value="count_desc" id="opt-sort-count">到達件数降順</option>
@@ -834,13 +940,15 @@
     <div class="slide-page" id="page-history">
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
-        <!-- タイトル色をゴールドに統一 -->
         <div class="page-title-text" id="history-header-title">到達履歴</div>
         <button class="btn-header-danger" id="btn-delete-current-keyword">削除</button>
       </div>
       <div class="filter-bar">
-        <input type="text" id="history-filter" placeholder="到達スポット絞り込み...">
-        <select id="sort-history">
+        <div class="sheikah-input-wrap">
+          <input type="text" id="history-filter" placeholder="到達スポット絞り込み...">
+          <button class="btn-input-clear" id="btn-history-filter-clear">✕</button>
+        </div>
+        <select class="sheikah-select-box" id="sort-history">
           <option value="near_asc" id="opt-hsort-near">現在地から近い順</option>
           <option value="date_desc" id="opt-hsort-desc">到達日時が新しい順</option>
           <option value="date_asc" id="opt-hsort-asc">到達日時が古い順</option>
@@ -849,13 +957,39 @@
       </div>
       <div class="list-scroll" id="history-list-container"></div>
     </div>
+
+    <!-- 第4画面：スポット詳細（Googleマップ写真・詳細ビューア） -->
+    <div class="slide-page" id="page-spot-detail">
+      <div class="page-header">
+        <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
+        <div class="page-title-text" id="detail-header-title">スポット詳細</div>
+        <div style="width: 70px;"></div>
+      </div>
+      <div class="spot-detail-content">
+        <div class="detail-card-panel">
+          <div class="spot-name-header" id="detail-spot-name">--</div>
+          <div class="spot-address-text" id="detail-spot-address">--</div>
+          <div class="action-button-row" style="margin-top: 12px; border-top: none;">
+            <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET (ピンポイント探索)</button>
+            <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">名称コピー</button>
+          </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">
+          現地ギャラリー (Google Places)
+        </div>
+        <div id="detail-photos-container">
+          <div class="no-photos-box">写真を取得中...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
     // ===================================================
-    // 0. 国際化
+    // 0. 国際化 ＆ マップスタイル定義
     // ===================================================
     const I18N = {
       ja: {
@@ -873,6 +1007,9 @@
         soundOff: "SOUND: MUTED",
         wakeLockOn: "WAKE LOCK: ON",
         wakeLockOff: "WAKE LOCK: OFF",
+        mapStyleNormal: "MAP: NORMAL",
+        mapStyleHigh: "MAP: HIGH CONTRAST",
+        langSwitchLabel: "→EN",
         compendiumBtn: "到達済みリスト (図鑑)",
         footerTip: "※消音時も円周の光とフラッシュで反応",
         backToMain: "◀ メイン",
@@ -884,6 +1021,8 @@
         sortCount: "到達件数降順",
         cleanZeroBtn: "到達0件の履歴を一括削除",
         backToKeywords: "◀ 履歴一覧",
+        backToHistory: "◀ 到達リスト",
+        spotDetailTitle: "スポット詳細",
         deleteBtn: "削除",
         sortHNear: "現在地から近い順",
         sortHDesc: "到達日時が新しい順",
@@ -902,6 +1041,7 @@
         radarOn: "レーダーON",
         radarOff: "レーダーOFF",
         copyBtn: "コピー",
+        noPhotosText: "Googleマップに登録された写真がありません。",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
@@ -921,6 +1061,9 @@
         soundOff: "SOUND: MUTED",
         wakeLockOn: "WAKE LOCK: ON",
         wakeLockOff: "WAKE LOCK: OFF",
+        mapStyleNormal: "MAP: NORMAL",
+        mapStyleHigh: "MAP: HIGH CONTRAST",
+        langSwitchLabel: "→JP",
         compendiumBtn: "Discovered List (Atlas)",
         footerTip: "Visual ring pulses even in mute mode",
         backToMain: "◀ Main",
@@ -932,6 +1075,8 @@
         sortCount: "By Discovery Count",
         cleanZeroBtn: "Delete Zero-Hit Records",
         backToKeywords: "◀ Keywords",
+        backToHistory: "◀ Places",
+        spotDetailTitle: "Place Details",
         deleteBtn: "Delete",
         sortHNear: "By Distance (Nearest)",
         sortHDesc: "Newest First",
@@ -950,6 +1095,7 @@
         radarOn: "RADAR ON",
         radarOff: "RADAR OFF",
         copyBtn: "COPY",
+        noPhotosText: "No photos found on Google Maps.",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         noZeroKeywords: "No zero-discovery keywords found."
@@ -961,6 +1107,33 @@
       const userSysLang = (navigator.language || '').toLowerCase();
       currentLang = userSysLang.startsWith('ja') ? 'ja' : 'en';
     }
+
+    // 2種類のマップスタイル（通常暗線 ＆ ハイコントラスト発光線）
+    const mapStyleNormal = [
+      { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
+      { featureType: "administrative", stylers: [{ visibility: "off" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
+      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { elementType: "geometry", stylers: [{ color: "#081018" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
+    ];
+
+    const mapStyleHighContrast = [
+      { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
+      { featureType: "administrative", stylers: [{ visibility: "off" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
+      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { elementType: "geometry", stylers: [{ color: "#050b11" }] },
+      // 道路をシアンネオン調にクッキリ際立たせる
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#005577" }] },
+      { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#0088aa" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#01050a" }] }
+    ];
+
+    let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'normal';
 
     function applyLanguage(lang) {
       currentLang = lang;
@@ -981,13 +1154,16 @@
       document.getElementById('opt-sort-count').textContent = t.sortCount;
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
+      document.getElementById('back-to-history-list').textContent = t.backToHistory;
+      document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
       document.getElementById('btn-delete-current-keyword').textContent = t.deleteBtn;
       document.getElementById('opt-hsort-near').textContent = t.sortHNear;
       document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
       document.getElementById('opt-hsort-name').textContent = t.sortHName;
       document.getElementById('toast-title').textContent = t.discoveryCompleted;
-      document.getElementById('lang-toggle-btn').textContent = lang === 'ja' ? 'EN' : 'JP';
+      document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
+      document.getElementById('label-map-style').textContent = currentMapStyleMode === 'high' ? t.mapStyleHigh : t.mapStyleNormal;
 
       updateButtonStateUI();
       renderKeywordsList();
@@ -996,6 +1172,23 @@
 
     document.getElementById('lang-toggle-btn').addEventListener('click', () => {
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
+
+    // 道路コントラストの切り替え
+    document.getElementById('map-style-toggle-btn').addEventListener('click', () => {
+      currentMapStyleMode = (currentMapStyleMode === 'normal') ? 'high' : 'normal';
+      localStorage.setItem('sheikah_map_style', currentMapStyleMode);
+      if (map) {
+        map.setOptions({ styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal });
+      }
+      const t = I18N[currentLang];
+      const btn = document.getElementById('map-style-toggle-btn');
+      document.getElementById('label-map-style').textContent = currentMapStyleMode === 'high' ? t.mapStyleHigh : t.mapStyleNormal;
+      if (currentMapStyleMode === 'high') {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     });
 
     // ===================================================
@@ -1111,6 +1304,7 @@
 
       activeKeyword: savedLastKeyword,
       selectedKeywordForHistory: null,
+      selectedSpotForDetail: null,
       places: [],
       pinpointTarget: null
     };
@@ -1136,26 +1330,13 @@
     // ===================================================
     let map = null;
 
-    const sheikahMapStyle = [
-      { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
-      { featureType: "all", elementType: "labels.text", stylers: [{ visibility: "off" }] },
-      { featureType: "all", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-      { featureType: "poi", stylers: [{ visibility: "off" }] },
-      { featureType: "administrative", stylers: [{ visibility: "off" }] },
-      { featureType: "transit", stylers: [{ visibility: "off" }] },
-      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-      { elementType: "geometry", stylers: [{ color: "#081018" }] },
-      { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
-      { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
-    ];
-
     function initMap(lat, lng) {
       if (typeof google === 'undefined' || !google.maps) return;
       map = new google.maps.Map(document.getElementById('map'), {
         center: { lat, lng },
         zoom: 17,
         disableDefaultUI: true,
-        styles: sheikahMapStyle,
+        styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal,
         gestureHandling: 'none'
       });
       placesService = new google.maps.places.PlacesService(map);
@@ -1568,7 +1749,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ モノクロSVGボタン更新
+    // 6. UI制御 ＆ クリアボタンバインド
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -1577,25 +1758,41 @@
     document.getElementById('keyword-input').value = appState.activeKeyword;
     document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
 
-    const keywordInputEl = document.getElementById('keyword-input');
-    const inputClearBtn = document.getElementById('btn-input-clear');
-
-    function checkClearBtnVisibility() {
-      if (keywordInputEl.value.trim().length > 0) {
-        inputClearBtn.classList.add('show');
-      } else {
-        inputClearBtn.classList.remove('show');
+    // 汎用入力クリアボタン設定関数
+    function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
+      function check() {
+        if (inputEl.value.trim().length > 0) {
+          clearBtnEl.classList.add('show');
+        } else {
+          clearBtnEl.classList.remove('show');
+        }
       }
-    }
-    keywordInputEl.addEventListener('input', checkClearBtnVisibility);
-    checkClearBtnVisibility();
+      inputEl.addEventListener('input', check);
+      check();
 
-    inputClearBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      keywordInputEl.value = '';
-      checkClearBtnVisibility();
-      keywordInputEl.focus();
-    });
+      clearBtnEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        inputEl.value = '';
+        check();
+        inputEl.focus();
+        if (onClearCallback) onClearCallback();
+      });
+    }
+
+    setupInputClear(
+      document.getElementById('keyword-input'),
+      document.getElementById('btn-input-clear')
+    );
+    setupInputClear(
+      document.getElementById('keyword-filter'),
+      document.getElementById('btn-keyword-filter-clear'),
+      () => renderKeywordsList()
+    );
+    setupInputClear(
+      document.getElementById('history-filter'),
+      document.getElementById('btn-history-filter-clear'),
+      () => renderHistoryList()
+    );
 
     document.getElementById('dial-btn').addEventListener('click', () => {
       radiusIndex = (radiusIndex + 1) % RADIUS_OPTIONS.length;
@@ -1644,7 +1841,7 @@
         labelSound.textContent = t.soundOn;
       }
 
-      // 画面点灯ボタン
+      // 画面点灯維持
       const wakeBtn = document.getElementById('wakelock-toggle-btn');
       const svgWake = document.getElementById('svg-wake');
       const labelWake = document.getElementById('label-wake-state');
@@ -1773,6 +1970,7 @@
 
     const pageKeywords = document.getElementById('page-keywords');
     const pageHistory = document.getElementById('page-history');
+    const pageSpotDetail = document.getElementById('page-spot-detail');
 
     document.getElementById('open-keywords-btn').addEventListener('click', () => {
       renderKeywordsList();
@@ -1789,6 +1987,10 @@
       renderKeywordsList();
     });
 
+    document.getElementById('back-to-history-list').addEventListener('click', () => {
+      pageSpotDetail.classList.remove('open');
+    });
+
     function setupSwipeBack(el, backCallback) {
       let startX = 0;
       el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
@@ -1799,9 +2001,10 @@
     }
     setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
+    setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・アクション
+    // 7. リスト表示・ソート・詳細画面・写真取得
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -1858,7 +2061,7 @@
         div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
           e.stopPropagation();
           document.getElementById('keyword-input').value = k;
-          checkClearBtnVisibility();
+          document.getElementById('btn-input-clear').classList.add('show');
           pageKeywords.classList.remove('open');
           startSearchFromSet();
         });
@@ -1889,7 +2092,7 @@
       }
     });
 
-    // 到達履歴画面（近い順ソート・タップで流れる横スクロール・SET・レーダーON/OFF・コピー）
+    // 到達履歴画面
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
@@ -1904,7 +2107,6 @@
         a.name.toLowerCase().includes(filterText)
       );
 
-      // 距離を計算してプロパティ付与
       if (appState.currentPos) {
         items.forEach(item => {
           item.calcDistance = getDistance(appState.currentPos.lat, appState.currentPos.lng, item.lat, item.lng);
@@ -1943,10 +2145,9 @@
           div.className = 'list-item';
           div.innerHTML = `
             <div class="list-item-left">
-              <span class="list-item-title" title="${item.name}">${item.name}</span>
+              <span class="list-item-title">${item.name}</span>
               <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
             </div>
-            <!-- アクションボタングループ：SET / レーダーON/OFF / コピー -->
             <div class="action-button-row">
               <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
               <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">
@@ -1956,36 +2157,19 @@
             </div>
           `;
 
-          // 【タップで流れる横スクロール】カードタップで長い店名が流れる
-          div.querySelector('.list-item-left').addEventListener('click', (e) => {
-            const titleEl = div.querySelector('.list-item-title');
-            titleEl.classList.toggle('marquee');
+          // カードタップで「第4画面（写真＆詳細ビューア）」を開く
+          div.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            openSpotDetailModal(item);
           });
 
           // ピンポイントSET
           div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
             e.stopPropagation();
-            appState.pinpointTarget = {
-              id: item.id,
-              name: item.name,
-              lat: item.lat,
-              lng: item.lng
-            };
-            appState.activeKeyword = item.name;
-            document.getElementById('keyword-input').value = item.name;
-            checkClearBtnVisibility();
-            document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
-
-            pageHistory.classList.remove('open');
-            pageKeywords.classList.remove('open');
-
-            appState.isTracking = true;
-            appState.isPaused = false;
-            updateButtonStateUI();
-            evaluateSensorCycle();
+            setPinpointTargetAndStart(item);
           });
 
-          // レーダーON/OFFトグル
+          // レーダーON/OFF
           div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => {
             e.stopPropagation();
             item.muted = !item.muted;
@@ -1996,18 +2180,97 @@
           // クリップボードコピー
           div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => {
             e.stopPropagation();
-            try {
-              await navigator.clipboard.writeText(item.name);
-              const toast = document.getElementById('toast-banner');
-              document.getElementById('toast-text').textContent = t.toastCopied(item.name);
-              toast.classList.add('show');
-              setTimeout(() => toast.classList.remove('show'), 2500);
-            } catch (err) {
-              prompt("Copy to clipboard:", item.name);
-            }
+            copyPlaceNameToClipboard(item.name);
           });
 
           container.appendChild(div);
+        });
+      }
+    }
+
+    function copyPlaceNameToClipboard(text) {
+      const t = I18N[currentLang];
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(t.toastCopied(text));
+        }).catch(() => prompt("Copy:", text));
+      } else {
+        prompt("Copy:", text);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-banner');
+      document.getElementById('toast-text').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function setPinpointTargetAndStart(item) {
+      const t = I18N[currentLang];
+      appState.pinpointTarget = {
+        id: item.id,
+        name: item.name,
+        lat: item.lat,
+        lng: item.lng
+      };
+      appState.activeKeyword = item.name;
+      document.getElementById('keyword-input').value = item.name;
+      document.getElementById('btn-input-clear').classList.add('show');
+      document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
+
+      pageSpotDetail.classList.remove('open');
+      pageHistory.classList.remove('open');
+      pageKeywords.classList.remove('open');
+
+      appState.isTracking = true;
+      appState.isPaused = false;
+      updateButtonStateUI();
+      evaluateSensorCycle();
+    }
+
+    // 第4画面：Google Places APIから高画質写真を取得して表示
+    function openSpotDetailModal(item) {
+      appState.selectedSpotForDetail = item;
+      const t = I18N[currentLang];
+
+      document.getElementById('detail-spot-name').textContent = item.name;
+      document.getElementById('detail-spot-address').textContent = "住所情報を照会中...";
+      const photosBox = document.getElementById('detail-photos-container');
+      photosBox.innerHTML = '<div class="no-photos-box">写真を取得中...</div>';
+
+      document.getElementById('detail-btn-pinpoint-set').onclick = () => setPinpointTargetAndStart(item);
+      document.getElementById('detail-btn-copy').onclick = () => copyPlaceNameToClipboard(item.name);
+
+      pageSpotDetail.classList.add('open');
+
+      // Place Details APIで写真と住所を取得
+      if (placesService && item.id) {
+        placesService.getDetails({
+          placeId: item.id,
+          fields: ['name', 'formatted_address', 'photos']
+        }, (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            document.getElementById('detail-spot-address').textContent = place.formatted_address || "住所情報なし";
+            if (place.photos && place.photos.length > 0) {
+              const gallery = document.createElement('div');
+              gallery.className = 'photo-gallery-scroll';
+              place.photos.forEach(photo => {
+                const url = photo.getUrl({ maxWidth: 800, maxHeight: 600 });
+                const wrap = document.createElement('div');
+                wrap.className = 'gallery-img-wrap';
+                wrap.innerHTML = `<img src="${url}" alt="${item.name}" loading="lazy">`;
+                gallery.appendChild(wrap);
+              });
+              photosBox.innerHTML = '';
+              photosBox.appendChild(gallery);
+            } else {
+              photosBox.innerHTML = `<div class="no-photos-box">${t.noPhotosText}</div>`;
+            }
+          } else {
+            document.getElementById('detail-spot-address').textContent = "Googleマップ詳細の取得に失敗しました";
+            photosBox.innerHTML = `<div class="no-photos-box">${t.noPhotosText}</div>`;
+          }
         });
       }
     }
