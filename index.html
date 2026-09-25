@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Sheikah Sensor - Real World Explorer</title>
+  <style>
+    :root {
+      --sheikah-cyan: #00f3ff;
+      --sheikah-glow: rgba(0, 243, 255, 0.6);
+      --sheikah-orange: #ff7700;
+      --sheikah-bg: #03080e;
+      --sheikah-panel: rgba(5, 20, 32, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--sheikah-bg);
+      color: var(--sheikah-cyan);
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* 上部ヘッダー：ターゲット情報 */
+    header {
+      width: 100%;
+      padding: 20px 15px 10px;
+      background: linear-gradient(180deg, var(--sheikah-panel) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .target-box {
+      border: 1px solid var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.05);
+      padding: 8px 18px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px var(--sheikah-glow);
+      text-align: center;
+    }
+
+    .target-title {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      opacity: 0.8;
+    }
+
+    .target-name {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 8px var(--sheikah-cyan);
+    }
+
+    /* 中央：シーカーセンサー レーダー表示 */
+    .sensor-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* レーダー波リング */
+    .radar-circle {
+      position: absolute;
+      border: 1px solid rgba(0, 243, 255, 0.2);
+      border-radius: 50%;
+    }
+
+    .circle-1 { width: 100px; height: 100px; }
+    .circle-2 { width: 180px; height: 180px; }
+    .circle-3 { width: 260px; height: 260px; }
+
+    /* 中央のシーカーアイ風コア */
+    .sensor-core {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--sheikah-cyan);
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--sheikah-cyan) 20%, transparent 80%);
+      box-shadow: 0 0 15px var(--sheikah-cyan);
+      z-index: 2;
+    }
+
+    /* センサー波紋パルス */
+    .sensor-wave {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 2px solid var(--sheikah-cyan);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .pulsing {
+      animation: pulse-out 0.4s ease-out forwards;
+    }
+
+    @keyframes pulse-out {
+      0% {
+        width: 40px;
+        height: 40px;
+        opacity: 1;
+        border-color: #fff;
+        box-shadow: 0 0 20px var(--sheikah-cyan);
+      }
+      100% {
+        width: 260px;
+        height: 260px;
+        opacity: 0;
+        border-color: var(--sheikah-cyan);
+      }
+    }
+
+    /* 方位を示すポインター（正面方向） */
+    .compass-needle {
+      position: absolute;
+      top: 10px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 16px solid var(--sheikah-cyan);
+      filter: drop-shadow(0 0 6px var(--sheikah-cyan));
+    }
+
+    /* 下部パネル：コントロール ＆ 信号メーター */
+    footer {
+      width: 100%;
+      padding: 20px;
+      background: linear-gradient(0deg, var(--sheikah-panel) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .signal-bar-container {
+      display: flex;
+      gap: 6px;
+    }
+
+    .signal-dot {
+      width: 14px;
+      height: 8px;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--sheikah-cyan);
+      border-radius: 2px;
+    }
+
+    .signal-dot.active {
+      background: var(--sheikah-cyan);
+      box-shadow: 0 0 8px var(--sheikah-cyan);
+    }
+
+    .sheikah-btn {
+      background: transparent;
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      padding: 10px 24px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+      transition: all 0.2s;
+    }
+
+    .sheikah-btn:active {
+      background: var(--sheikah-cyan);
+      color: #000;
+      box-shadow: 0 0 20px var(--sheikah-cyan);
+    }
+
+    /* デバッグ用ステータス表示 */
+    #debug-info {
+      font-size: 0.7rem;
+      opacity: 0.7;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="target-box">
+      <div class="target-title">SHEIKAH SENSOR</div>
+      <div class="target-name" id="target-display">中華料理屋</div>
+    </div>
+  </header>
+
+  <div class="sensor-container">
+    <div class="compass-needle"></div>
+    <div class="radar-circle circle-1"></div>
+    <div class="radar-circle circle-2"></div>
+    <div class="radar-circle circle-3"></div>
+    
+    <div class="sensor-core"></div>
+    <div class="sensor-wave" id="sensor-wave"></div>
+  </div>
+
+  <footer>
+    <!-- シグナル強度インジケーター（全5段階） -->
+    <div class="signal-bar-container">
+      <div class="signal-dot" id="sig-1"></div>
+      <div class="signal-dot" id="sig-2"></div>
+      <div class="signal-dot" id="sig-3"></div>
+      <div class="signal-dot" id="sig-4"></div>
+      <div class="signal-dot" id="sig-5"></div>
+    </div>
+
+    <button class="sheikah-btn" id="start-btn">SENSOR ACTIVATE</button>
+
+    <div id="debug-info">
+      距離: -- m | 角度差: --°<br>
+      GPS / コンパス待機中
+    </div>
+  </footer>
+
+  <script>
+    // ==========================================
+    // 1. Web Audio API 音源シンセサイザー
+    // ==========================================
+    let audioCtx = null;
+    let customAudio = null; // 外部音源を使う場合はここを設定
+
+    // ※外部音源（wavやmp3）を使用する場合は以下を有効化してください
+    // customAudio = new Audio('sheikah_beep.mp3');
+
+    function playSheikahBeep(pitch = 1800) {
+      if (customAudio) {
+        customAudio.currentTime = 0;
+        customAudio.play().catch(() => {});
+        return;
+      }
+
+      if (!audioCtx) return;
+
+      // シーカーセンサー特有の金属的でクリアな高音ピープ音を合成
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      // 2重発振風に周波数をわずかに変調
+      osc.frequency.setValueAtTime(pitch, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 1.05, audioCtx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    }
+
+    // ==========================================
+    // 2. 状態管理・ターゲット設定
+    // ==========================================
+    let isTracking = false;
+    let currentPos = null;
+    let currentHeading = 0; // コンパス方角（0: 北, 90: 東...）
+    let soundTimer = null;
+
+    // テスト用モックスポット（現在地取得時に、そこから北東100m地点に中華屋を仮想生成）
+    let targetPlace = null;
+
+    // ==========================================
+    // 3. センサー計算ロジック（距離と角度差）
+    // ==========================================
+    // 2点間の距離（メートル）
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // 2点間の方位角（0〜360度）
+    function getBearing(lat1, lon1, lat2, lon2) {
+      const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+      const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+                Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos((lon2 - lon1) * Math.PI / 180);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    // センサー更新ループ
+    function evaluateSensor() {
+      if (!currentPos || !targetPlace) return;
+
+      const dist = getDistance(currentPos.lat, currentPos.lng, targetPlace.lat, targetPlace.lng);
+      const targetBearing = getBearing(currentPos.lat, currentPos.lng, targetPlace.lat, targetPlace.lng);
+
+      // スマホの向いている方向とのズレ（0〜180度）
+      let diffAngle = Math.abs(currentHeading - targetBearing);
+      if (diffAngle > 180) diffAngle = 360 - diffAngle;
+
+      // シグナル強度（0〜5段階）の算出
+      // 正面（±30度以内）を向いていて、かつ距離が近いほど高ランク
+      let signalLevel = 0;
+
+      if (diffAngle <= 45) { // 正面近くを向いている
+        if (dist < 20) signalLevel = 5;
+        else if (dist < 50) signalLevel = 4;
+        else if (dist < 100) signalLevel = 3;
+        else if (dist < 200) signalLevel = 2;
+        else signalLevel = 1;
+      } else if (diffAngle <= 90) { // 横を向いている
+        signalLevel = dist < 50 ? 2 : 1;
+      } else { // 背を向けている
+        signalLevel = 0;
+      }
+
+      // UIメーターの更新
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`sig-${i}`).classList.toggle('active', i <= signalLevel);
+      }
+
+      document.getElementById('debug-info').innerHTML = 
+        `距離: ${Math.round(dist)}m | 角度ズレ: ${Math.round(diffAngle)}°<br>` +
+        `目標方角: ${Math.round(targetBearing)}° | 進行方角: ${Math.round(currentHeading)}°`;
+
+      // 音の間隔をスケジュール（シグナルが強いほど速い）
+      scheduleBeep(signalLevel);
+    }
+
+    // 音と波紋アニメーションのスケジューリング
+    let nextBeepDelay = null;
+    function scheduleBeep(level) {
+      if (soundTimer) clearTimeout(soundTimer);
+
+      if (level === 0) return; // 圏外・無反応
+
+      // レベルごとの発音インターバル（ms）
+      const intervals = {
+        1: 2200, // 遠い / ズレている
+        2: 1500,
+        3: 900,
+        4: 500,
+        5: 220   // 最接近 ＆ 正面ピッタリ！
+      };
+
+      const delay = intervals[level];
+
+      function trigger() {
+        if (!isTracking) return;
+        
+        // 音を鳴らす
+        playSheikahBeep(level === 5 ? 2100 : 1800);
+
+        // 波紋アニメーションを発火
+        const wave = document.getElementById('sensor-wave');
+        wave.classList.remove('pulsing');
+        void wave.offsetWidth; // リフロー強制
+        wave.classList.add('pulsing');
+
+        soundTimer = setTimeout(trigger, delay);
+      }
+
+      soundTimer = setTimeout(trigger, 100);
+    }
+
+    // ==========================================
+    // 4. イベントハンドラー（起動とセンサー取得）
+    // ==========================================
+    document.getElementById('start-btn').addEventListener('click', async () => {
+      // AudioContext の初期化（ユーザー操作が必要）
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      // iOS Safari のコンパス許可リクエスト
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission !== 'granted') {
+            alert('コンパスの利用が拒否されました');
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      isTracking = true;
+      document.getElementById('start-btn').textContent = 'SEARCHING...';
+      document.getElementById('start-btn').style.borderColor = 'var(--sheikah-orange)';
+      document.getElementById('start-btn').style.color = 'var(--sheikah-orange)';
+
+      // コンパス追跡
+      window.addEventListener('deviceorientation', (e) => {
+        // iOSは webkitCompassHeading、Androidは alpha から算出
+        if (e.webkitCompassHeading !== undefined) {
+          currentHeading = e.webkitCompassHeading;
+        } else if (e.alpha !== null) {
+          currentHeading = (360 - e.alpha) % 360;
+        }
+        evaluateSensor();
+      });
+
+      // GPS現在地追跡
+      if ('geolocation' in navigator) {
+        navigator.geolocation.watchPosition((pos) => {
+          currentPos = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          };
+
+          // 初回位置取得時、テスト用に「現在地から北東80m」にダミーの町中華を設置
+          if (!targetPlace) {
+            targetPlace = {
+              name: '中華料理 龍鳳（テスト）',
+              lat: currentPos.lat + 0.0006, // 約66m北
+              lng: currentPos.lng + 0.0006  // 約55m東
+            };
+            document.getElementById('target-display').textContent = targetPlace.name;
+          }
+
+          evaluateSensor();
+        }, (err) => {
+          document.getElementById('debug-info').textContent = 'GPS取得エラー: ' + err.message;
+        }, { enableHighAccuracy: true });
+      }
+    });
+  </script>
+</body>
+</html>
