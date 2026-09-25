@@ -531,7 +531,7 @@
     }
 
     /* ===================================================
-       【改善】滑らかな横スライドアニメーション画面
+       スライド画面共通
     =================================================== */
     .slide-page {
       position: absolute;
@@ -774,6 +774,16 @@
       background: rgba(197, 160, 89, 0.1);
     }
 
+    .btn-maps-intent {
+      border-color: #ffaa00;
+      color: #ffbb33;
+      background: rgba(255, 170, 0, 0.12);
+    }
+    .btn-maps-intent:active {
+      background: #ffaa00;
+      color: #000;
+    }
+
     .btn-danger-sm {
       border-color: var(--sheikah-danger);
       color: var(--sheikah-danger);
@@ -950,7 +960,7 @@
     <div class="sheikah-divider-bar"></div>
 
     <!-- 下部：操作パネル -->
-    <div class="bottom-section">
+    <div class="bottom-section" id="main-bottom-panel">
       <div class="input-row">
         <div class="keyword-input-wrap">
           <input type="text" id="keyword-input" value="マクドナルド" placeholder="探す対象を入力...">
@@ -1013,7 +1023,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.260831</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260835</span></span>
       </div>
     </div>
 
@@ -1083,11 +1093,19 @@
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
+          
+          <!-- アクション行：ピンポイントSET・レーダーON/OFF・コピー・削除 -->
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
             <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
             <button class="btn-sheikah-sm" id="detail-btn-toggle-radar">レーダーON</button>
             <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">コピー</button>
             <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
+          </div>
+
+          <!-- Googleマップ公式アクション行（星評価＆写真投稿リンク） -->
+          <div class="action-button-row" style="margin-top: 10px; justify-content: flex-start;">
+            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review">★ クチコミ投稿</button>
+            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-photo">📷 写真を追加</button>
           </div>
         </div>
 
@@ -1156,6 +1174,8 @@
         radarOn: "レーダーON",
         radarOff: "レーダーOFF",
         copyBtn: "コピー",
+        mapsReviewBtn: "★ クチコミ投稿",
+        mapsPhotoBtn: "📷 写真を追加",
         galleryHeader: "現地ギャラリー (Google Places)",
         loadingPhotos: "写真を取得中...",
         loadingAddress: "住所情報を照会中...",
@@ -1215,6 +1235,8 @@
         radarOn: "RADAR ON",
         radarOff: "RADAR OFF",
         copyBtn: "COPY",
+        mapsReviewBtn: "★ Post Review",
+        mapsPhotoBtn: "📷 Add Photo",
         galleryHeader: "Place Gallery (Google Places)",
         loadingPhotos: "Loading photos...",
         loadingAddress: "Querying address...",
@@ -1284,6 +1306,8 @@
       document.getElementById('detail-btn-copy').textContent = t.copyBtn;
       document.getElementById('detail-btn-delete-single').textContent = t.deleteBtn;
       document.getElementById('detail-gallery-header').textContent = t.galleryHeader;
+      document.getElementById('detail-btn-maps-review').textContent = t.mapsReviewBtn;
+      document.getElementById('detail-btn-maps-photo').textContent = t.mapsPhotoBtn;
       document.getElementById('opt-hsort-near').textContent = t.sortHNear;
       document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
@@ -1418,7 +1442,6 @@
     let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
     let savedLastKeyword = localStorage.getItem('sheikah_last_keyword') || "マクドナルド";
 
-    // 最後に確認された位置（東京駅デフォルト）
     let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
     try {
       const cached = localStorage.getItem('sheikah_last_pos');
@@ -1488,12 +1511,9 @@
       }
     }
 
-    // 【新仕様】起動時に自動で地図・Placesサービス・位置権限を準備
     function bootstrapMapAndLocation() {
-      // 1. 直近位置またはデフォルト位置で地図とPlacesServiceを即座に有効化
       initMap(lastKnownPos.lat, lastKnownPos.lng);
 
-      // 2. ブラウザの位置情報権限を自動取得・測位開始
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -1504,7 +1524,7 @@
             if (map) map.setCenter(p);
           },
           (err) => {
-            console.warn("初期位置測位エラー（通常起動）:", err.message);
+            console.warn("初期位置測位エラー:", err.message);
           },
           { enableHighAccuracy: true, timeout: 8000 }
         );
@@ -2175,12 +2195,32 @@
       renderHistoryList();
     });
 
+    // 【新機能】メイン画面から第2画面への左スワイプ遷移
+    const mainBottomPanel = document.getElementById('main-bottom-panel');
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    mainBottomPanel.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    mainBottomPanel.addEventListener('touchend', (e) => {
+      const diffX = e.changedTouches[0].clientX - touchStartX;
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+      // 水平方向への明確な左スワイプ（-60px以上かつ縦ブレが少ない）
+      if (diffX < -60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+        document.getElementById('open-keywords-btn').click();
+      }
+    }, { passive: true });
+
+    // スライド画面からのスワイプバック（右スワイプで前画面へ戻る）
     function setupSwipeBack(el, backCallback) {
       let startX = 0;
       el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
       el.addEventListener('touchend', (e) => {
         const diffX = e.changedTouches[0].clientX - startX;
-        if (diffX > 80) backCallback();
+        if (diffX > 75) backCallback();
       }, { passive: true });
     }
     setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
@@ -2292,7 +2332,6 @@
         a.name.toLowerCase().includes(filterText)
       );
 
-      // 距離を計算してプロパティ付与（現在地または直近既知位置基準）
       const basePos = appState.currentPos || lastKnownPos;
       if (basePos) {
         items.forEach(item => {
@@ -2412,7 +2451,7 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル）
+    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル＆Googleマップ直接投稿連携）
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2453,6 +2492,19 @@
         }
       };
 
+      // Googleマップ公式クチコミ/写真追加ダイレクトリンク
+      document.getElementById('detail-btn-maps-review').onclick = () => {
+        const reviewUrl = item.id 
+          ? `https://search.google.com/local/writereview?placeid=${item.id}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
+        window.open(reviewUrl, '_blank');
+      };
+
+      document.getElementById('detail-btn-maps-photo').onclick = () => {
+        const photoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}&query_place_id=${item.id || ''}`;
+        window.open(photoUrl, '_blank');
+      };
+
       pageSpotDetail.classList.add('open');
 
       const gallery = document.createElement('div');
@@ -2466,7 +2518,6 @@
       `;
       gallery.appendChild(mapWrap);
 
-      // PlacesServiceが存在しない場合は即座に初期化
       if (!placesService) {
         initMap(item.lat, item.lng);
       }
