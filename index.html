@@ -91,11 +91,11 @@
       background: #03080e;
     }
 
-    /* 【滑らかな回転】イージング補間を設定 */
+    /* 滑らかな回転イージング */
     #map {
       width: 100%;
       height: 100%;
-      transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
       transform-origin: center center;
     }
 
@@ -579,13 +579,16 @@
       prevPos: null,
       lastSearchedPos: null,
       currentHeading: 0,
-      visualMapRotation: 0, // 360度ループ対策用累積角度
+      visualMapRotation: 0,
+      isWalking: false,           // 歩行中か静止中かのフラグ
+      lastMoveTimestamp: 0,
       activeKeyword: "大学",
       selectedKeywordForHistory: null,
       places: []
     };
 
     let watchId = null;
+    let compassActive = false;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -782,42 +785,65 @@
     }
 
     // ===================================================
-    // 5. GPS位置情報 ＆ 滑らかな向き追従ロジック
+    // 5. ハイブリッド方向追従（歩行＝GPSベクトル、静止＝コンパス）
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
       if (!mapDiv) return;
 
-      // 目的とするマップ回転角度（進行方向が真上になるため -targetBearing）
       const desiredAngle = -targetBearing;
-      
-      // 現在の累積角度から、最短の角度差（-180度〜+180度）を計算
       let diff = (desiredAngle - appState.visualMapRotation) % 360;
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
 
-      // 最短ルートで累積角度を加算（これで359°→1°でぐるんと逆回転しない）
       appState.visualMapRotation += diff;
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
+    // 電子コンパスのリスナー
+    function onDeviceOrientation(e) {
+      if (!appState.isTracking || appState.isPaused) return;
+
+      let compassHeading = null;
+      if (e.webkitCompassHeading !== undefined) {
+        compassHeading = e.webkitCompassHeading; // iOS Safari
+      } else if (e.alpha !== null) {
+        compassHeading = (360 - e.alpha) % 360; // Android Chrome
+      }
+
+      if (compassHeading === null || isNaN(compassHeading)) return;
+
+      // 直近2.5秒以内に歩行移動していない場合（その場での停止・旋回時）はコンパスで滑らか追従
+      const now = Date.now();
+      if (!appState.isWalking || (now - appState.lastMoveTimestamp > 2500)) {
+        appState.currentHeading = compassHeading;
+        rotateMapSmoothly(compassHeading);
+        evaluateSensorCycle();
+      }
+    }
+
+    // GPS位置更新リスナー
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
-      // 【方向判定の改善】
-      // 1. GPSハードウェアから heading（進行方位）が取得できる場合は最優先
-      if (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.speed > 0.5) {
+      const hasGpsHeading = (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.speed > 0.6);
+
+      if (hasGpsHeading) {
+        // 歩行中：GPSハードウェアの進行方位を採用
+        appState.isWalking = true;
+        appState.lastMoveTimestamp = Date.now();
         appState.currentHeading = pos.coords.heading;
         appState.prevPos = newPos;
         rotateMapSmoothly(appState.currentHeading);
-      } 
-      // 2. 差分計算の場合：3.0m以上の確実な移動があった時だけ方角を更新（ブレ排除）
-      else if (appState.prevPos) {
+      } else if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        if (moved >= 3.0) {
+        // 2.5m以上移動した場合は歩行移動と判定
+        if (moved >= 2.5) {
+          appState.isWalking = true;
+          appState.lastMoveTimestamp = Date.now();
           appState.currentHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
           appState.prevPos = newPos;
           rotateMapSmoothly(appState.currentHeading);
@@ -830,7 +856,6 @@
         map.setCenter(newPos);
       }
 
-      // 50m以上移動した場合は自動再検索
       if (appState.lastSearchedPos) {
         const movedSinceSearch = getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng);
         if (movedSinceSearch >= 50) {
@@ -862,7 +887,7 @@
     }
 
     // ===================================================
-    // 6. UI制御
+    // 6. UI制御 ＆ コンパス許可リクエスト
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -890,8 +915,24 @@
       }
     }
 
-    function startSearchFromSet() {
+    async function startSearchFromSet() {
       initAudio();
+
+      // iOS Safari のコンパス利用許可リクエスト
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted' && !compassActive) {
+            window.addEventListener('deviceorientation', onDeviceOrientation, true);
+            compassActive = true;
+          }
+        } catch (e) {
+          console.warn("コンパス許可エラー:", e);
+        }
+      } else if (!compassActive) {
+        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        compassActive = true;
+      }
 
       const inputVal = document.getElementById('keyword-input').value.trim();
       appState.activeKeyword = inputVal || "大学";
