@@ -47,7 +47,6 @@
       flex-direction: column;
     }
 
-    /* 上部：横幅最大の正円マップエリア */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -91,7 +90,6 @@
       background: #03080e;
     }
 
-    /* 滑らかな回転イージング */
     #map {
       width: 100%;
       height: 100%;
@@ -139,7 +137,6 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
-    /* 下部：操作パネル */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -448,7 +445,7 @@
     <div class="bottom-section">
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="大学" placeholder="探す対象を入力...">
+          <input type="text" id="keyword-input" value="東京駅" placeholder="探す対象を入力...">
         </div>
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
@@ -459,7 +456,7 @@
 
       <div class="status-panel">
         <div>
-          <div class="target-meta-info" id="target-meta-info">[対象: 大学 / 範囲: 100m]</div>
+          <div class="target-meta-info" id="target-meta-info">[対象: 東京駅 / 範囲: 100m]</div>
           <div class="unknown-badge">
             <span style="font-size: 0.75rem; color: #889;">未踏:</span>
             <span class="unknown-count" id="unknown-count">0</span>
@@ -580,15 +577,16 @@
       lastSearchedPos: null,
       currentHeading: 0,
       visualMapRotation: 0,
-      isWalking: false,           // 歩行中か静止中かのフラグ
+      isWalking: false,
       lastMoveTimestamp: 0,
-      activeKeyword: "大学",
+      activeKeyword: "東京駅",
       selectedKeywordForHistory: null,
       places: []
     };
 
     let watchId = null;
     let compassActive = false;
+    let placesService = null;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -627,6 +625,7 @@
         styles: sheikahMapStyle,
         gestureHandling: 'none'
       });
+      placesService = new google.maps.places.PlacesService(map);
     }
 
     // ===================================================
@@ -785,7 +784,7 @@
     }
 
     // ===================================================
-    // 5. ハイブリッド方向追従（歩行＝GPSベクトル、静止＝コンパス）
+    // 5. ハイブリッド方向追従 ＆ Google Places API リアル検索
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -800,20 +799,18 @@
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
-    // 電子コンパスのリスナー
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
 
       let compassHeading = null;
       if (e.webkitCompassHeading !== undefined) {
-        compassHeading = e.webkitCompassHeading; // iOS Safari
+        compassHeading = e.webkitCompassHeading;
       } else if (e.alpha !== null) {
-        compassHeading = (360 - e.alpha) % 360; // Android Chrome
+        compassHeading = (360 - e.alpha) % 360;
       }
 
       if (compassHeading === null || isNaN(compassHeading)) return;
 
-      // 直近2.5秒以内に歩行移動していない場合（その場での停止・旋回時）はコンパスで滑らか追従
       const now = Date.now();
       if (!appState.isWalking || (now - appState.lastMoveTimestamp > 2500)) {
         appState.currentHeading = compassHeading;
@@ -822,7 +819,6 @@
       }
     }
 
-    // GPS位置更新リスナー
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
@@ -832,7 +828,6 @@
       const hasGpsHeading = (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.speed > 0.6);
 
       if (hasGpsHeading) {
-        // 歩行中：GPSハードウェアの進行方位を採用
         appState.isWalking = true;
         appState.lastMoveTimestamp = Date.now();
         appState.currentHeading = pos.coords.heading;
@@ -840,7 +835,6 @@
         rotateMapSmoothly(appState.currentHeading);
       } else if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        // 2.5m以上移動した場合は歩行移動と判定
         if (moved >= 2.5) {
           appState.isWalking = true;
           appState.lastMoveTimestamp = Date.now();
@@ -868,6 +862,7 @@
       evaluateSensorCycle();
     }
 
+    // 【修正】Google Places API を呼び出して実在スポットを取得
     function executeSearch() {
       if (!appState.currentPos) return;
       appState.lastSearchedPos = { ...appState.currentPos };
@@ -876,18 +871,32 @@
       const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
       document.getElementById('target-meta-info').textContent = `[対象: ${appState.activeKeyword} / 範囲: ${rText}]`;
 
-      const rDeg = (currentRadius / 111000) * 0.7;
-      appState.places = [
-        { id: `mock_1_${currentRadius}`, name: `${appState.activeKeyword} A地点`, lat: appState.currentPos.lat + rDeg * 0.8, lng: appState.currentPos.lng + rDeg * 0.3 },
-        { id: `mock_2_${currentRadius}`, name: `${appState.activeKeyword} B地点`, lat: appState.currentPos.lat - rDeg * 0.5, lng: appState.currentPos.lng + rDeg * 0.7 },
-        { id: `mock_3_${currentRadius}`, name: `${appState.activeKeyword} C地点`, lat: appState.currentPos.lat + rDeg * 0.4, lng: appState.currentPos.lng - rDeg * 0.6 }
-      ];
+      if (placesService) {
+        const request = {
+          location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
+          radius: currentRadius,
+          keyword: appState.activeKeyword
+        };
 
-      evaluateSensorCycle();
+        placesService.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            appState.places = results.map(place => ({
+              id: place.place_id,
+              name: place.name,
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng()
+            }));
+          } else {
+            // 周囲に対象が存在しない場合は 0 件
+            appState.places = [];
+          }
+          evaluateSensorCycle();
+        });
+      }
     }
 
     // ===================================================
-    // 6. UI制御 ＆ コンパス許可リクエスト
+    // 6. UI制御
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -918,7 +927,6 @@
     async function startSearchFromSet() {
       initAudio();
 
-      // iOS Safari のコンパス利用許可リクエスト
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
           const permission = await DeviceOrientationEvent.requestPermission();
@@ -935,7 +943,7 @@
       }
 
       const inputVal = document.getElementById('keyword-input').value.trim();
-      appState.activeKeyword = inputVal || "大学";
+      appState.activeKeyword = inputVal || "駅";
       appState.isTracking = true;
       appState.isPaused = false;
 
