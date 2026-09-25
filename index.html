@@ -15,6 +15,7 @@
       --sheikah-bg: #111417;
       --sheikah-panel: #1b2228;
       --sheikah-border: #3b3226;
+      --sheikah-danger: #ff4d4d;
     }
 
     * {
@@ -48,9 +49,7 @@
       flex-direction: column;
     }
 
-    /* ===================================================
-       上部：正円マップ（インカメラ回避）
-    =================================================== */
+    /* 上部：正円マップ（インカメラ回避） */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -76,7 +75,6 @@
         radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
-    /* 正円外枠（音無しでも反応度が分かるシーカーリング発光） */
     .circle-map-wrapper {
       position: relative;
       width: min(86vw, 330px);
@@ -89,7 +87,6 @@
       transition: box-shadow 0.4s ease, border-color 0.4s ease;
     }
 
-    /* レーダー反応度別の円周ビジュアルスタイル */
     .circle-map-wrapper.signal-idle {
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
       animation: none;
@@ -361,7 +358,7 @@
     }
 
     /* ===================================================
-       スライド画面（大幅引き下げ ＆ 操作性アップ）
+       スライド画面
     =================================================== */
     .slide-page {
       position: absolute;
@@ -380,7 +377,6 @@
       transform: translateX(-100%);
     }
 
-    /* ヘッダー位置を画面上部からしっかり引き下げ */
     .page-header {
       padding-top: calc(max(env(safe-area-inset-top), 48px) + 12px);
       padding-bottom: 14px;
@@ -393,7 +389,6 @@
       justify-content: space-between;
     }
 
-    /* 押しやすい大きなピル型戻るボタン */
     .back-btn {
       color: var(--sheikah-cyan);
       background: rgba(0, 243, 255, 0.1);
@@ -413,6 +408,21 @@
       color: #000;
     }
 
+    .btn-header-danger {
+      color: var(--sheikah-danger);
+      background: rgba(255, 77, 77, 0.1);
+      border: 1.5px solid var(--sheikah-danger);
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 20px;
+    }
+    .btn-header-danger:active {
+      background: var(--sheikah-danger);
+      color: #fff;
+    }
+
     .page-title-text {
       font-size: 1.1rem;
       font-weight: bold;
@@ -421,7 +431,7 @@
     }
 
     .filter-bar {
-      padding: 12px 16px;
+      padding: 10px 16px;
       background: rgba(0,0,0,0.4);
       display: flex;
       gap: 10px;
@@ -430,12 +440,33 @@
       background: #111;
       border: 1.5px solid var(--sheikah-border);
       color: #eee;
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-radius: 6px;
       font-size: 0.95rem;
       outline: none;
     }
     .filter-bar select { flex: 1; }
+
+    /* 一括削除バー */
+    .action-sub-bar {
+      padding: 6px 16px 10px 16px;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-clean-zero {
+      background: rgba(255, 77, 77, 0.12);
+      border: 1px solid var(--sheikah-danger);
+      color: var(--sheikah-danger);
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-clean-zero:active {
+      background: var(--sheikah-danger);
+      color: #fff;
+    }
 
     .list-scroll {
       flex: 1;
@@ -520,7 +551,7 @@
       <div id="toast-text" style="font-size: 1.1rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 上部：正円マップ（反応度に応じて円周が光る） -->
+    <!-- 上部：正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
@@ -569,7 +600,7 @@
 
       <div class="app-version-footer">
         <span style="color: #c5a059;">※消音時も円周の光と振動で反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252218</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252226</span></span>
       </div>
     </div>
 
@@ -588,6 +619,9 @@
           <option value="count_desc">到達件数降順</option>
         </select>
       </div>
+      <div class="action-sub-bar">
+        <button class="btn-clean-zero" id="btn-delete-zero-keywords">到達0件の履歴を一括削除</button>
+      </div>
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
 
@@ -596,7 +630,7 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
         <div class="page-title-text" id="history-header-title" style="color: var(--sheikah-cyan);">到達履歴</div>
-        <div style="width: 70px;"></div>
+        <button class="btn-header-danger" id="btn-delete-current-keyword">削除</button>
       </div>
       <div class="filter-bar">
         <select id="sort-history">
@@ -613,7 +647,7 @@
 
   <script>
     // ===================================================
-    // 1. Web Audio API 音源 ＆ バイブレーション
+    // 1. Web Audio API 音源（堅牢化・常時復帰対応）
     // ===================================================
     let audioCtx = null;
 
@@ -637,6 +671,7 @@
     window.addEventListener('click', () => { initAudio(); }, { once: true });
 
     function playBeep(freq = 1800) {
+      if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -647,35 +682,38 @@
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + 0.08);
 
-        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
 
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.12);
-      } catch (e) {}
+        osc.stop(audioCtx.currentTime + 0.14);
+      } catch (e) {
+        console.warn("playBeep warning:", e);
+      }
     }
 
     function playTreasureFanfare() {
-      // 【新機能】到達時のバイブレーション（宝箱リズム）
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 300, 100, 600]);
       }
 
+      if (!audioCtx) initAudio();
       if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
       const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
       notes.forEach((freq, idx) => {
         setTimeout(() => {
+          if (!audioCtx) return;
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
           const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
-          gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
 
           osc.connect(gain);
@@ -753,7 +791,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ センサーロジック（円周ビジュアル連動）
+    // 4. 幾何計算 ＆ センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -771,10 +809,9 @@
     }
 
     let radarTimer = null;
-    let currentScheduledInterval = null;
+    let scheduledInterval = null;
     let lastEvaluatedDistance = null;
 
-    // 【新機能】円周リングのビジュアル切り替え
     function updateVisualRing(level) {
       const ring = document.getElementById('circle-map-wrapper');
       if (!ring) return;
@@ -784,6 +821,7 @@
     function evaluateSensorCycle() {
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
         updateVisualRing('idle');
         return;
       }
@@ -800,7 +838,8 @@
         if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
           document.getElementById('distance-info').textContent = "範囲内に対象なし";
         }
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
         updateVisualRing('idle');
         return;
       }
@@ -825,7 +864,6 @@
         document.getElementById('distance-info').textContent = "探知反応あり";
       }
 
-      // 到着判定（20m以内）
       if (minDistance <= 20) {
         handleArrival(closestTarget);
         return;
@@ -835,50 +873,53 @@
       lastEvaluatedDistance = minDistance;
 
       let interval = null;
-      // 反応レベルの判定（音 ＋ 円周のビジュアル発光）
       if (minDistance <= 200) {
         if (targetBearingDiff <= 35) {
-          interval = 600; // 正面・至近（高周期）
-          updateVisualRing('level3'); // 超連射級の強烈発光
+          interval = 600;
+          updateVisualRing('level3');
         } else if (isApproaching) {
-          interval = 1400; // 接近中（中周期）
-          updateVisualRing('level2'); // 明るいシアンパルス
+          interval = 1400;
+          updateVisualRing('level2');
         } else {
           interval = 2200;
           updateVisualRing('level1');
         }
       } else {
-        interval = 2500; // 遠距離
-        updateVisualRing('level1'); // 静かなシアン呼吸
+        interval = 2500;
+        updateVisualRing('level1');
       }
 
       if (interval !== null) {
         scheduleRadarSound(interval);
       } else {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
         updateVisualRing('idle');
       }
     }
 
     function scheduleRadarSound(interval) {
-      if (radarTimer && currentScheduledInterval === interval) {
+      if (radarTimer && scheduledInterval === interval) {
         return;
       }
 
       if (radarTimer) clearTimeout(radarTimer);
-      currentScheduledInterval = interval;
+      scheduledInterval = interval;
 
       function pulse() {
         if (!appState.isTracking || appState.isPaused) {
           radarTimer = null;
+          scheduledInterval = null;
           return;
         }
         playBeep(interval <= 700 ? 2100 : 1750);
 
         const wave = document.getElementById('radar-pulse');
-        wave.classList.remove('pulse-anim');
-        void wave.offsetWidth;
-        wave.classList.add('pulse-anim');
+        if (wave) {
+          wave.classList.remove('pulse-anim');
+          void wave.offsetWidth;
+          wave.classList.add('pulse-anim');
+        }
 
         radarTimer = setTimeout(pulse, interval);
       }
@@ -1162,7 +1203,8 @@
 
       appState.isPaused = !appState.isPaused;
       if (appState.isPaused) {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
         updateSearchStatusUI(false);
       } else {
         updateSearchStatusUI(true);
@@ -1200,7 +1242,7 @@
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・トグル
+    // 7. リスト表示・ソート・削除機能
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -1248,6 +1290,28 @@
       });
     }
 
+    // 【新機能】到達0件の履歴を一括削除
+    document.getElementById('btn-delete-zero-keywords').addEventListener('click', () => {
+      const db = loadSavedData();
+      const zeroKeys = Object.keys(db.keywordHistory).filter(k => {
+        const count = db.arrivals.filter(item => item.keyword === k).length;
+        return count === 0;
+      });
+
+      if (zeroKeys.length === 0) {
+        alert("削除対象となる到達0件の履歴はありません。");
+        return;
+      }
+
+      if (confirm(`到達数0件の履歴（${zeroKeys.length}件）をすべて削除しますか？`)) {
+        zeroKeys.forEach(k => {
+          delete db.keywordHistory[k];
+        });
+        saveAppData(db);
+        renderKeywordsList();
+      }
+    });
+
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
@@ -1262,32 +1326,61 @@
         if (sortType === 'name_asc') return a.name.localeCompare(b.name, 'ja');
       });
 
-      items.forEach(item => {
-        const d = new Date(item.date);
-        const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `
-          <div>
-            <div class="list-item-title">${item.name}</div>
-            <div class="list-item-sub">到達: ${dateStr}</div>
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">
+            このキーワードでの到達実績はまだありません。
           </div>
-          <button class="toggle-radar ${item.muted ? 'off' : 'active'}" data-id="${item.id}">
-            ${item.muted ? 'レーダーOFF' : 'レーダーON'}
-          </button>
         `;
+      } else {
+        items.forEach(item => {
+          const d = new Date(item.date);
+          const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
 
-        div.querySelector('.toggle-radar').addEventListener('click', (e) => {
-          e.stopPropagation();
-          item.muted = !item.muted;
-          saveAppData(db);
-          renderHistoryList();
+          const div = document.createElement('div');
+          div.className = 'list-item';
+          div.innerHTML = `
+            <div>
+              <div class="list-item-title">${item.name}</div>
+              <div class="list-item-sub">到達: ${dateStr}</div>
+            </div>
+            <button class="toggle-radar ${item.muted ? 'off' : 'active'}" data-id="${item.id}">
+              ${item.muted ? 'レーダーOFF' : 'レーダーON'}
+            </button>
+          `;
+
+          div.querySelector('.toggle-radar').addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.muted = !item.muted;
+            saveAppData(db);
+            renderHistoryList();
+          });
+
+          container.appendChild(div);
         });
-
-        container.appendChild(div);
-      });
+      }
     }
+
+    // 【新機能】このキーワードの履歴を丸ごと削除
+    document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
+      const targetKey = appState.selectedKeywordForHistory;
+      if (!targetKey) return;
+
+      if (confirm(`キーワード「${targetKey}」の履歴と到達データをすべて削除しますか？`)) {
+        const db = loadSavedData();
+        // キーワード履歴から削除
+        if (db.keywordHistory[targetKey]) {
+          delete db.keywordHistory[targetKey];
+        }
+        // 到達リストからこのキーワードのスポットを全削除
+        db.arrivals = db.arrivals.filter(item => item.keyword !== targetKey);
+        saveAppData(db);
+
+        // 前の画面へ戻る
+        pageHistory.classList.remove('open');
+        renderKeywordsList();
+      }
+    });
 
     document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
     document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
