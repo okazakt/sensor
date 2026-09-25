@@ -47,6 +47,7 @@
       flex-direction: column;
     }
 
+    /* 上部：正円マップ（インカメラ回避） */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -139,6 +140,7 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
+    /* 下部：操作パネル */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -226,7 +228,7 @@
       background: rgba(3, 8, 14, 0.65);
       border: 1px solid #334;
       border-radius: 6px;
-      padding: 8px 12px;
+      padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -245,7 +247,7 @@
       gap: 6px;
     }
     .unknown-count {
-      font-size: 1.35rem;
+      font-size: 1.45rem;
       font-weight: bold;
       color: var(--sheikah-orange);
       text-shadow: 0 0 8px var(--sheikah-orange);
@@ -256,12 +258,11 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 2px;
-      max-width: 55%;
+      gap: 3px;
     }
 
     .status-indicator {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: bold;
       letter-spacing: 1px;
     }
@@ -322,6 +323,7 @@
       margin-top: 2px;
     }
 
+    /* スライド画面（セーフエリア対応） */
     .slide-page {
       position: absolute;
       top: 0;
@@ -340,7 +342,7 @@
     }
 
     .page-header {
-      padding: 14px 16px;
+      padding: max(env(safe-area-inset-top), 24px) 16px 14px 16px;
       background: #151a20;
       border-bottom: 2px solid var(--sheikah-gold);
       display: flex;
@@ -353,11 +355,13 @@
       background: transparent;
       border: none;
       font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
+      padding: 6px 8px;
     }
 
     .filter-bar {
-      padding: 8px 14px;
+      padding: 10px 14px;
       background: rgba(0,0,0,0.4);
       display: flex;
       gap: 8px;
@@ -366,7 +370,7 @@
       background: #111;
       border: 1px solid var(--sheikah-border);
       color: #eee;
-      padding: 6px 10px;
+      padding: 8px 10px;
       border-radius: 4px;
       font-size: 0.85rem;
       outline: none;
@@ -395,7 +399,7 @@
     }
 
     .toggle-radar {
-      padding: 4px 8px;
+      padding: 5px 10px;
       font-size: 0.75rem;
       border-radius: 4px;
       border: 1px solid #555;
@@ -414,18 +418,18 @@
 
     #toast-banner {
       position: absolute;
-      top: 20px;
+      top: max(env(safe-area-inset-top), 24px);
       left: 5%;
       width: 90%;
       background: rgba(3, 8, 14, 0.95);
       border: 2px solid var(--sheikah-cyan);
       box-shadow: 0 0 20px var(--sheikah-cyan-glow);
       color: #fff;
-      padding: 16px;
+      padding: 14px;
       border-radius: 6px;
       text-align: center;
       z-index: 200;
-      transform: translateY(-150%);
+      transform: translateY(-180%);
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
     #toast-banner.show {
@@ -490,7 +494,7 @@
 
       <div class="app-version-footer">
         <span style="color: #c5a059;">※消音スイッチ解除で音が出ます</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252202</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252210</span></span>
       </div>
     </div>
 
@@ -499,7 +503,7 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
         <div style="font-weight: bold; color: var(--sheikah-gold);">キーワード履歴</div>
-        <div style="width: 40px;"></div>
+        <div style="width: 50px;"></div>
       </div>
       <div class="filter-bar">
         <input type="text" id="keyword-filter" placeholder="キーワード絞り込み..." style="flex: 1;">
@@ -517,7 +521,7 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ キーワード一覧</button>
         <div id="history-header-title" style="font-weight: bold; color: var(--sheikah-cyan);">到達履歴</div>
-        <div style="width: 40px;"></div>
+        <div style="width: 50px;"></div>
       </div>
       <div class="filter-bar">
         <select id="sort-history">
@@ -626,6 +630,7 @@
     let watchId = null;
     let compassActive = false;
     let placesService = null;
+    let isSearchInProgress = false;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -686,7 +691,7 @@
     }
 
     let radarTimer = null;
-    let currentScheduledInterval = null; // 現在予約中の再生間隔
+    let currentScheduledInterval = null;
     let lastEvaluatedDistance = null;
 
     function evaluateSensorCycle() {
@@ -696,17 +701,20 @@
       }
 
       const db = loadSavedData();
+      // 未踏（まだ到達していない、またはミュート解除されている）スポットのみを抽出
       const activeTargets = appState.places.filter(p => {
         const item = db.arrivals.find(a => a.id === p.id);
         return !item || !item.muted;
       });
 
       document.getElementById('unknown-count').textContent = activeTargets.length;
+
+      // 範囲内に対象がない場合：終了せず待機（移動すればまた探知するため）
       if (activeTargets.length === 0) {
         if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
-          document.getElementById('distance-info').textContent = "未踏スポットなし";
+          document.getElementById('distance-info').textContent = "範囲内に対象なし";
         }
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
         return;
       }
 
@@ -726,9 +734,11 @@
         }
       });
 
-      document.getElementById('distance-info').textContent = `最寄り: 約${Math.round(minDistance)}m`;
+      if (!document.getElementById('distance-info').textContent.includes("APIエラー")) {
+        document.getElementById('distance-info').textContent = "探知反応あり";
+      }
 
-      // 【修正1】到着判定を20mに緩和（GPSの誤差や店舗重心のズレを吸収）
+      // 20m以内で到達判定
       if (minDistance <= 20) {
         handleArrival(closestTarget);
         return;
@@ -751,13 +761,11 @@
       if (interval !== null) {
         scheduleRadarSound(interval);
       } else {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
       }
     }
 
-    // 【修正2】回転時の超連射を防ぐ防護リミッター
     function scheduleRadarSound(interval) {
-      // すでに同じ周期のタイマーが動いている場合は、回転イベントによる再発火をスキップ（連射防止）
       if (radarTimer && currentScheduledInterval === interval) {
         return;
       }
@@ -782,11 +790,8 @@
       pulse();
     }
 
+    // 到着時：該当スポットのみ図鑑登録・ミュートし、探索は止まらずシームレスに続行
     function handleArrival(target) {
-      appState.isTracking = false;
-      if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-
-      // 宝箱解放アルペジオファンファーレ
       playTreasureFanfare();
 
       const db = loadSavedData();
@@ -800,7 +805,7 @@
           lat: target.lat,
           lng: target.lng,
           date: now,
-          muted: true
+          muted: true // 到達済みにする
         });
       }
       if (!db.keywordHistory[appState.activeKeyword]) {
@@ -831,13 +836,15 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 5000);
 
-      updateSearchStatusUI(false);
-      document.getElementById('distance-info').textContent = "到達完了！";
-      document.getElementById('unknown-count').textContent = "0";
+      // 終了せず、次の目的地に向けてそのまま評価を続行
+      lastEvaluatedDistance = null;
+      setTimeout(() => {
+        evaluateSensorCycle();
+      }, 1500);
     }
 
     // ===================================================
-    // 5. ハイブリッド方向追従 ＆ Google Places API
+    // 5. ハイブリッド方向追従 ＆ 移動に伴う動的再検索
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -903,9 +910,17 @@
         map.setCenter(newPos);
       }
 
+      // 【仕様通り】移動に応じた低頻度な再検索
+      // 半径に合わせて「適切な移動差分」を計算（100mなら30m、3kmなら100m、広域なら300m）
+      const currentRadius = RADIUS_OPTIONS[radiusIndex];
+      const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
+
       if (appState.lastSearchedPos) {
-        const movedSinceSearch = getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng);
-        if (movedSinceSearch >= 50) {
+        const movedSinceSearch = getDistance(
+          appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
+          newPos.lat, newPos.lng
+        );
+        if (movedSinceSearch >= refreshThreshold) {
           executeSearch();
         }
       } else {
@@ -916,7 +931,8 @@
     }
 
     function executeSearch() {
-      if (!appState.currentPos) return;
+      if (!appState.currentPos || isSearchInProgress) return;
+      isSearchInProgress = true;
       appState.lastSearchedPos = { ...appState.currentPos };
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
@@ -933,7 +949,9 @@
         };
 
         placesService.textSearch(request, (results, status) => {
+          isSearchInProgress = false;
           if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            // 現在地から設定半径内にあるものだけを抽出
             const filtered = results.filter(place => {
               const d = getDistance(
                 appState.currentPos.lat, appState.currentPos.lng,
@@ -957,6 +975,8 @@
           }
           evaluateSensorCycle();
         });
+      } else {
+        isSearchInProgress = false;
       }
     }
 
@@ -1051,7 +1071,7 @@
 
       appState.isPaused = !appState.isPaused;
       if (appState.isPaused) {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; currentScheduledInterval = null; }
         updateSearchStatusUI(false);
       } else {
         updateSearchStatusUI(true);
