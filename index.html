@@ -47,9 +47,7 @@
       flex-direction: column;
     }
 
-    /* ===================================================
-       上部：画面横幅いっぱいの正円マップエリア
-    =================================================== */
+    /* 上部：横幅最大の正円マップエリア */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -93,9 +91,12 @@
       background: #03080e;
     }
 
+    /* 【滑らかな回転】イージング補間を設定 */
     #map {
       width: 100%;
       height: 100%;
+      transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-origin: center center;
     }
 
     .gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] {
@@ -138,9 +139,7 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
-    /* ===================================================
-       下部：操作パネル
-    =================================================== */
+    /* 下部：操作パネル */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -433,7 +432,7 @@
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 6px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 上部：横幅最大の正円マップ -->
+    <!-- 上部：正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper">
@@ -517,7 +516,6 @@
     </div>
   </div>
 
-  <!-- Google Maps JavaScript API（指定キー組み込み済み） -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
@@ -581,6 +579,7 @@
       prevPos: null,
       lastSearchedPos: null,
       currentHeading: 0,
+      visualMapRotation: 0, // 360度ループ対策用累積角度
       activeKeyword: "大学",
       selectedKeywordForHistory: null,
       places: []
@@ -604,52 +603,16 @@
     let map = null;
 
     const sheikahMapStyle = [
-      {
-        featureType: "all",
-        elementType: "labels",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "all",
-        elementType: "labels.text",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "all",
-        elementType: "labels.icon",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "poi",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "administrative",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "transit",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        featureType: "road",
-        elementType: "labels",
-        stylers: [{ visibility: "off" }]
-      },
-      {
-        elementType: "geometry",
-        stylers: [{ color: "#081018" }]
-      },
-      {
-        featureType: "road",
-        elementType: "geometry",
-        stylers: [{ color: "#142433" }]
-      },
-      {
-        featureType: "water",
-        elementType: "geometry",
-        stylers: [{ color: "#02070d" }]
-      }
+      { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { featureType: "all", elementType: "labels.text", stylers: [{ visibility: "off" }] },
+      { featureType: "all", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
+      { featureType: "administrative", stylers: [{ visibility: "off" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
+      { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+      { elementType: "geometry", stylers: [{ color: "#081018" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
     ];
 
     function initMap(lat, lng) {
@@ -819,19 +782,45 @@
     }
 
     // ===================================================
-    // 5. GPS位置情報 ＆ 移動自動再検索
+    // 5. GPS位置情報 ＆ 滑らかな向き追従ロジック
     // ===================================================
+    function rotateMapSmoothly(targetBearing) {
+      const mapDiv = document.getElementById('map');
+      if (!mapDiv) return;
+
+      // 目的とするマップ回転角度（進行方向が真上になるため -targetBearing）
+      const desiredAngle = -targetBearing;
+      
+      // 現在の累積角度から、最短の角度差（-180度〜+180度）を計算
+      let diff = (desiredAngle - appState.visualMapRotation) % 360;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+
+      // 最短ルートで累積角度を加算（これで359°→1°でぐるんと逆回転しない）
+      appState.visualMapRotation += diff;
+      mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
+    }
+
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       appState.currentPos = newPos;
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
-      if (appState.prevPos) {
+      // 【方向判定の改善】
+      // 1. GPSハードウェアから heading（進行方位）が取得できる場合は最優先
+      if (pos.coords.heading !== null && !isNaN(pos.coords.heading) && pos.coords.speed > 0.5) {
+        appState.currentHeading = pos.coords.heading;
+        appState.prevPos = newPos;
+        rotateMapSmoothly(appState.currentHeading);
+      } 
+      // 2. 差分計算の場合：3.0m以上の確実な移動があった時だけ方角を更新（ブレ排除）
+      else if (appState.prevPos) {
         const moved = getDistance(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
-        if (moved >= 2.0) {
+        if (moved >= 3.0) {
           appState.currentHeading = getBearing(appState.prevPos.lat, appState.prevPos.lng, newPos.lat, newPos.lng);
           appState.prevPos = newPos;
+          rotateMapSmoothly(appState.currentHeading);
         }
       } else {
         appState.prevPos = newPos;
@@ -839,11 +828,9 @@
 
       if (map) {
         map.setCenter(newPos);
-        const mapDiv = document.getElementById('map');
-        mapDiv.style.transform = `rotate(${-appState.currentHeading}deg)`;
-        mapDiv.style.transformOrigin = 'center center';
       }
 
+      // 50m以上移動した場合は自動再検索
       if (appState.lastSearchedPos) {
         const movedSinceSearch = getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng);
         if (movedSinceSearch >= 50) {
@@ -925,7 +912,11 @@
       if (!watchId && 'geolocation' in navigator) {
         watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
           document.getElementById('distance-info').textContent = "GPSエラー: " + err.message;
-        }, { enableHighAccuracy: true });
+        }, { 
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 10000
+        });
       } else {
         executeSearch();
       }
