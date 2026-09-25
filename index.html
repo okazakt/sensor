@@ -69,7 +69,6 @@
       100% { opacity: 0; }
     }
 
-    /* 言語切り替えトグル（押しやすく安全な位置へ配置） */
     .lang-toggle-btn {
       position: absolute;
       top: calc(max(env(safe-area-inset-top), 36px) + 6px);
@@ -99,10 +98,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-bottom: 3px solid var(--sheikah-gold);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
       overflow: hidden;
       padding-top: max(env(safe-area-inset-top), 32px);
+    }
+
+    /* 上下分断の立体ゴールドライン */
+    .sheikah-divider-bar {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+      z-index: 10;
+      flex-shrink: 0;
     }
 
     .relic-circuit {
@@ -240,10 +247,8 @@
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      border-top: 1px solid rgba(197, 160, 89, 0.3);
     }
 
-    /* 【改善】高さ46pxに完全統一した入力行 */
     .input-row {
       display: flex;
       gap: 8px;
@@ -265,7 +270,7 @@
       background: rgba(3, 8, 14, 0.9);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-cyan);
-      padding: 0 38px 0 12px; /* クリアボタン用の右余白 */
+      padding: 0 38px 0 12px;
       font-size: 0.98rem;
       border-radius: 6px;
       outline: none;
@@ -276,7 +281,6 @@
       box-shadow: 0 0 10px var(--sheikah-cyan-glow);
     }
 
-    /* 入力クリアボタン（✕） */
     .btn-input-clear {
       position: absolute;
       right: 8px;
@@ -357,6 +361,10 @@
       color: var(--sheikah-cyan);
       margin-bottom: 2px;
       opacity: 0.95;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .unknown-badge {
@@ -413,34 +421,43 @@
       background: rgba(197, 160, 89, 0.1);
       border: 1.5px solid var(--sheikah-gold);
       color: var(--sheikah-gold);
-      padding: 9px;
+      padding: 10px;
       font-size: 0.88rem;
       font-weight: bold;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       border-radius: 6px;
       cursor: pointer;
       text-align: center;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
     .btn-sheikah:active {
       background: var(--sheikah-gold);
       color: #000;
     }
 
+    /* アイコン付き直感状態ボタンスタイル */
     .btn-pause-toggle {
-      flex: 1;
-      border-color: var(--sheikah-orange);
-      color: var(--sheikah-orange);
-    }
-    .btn-pause-toggle.paused {
+      background: rgba(0, 243, 255, 0.12);
       border-color: var(--sheikah-cyan);
       color: var(--sheikah-cyan);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.25);
+    }
+    .btn-pause-toggle.paused {
+      background: rgba(197, 160, 89, 0.08);
+      border-color: #667788;
+      color: #8899aa;
+      box-shadow: none;
     }
 
     .btn-sub-control {
       flex: 1;
-      border-color: #667788;
-      color: #99aabb;
+      border-color: #556677;
+      color: #778899;
+      background: rgba(20, 25, 30, 0.6);
       font-size: 0.78rem;
     }
     .btn-sub-control.active {
@@ -459,22 +476,20 @@
       margin-top: 2px;
     }
 
-    /* スライド画面 */
+    /* スライド画面（非表示時はdisplay:noneで影の漏れを完全遮断） */
     .slide-page {
       position: absolute;
       top: 0;
-      left: 100%;
+      left: 0;
       width: 100%;
       height: 100%;
       background: var(--sheikah-bg);
       z-index: 100;
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      display: flex;
+      display: none;
       flex-direction: column;
-      box-shadow: -5px 0 25px rgba(0,0,0,0.9);
     }
     .slide-page.open {
-      transform: translateX(-100%);
+      display: flex;
     }
 
     .page-header {
@@ -585,15 +600,24 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
     }
     .list-item:active {
       background: rgba(45, 55, 65, 0.95);
     }
 
+    .list-item-left {
+      flex: 1;
+      min-width: 0;
+    }
+
     .list-item-title {
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .list-item-sub {
       font-size: 0.8rem;
@@ -605,41 +629,23 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
     }
 
-    /* 履歴から再セットするボタン */
     .btn-reset-search {
-      padding: 6px 12px;
-      font-size: 0.75rem;
+      padding: 6px 14px;
+      font-size: 0.78rem;
       font-weight: bold;
       background: rgba(0, 243, 255, 0.12);
       border: 1.5px solid var(--sheikah-cyan);
       color: var(--sheikah-cyan);
       border-radius: 4px;
       cursor: pointer;
+      flex-shrink: 0;
     }
     .btn-reset-search:active {
       background: var(--sheikah-cyan);
       color: #000;
-    }
-
-    .toggle-radar {
-      padding: 8px 14px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      border-radius: 6px;
-      border: 1px solid #555;
-      cursor: pointer;
-    }
-    .toggle-radar.active {
-      border-color: var(--sheikah-cyan);
-      color: var(--sheikah-cyan);
-      background: rgba(0, 243, 255, 0.15);
-    }
-    .toggle-radar.off {
-      border-color: #666;
-      color: #888;
-      background: transparent;
     }
 
     #toast-banner {
@@ -686,6 +692,9 @@
       </div>
     </div>
 
+    <!-- 上下を分断する立体装飾モールドライン -->
+    <div class="sheikah-divider-bar"></div>
+
     <!-- 下部：操作パネル -->
     <div class="bottom-section">
       <div class="input-row">
@@ -718,17 +727,24 @@
       </div>
 
       <div class="btn-group">
-        <button class="btn-sheikah btn-pause-toggle" id="pause-toggle-btn">PAUSE SENSOR</button>
+        <!-- 状態明示型アイコンボタン -->
+        <button class="btn-sheikah btn-pause-toggle paused" id="pause-toggle-btn">
+          <span id="icon-sensor">⏸</span> <span id="label-sensor-state">SENSOR: STANDBY</span>
+        </button>
         <div class="dual-btn-row">
-          <button class="btn-sheikah btn-sub-control" id="mute-toggle-btn">SOUND: ON</button>
-          <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">WAKE LOCK: ON</button>
+          <button class="btn-sheikah btn-sub-control active" id="mute-toggle-btn">
+            <span id="icon-sound">🔊</span> <span id="label-sound-state">SOUND: ON</span>
+          </button>
+          <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">
+            <span id="icon-wake">🔆</span> <span id="label-wake-state">WAKE LOCK: ON</span>
+          </button>
         </div>
         <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
       </div>
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.252320</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.252345</span></span>
       </div>
     </div>
 
@@ -761,6 +777,7 @@
         <button class="btn-header-danger" id="btn-delete-current-keyword">削除</button>
       </div>
       <div class="filter-bar">
+        <input type="text" id="history-filter" placeholder="到達スポット絞り込み..." style="flex: 1;">
         <select id="sort-history">
           <option value="date_desc" id="opt-hsort-desc">到達日時が新しい順</option>
           <option value="date_asc" id="opt-hsort-asc">到達日時が古い順</option>
@@ -775,7 +792,7 @@
 
   <script>
     // ===================================================
-    // 0. 国際化（日英辞書）
+    // 0. 国際化
     // ===================================================
     const I18N = {
       ja: {
@@ -786,10 +803,11 @@
         standby: "STANDBY",
         searching: "SEARCHING...",
         paused: "PAUSED",
-        pauseSensor: "PAUSE SENSOR",
-        resumeSensor: "RESUME SENSOR",
+        sensorActive: "SENSOR: ACTIVE",
+        sensorPaused: "SENSOR: PAUSED",
+        sensorStandby: "SENSOR: STANDBY",
         soundOn: "SOUND: ON",
-        soundOff: "MUTE: ON",
+        soundOff: "SOUND: MUTED",
         wakeLockOn: "WAKE LOCK: ON",
         wakeLockOff: "WAKE LOCK: OFF",
         compendiumBtn: "到達済みリスト (図鑑)",
@@ -797,6 +815,7 @@
         backToMain: "◀ メイン",
         keywordsTitle: "キーワード履歴",
         filterKeywordsPlaceholder: "キーワード絞り込み...",
+        filterHistoryPlaceholder: "到達スポット絞り込み...",
         sortSearch: "検索日時順",
         sortArrival: "到達日時順",
         sortCount: "到達件数降順",
@@ -812,11 +831,9 @@
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `マップに「${name}」が記録されました`,
         targetMeta: (k, r) => `[対象: ${k} / 範囲: ${r}]`,
+        targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
         arrivalCount: (c) => `到達数: ${c} 箇所`,
         arrivalDate: (d) => `到達: ${d}`,
-        radarOn: "レーダーON",
-        radarOff: "レーダーOFF",
-        btnSelectSearch: "セット",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
@@ -829,10 +846,11 @@
         standby: "STANDBY",
         searching: "SEARCHING...",
         paused: "PAUSED",
-        pauseSensor: "PAUSE SENSOR",
-        resumeSensor: "RESUME SENSOR",
+        sensorActive: "SENSOR: ACTIVE",
+        sensorPaused: "SENSOR: PAUSED",
+        sensorStandby: "SENSOR: STANDBY",
         soundOn: "SOUND: ON",
-        soundOff: "MUTE: ON",
+        soundOff: "SOUND: MUTED",
         wakeLockOn: "WAKE LOCK: ON",
         wakeLockOff: "WAKE LOCK: OFF",
         compendiumBtn: "Discovered List (Atlas)",
@@ -840,6 +858,7 @@
         backToMain: "◀ Main",
         keywordsTitle: "Keywords History",
         filterKeywordsPlaceholder: "Filter keywords...",
+        filterHistoryPlaceholder: "Filter places...",
         sortSearch: "By Search Date",
         sortArrival: "By Discovery Date",
         sortCount: "By Discovery Count",
@@ -855,11 +874,9 @@
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `Recorded "${name}" to slate map`,
         targetMeta: (k, r) => `[Target: ${k} / Range: ${r}]`,
+        targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
         arrivalCount: (c) => `Discovered: ${c} spots`,
         arrivalDate: (d) => `Date: ${d}`,
-        radarOn: "RADAR ON",
-        radarOff: "RADAR OFF",
-        btnSelectSearch: "SET",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         noZeroKeywords: "No zero-discovery keywords found."
@@ -885,6 +902,7 @@
       document.getElementById('back-to-main').textContent = t.backToMain;
       document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
       document.getElementById('keyword-filter').placeholder = t.filterKeywordsPlaceholder;
+      document.getElementById('history-filter').placeholder = t.filterHistoryPlaceholder;
       document.getElementById('opt-sort-search').textContent = t.sortSearch;
       document.getElementById('opt-sort-arrival').textContent = t.sortArrival;
       document.getElementById('opt-sort-count').textContent = t.sortCount;
@@ -895,13 +913,9 @@
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
       document.getElementById('opt-hsort-name').textContent = t.sortHName;
       document.getElementById('toast-title').textContent = t.discoveryCompleted;
-      document.getElementById('mute-toggle-btn').textContent = appState.isMuted ? t.soundOff : t.soundOn;
-      document.getElementById('wakelock-toggle-btn').textContent = appState.wakeLockActive ? t.wakeLockOn : t.wakeLockOff;
-
-      const pauseBtn = document.getElementById('pause-toggle-btn');
-      pauseBtn.textContent = appState.isPaused ? t.resumeSensor : t.pauseSensor;
       document.getElementById('lang-toggle-btn').textContent = lang === 'ja' ? 'EN' : 'JP';
 
+      updateButtonStateUI();
       renderKeywordsList();
       if (appState.selectedKeywordForHistory) renderHistoryList();
     }
@@ -997,11 +1011,10 @@
     }
 
     // ===================================================
-    // 2. 状態管理（リロード時復元対応）
+    // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
     
-    // 前回の検索設定をlocalStorageから復元
     let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
     let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
     let savedLastKeyword = localStorage.getItem('sheikah_last_keyword') || "マクドナルド";
@@ -1010,7 +1023,7 @@
       isTracking: false,
       isPaused: false,
       isMuted: false,
-      wakeLockActive: true, // 画面ロック防止フラグ（デフォルトON）
+      wakeLockActive: true,
       currentPos: null,
       lastSearchedPos: null,
 
@@ -1024,7 +1037,8 @@
 
       activeKeyword: savedLastKeyword,
       selectedKeywordForHistory: null,
-      places: []
+      places: [],
+      pinpointTarget: null // ピンポイント到達モード用
     };
 
     let wakeLockSentinel = null;
@@ -1044,7 +1058,7 @@
     }
 
     // ===================================================
-    // 3. Google Maps（文字・アイコン完全非表示）
+    // 3. Google Maps
     // ===================================================
     let map = null;
 
@@ -1074,7 +1088,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ 本家BotW探知ロジック
+    // 4. 幾何計算 ＆ センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -1101,25 +1115,36 @@
     }
 
     function evaluateSensorCycle() {
+      const countEl = document.getElementById('unknown-count');
+      const distInfoEl = document.getElementById('distance-info');
+      const t = I18N[currentLang];
+
+      // PAUSE中または停止中は件数をブランク（--）にし沈黙
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
         updateVisualRing('idle');
+        countEl.textContent = "--";
+        if (appState.isPaused) distInfoEl.textContent = "--";
         return;
       }
 
-      const t = I18N[currentLang];
-      const db = loadSavedData();
-      const activeTargets = appState.places.filter(p => {
-        const item = db.arrivals.find(a => a.id === p.id);
-        return !item || !item.muted;
-      });
+      let activeTargets = [];
+      if (appState.pinpointTarget) {
+        activeTargets = [appState.pinpointTarget];
+      } else {
+        const db = loadSavedData();
+        activeTargets = appState.places.filter(p => {
+          const item = db.arrivals.find(a => a.id === p.id);
+          return !item || !item.muted;
+        });
+      }
 
-      document.getElementById('unknown-count').textContent = activeTargets.length;
+      countEl.textContent = activeTargets.length;
 
       if (activeTargets.length === 0) {
-        if (!document.getElementById('distance-info').textContent.includes("API")) {
-          document.getElementById('distance-info').textContent = t.noSpotsInRange;
+        if (!distInfoEl.textContent.includes("API")) {
+          distInfoEl.textContent = t.noSpotsInRange;
         }
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
@@ -1170,8 +1195,8 @@
 
       updateVisualRing(level);
 
-      if (!document.getElementById('distance-info').textContent.includes("API")) {
-        document.getElementById('distance-info').textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
+      if (!distInfoEl.textContent.includes("API")) {
+        distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
       }
 
       if (interval !== null) {
@@ -1267,6 +1292,12 @@
       document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 5000);
+
+      // ピンポイント探索時は完了後に通常探索へ戻す
+      if (appState.pinpointTarget) {
+        appState.pinpointTarget = null;
+        executeSearch();
+      }
 
       setTimeout(() => {
         evaluateSensorCycle();
@@ -1394,26 +1425,28 @@
         map.setCenter(newPos);
       }
 
-      const currentRadius = RADIUS_OPTIONS[radiusIndex];
-      const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
+      if (!appState.pinpointTarget) {
+        const currentRadius = RADIUS_OPTIONS[radiusIndex];
+        const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
 
-      if (appState.lastSearchedPos) {
-        const movedSinceSearch = getDistance(
-          appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
-          newPos.lat, newPos.lng
-        );
-        if (movedSinceSearch >= refreshThreshold) {
+        if (appState.lastSearchedPos) {
+          const movedSinceSearch = getDistance(
+            appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
+            newPos.lat, newPos.lng
+          );
+          if (movedSinceSearch >= refreshThreshold) {
+            executeSearch();
+          }
+        } else {
           executeSearch();
         }
-      } else {
-        executeSearch();
       }
 
       evaluateSensorCycle();
     }
 
     function executeSearch() {
-      if (!appState.currentPos || isSearchInProgress) return;
+      if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget) return;
       isSearchInProgress = true;
       appState.lastSearchedPos = { ...appState.currentPos };
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
@@ -1463,17 +1496,15 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ Screen Wake Lock (画面ロック防止)
+    // 6. UI制御 ＆ ボタン状態明示化
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
     }
 
-    // 初期復元値のUI反映
     document.getElementById('keyword-input').value = appState.activeKeyword;
     document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
 
-    // 入力クリアボタンの表示制御
     const keywordInputEl = document.getElementById('keyword-input');
     const inputClearBtn = document.getElementById('btn-input-clear');
 
@@ -1500,26 +1531,63 @@
       localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
     });
 
-    function updateSearchStatusUI(active) {
+    // 直感的なON/OFF状態表示の更新
+    function updateButtonStateUI() {
+      const t = I18N[currentLang];
       const indicator = document.getElementById('status-indicator');
       const pauseBtn = document.getElementById('pause-toggle-btn');
-      const t = I18N[currentLang];
+      const iconSensor = document.getElementById('icon-sensor');
+      const labelSensor = document.getElementById('label-sensor-state');
 
-      if (active) {
-        indicator.textContent = t.searching;
-        indicator.className = "status-indicator active";
-        pauseBtn.textContent = t.pauseSensor;
-        pauseBtn.className = "btn-sheikah btn-pause-toggle";
-      } else {
+      if (!appState.isTracking) {
+        indicator.textContent = t.standby;
+        indicator.className = "status-indicator paused";
+        pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
+        iconSensor.textContent = "⏸";
+        labelSensor.textContent = t.sensorStandby;
+      } else if (appState.isPaused) {
         indicator.textContent = t.paused;
         indicator.className = "status-indicator paused";
-        pauseBtn.textContent = t.resumeSensor;
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        updateVisualRing('idle');
+        iconSensor.textContent = "⏸";
+        labelSensor.textContent = t.sensorPaused;
+      } else {
+        indicator.textContent = t.searching;
+        indicator.className = "status-indicator active";
+        pauseBtn.className = "btn-sheikah btn-pause-toggle";
+        iconSensor.textContent = "▶";
+        labelSensor.textContent = t.sensorActive;
+      }
+
+      // サウンドボタン
+      const muteBtn = document.getElementById('mute-toggle-btn');
+      const iconSound = document.getElementById('icon-sound');
+      const labelSound = document.getElementById('label-sound-state');
+      if (appState.isMuted) {
+        muteBtn.className = "btn-sheikah btn-sub-control";
+        iconSound.textContent = "🔇";
+        labelSound.textContent = t.soundOff;
+      } else {
+        muteBtn.className = "btn-sheikah btn-sub-control active";
+        iconSound.textContent = "🔊";
+        labelSound.textContent = t.soundOn;
+      }
+
+      // 画面点灯ボタン
+      const wakeBtn = document.getElementById('wakelock-toggle-btn');
+      const iconWake = document.getElementById('icon-wake');
+      const labelWake = document.getElementById('label-wake-state');
+      if (appState.wakeLockActive) {
+        wakeBtn.className = "btn-sheikah btn-sub-control active";
+        iconWake.textContent = "🔆";
+        labelWake.textContent = t.wakeLockOn;
+      } else {
+        wakeBtn.className = "btn-sheikah btn-sub-control";
+        iconWake.textContent = "💤";
+        labelWake.textContent = t.wakeLockOff;
       }
     }
 
-    // 画面ロック防止（Wake Lock）
     async function requestWakeLock() {
       if ('wakeLock' in navigator && appState.wakeLockActive) {
         try {
@@ -1537,7 +1605,6 @@
       }
     }
 
-    // タブ復帰時の自動再取得
     document.addEventListener('visibilitychange', async () => {
       if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
         await requestWakeLock();
@@ -1546,33 +1613,21 @@
 
     document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
       appState.wakeLockActive = !appState.wakeLockActive;
-      const t = I18N[currentLang];
-      const btn = document.getElementById('wakelock-toggle-btn');
-
       if (appState.wakeLockActive) {
         await requestWakeLock();
-        btn.textContent = t.wakeLockOn;
-        btn.classList.add('active');
       } else {
         releaseWakeLock();
-        btn.textContent = t.wakeLockOff;
-        btn.classList.remove('active');
       }
+      updateButtonStateUI();
     });
 
     document.getElementById('mute-toggle-btn').addEventListener('click', () => {
       appState.isMuted = !appState.isMuted;
-      const muteBtn = document.getElementById('mute-toggle-btn');
-      const t = I18N[currentLang];
-      if (appState.isMuted) {
-        muteBtn.textContent = t.soundOff;
-        muteBtn.classList.add('active');
-      } else {
+      if (!appState.isMuted) {
         initAudio();
-        muteBtn.textContent = t.soundOn;
-        muteBtn.classList.remove('active');
         playBeep(2000, 0.08);
       }
+      updateButtonStateUI();
     });
 
     async function startSearchFromSet() {
@@ -1597,10 +1652,10 @@
 
       const inputVal = document.getElementById('keyword-input').value.trim();
       appState.activeKeyword = inputVal || "マクドナルド";
+      appState.pinpointTarget = null;
       appState.isTracking = true;
       appState.isPaused = false;
 
-      // 直近のキーワードと半径を永続化（リロード時復元用）
       localStorage.setItem('sheikah_last_keyword', appState.activeKeyword);
       localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
 
@@ -1613,7 +1668,7 @@
       }
       saveAppData(db);
 
-      updateSearchStatusUI(true);
+      updateButtonStateUI();
 
       if (!watchId && 'geolocation' in navigator) {
         watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
@@ -1644,11 +1699,9 @@
       if (appState.isPaused) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
-        updateSearchStatusUI(false);
-      } else {
-        updateSearchStatusUI(true);
-        evaluateSensorCycle();
       }
+      updateButtonStateUI();
+      evaluateSensorCycle();
     });
 
     const pageKeywords = document.getElementById('page-keywords');
@@ -1681,7 +1734,7 @@
     setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・履歴再セット・削除
+    // 7. リスト表示・ソート・ピンポイントSET・削除
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -1714,26 +1767,25 @@
         const div = document.createElement('div');
         div.className = 'list-item';
         div.innerHTML = `
-          <div>
+          <div class="list-item-left">
             <div class="list-item-title">${k}</div>
             <div class="list-item-sub">${t.arrivalCount(count)}</div>
           </div>
           <div class="item-right-actions">
-            <button class="btn-reset-search" data-key="${k}">${t.btnSelectSearch}</button>
+            <button class="btn-reset-search" data-key="${k}">SET</button>
             <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
           </div>
         `;
 
-        // 履歴行をタップした時は詳細画面（到達スポット一覧）へ
         div.addEventListener('click', (e) => {
           if (e.target.classList.contains('btn-reset-search')) return;
           appState.selectedKeywordForHistory = k;
           document.getElementById('history-header-title').textContent = `${k}`;
+          document.getElementById('history-filter').value = '';
           renderHistoryList();
           pageHistory.classList.add('open');
         });
 
-        // 【新機能】「セット」ボタンタップで即座に探索再開
         div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
           e.stopPropagation();
           document.getElementById('keyword-input').value = k;
@@ -1768,14 +1820,20 @@
       }
     });
 
+    // 到達履歴画面（絞り込み ＆ ピンポイントSET対応）
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
       container.innerHTML = '';
       const t = I18N[currentLang];
 
+      const filterText = document.getElementById('history-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-history').value;
-      let items = db.arrivals.filter(a => a.keyword === appState.selectedKeywordForHistory);
+
+      let items = db.arrivals.filter(a => 
+        a.keyword === appState.selectedKeywordForHistory &&
+        a.name.toLowerCase().includes(filterText)
+      );
 
       items.sort((a, b) => {
         if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
@@ -1797,20 +1855,36 @@
           const div = document.createElement('div');
           div.className = 'list-item';
           div.innerHTML = `
-            <div>
+            <div class="list-item-left">
               <div class="list-item-title">${item.name}</div>
               <div class="list-item-sub">${t.arrivalDate(dateStr)}</div>
             </div>
-            <button class="toggle-radar ${item.muted ? 'off' : 'active'}" data-id="${item.id}">
-              ${item.muted ? t.radarOff : t.radarOn}
-            </button>
+            <div class="item-right-actions">
+              <button class="btn-reset-search btn-pinpoint-set">SET</button>
+            </div>
           `;
 
-          div.querySelector('.toggle-radar').addEventListener('click', (e) => {
+          // ピンポイントSET（その登録場所の座標を直接追従）
+          div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
             e.stopPropagation();
-            item.muted = !item.muted;
-            saveAppData(db);
-            renderHistoryList();
+            appState.pinpointTarget = {
+              id: item.id,
+              name: item.name,
+              lat: item.lat,
+              lng: item.lng
+            };
+            appState.activeKeyword = item.name;
+            document.getElementById('keyword-input').value = item.name;
+            checkClearBtnVisibility();
+            document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
+
+            pageHistory.classList.remove('open');
+            pageKeywords.classList.remove('open');
+
+            appState.isTracking = true;
+            appState.isPaused = false;
+            updateButtonStateUI();
+            evaluateSensorCycle();
           });
 
           container.appendChild(div);
@@ -1838,6 +1912,7 @@
 
     document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
     document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
+    document.getElementById('history-filter').addEventListener('input', renderHistoryList);
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
     applyLanguage(currentLang);
