@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>SHEIKAH SLATE SENSOR</title>
   <style>
     :root {
@@ -47,6 +47,9 @@
       flex-direction: column;
     }
 
+    /* ===================================================
+       上部：正円マップ（インカメラ/ノッチ領域を回避）
+    =================================================== */
     .top-section {
       width: 100%;
       height: 52vh;
@@ -58,6 +61,8 @@
       border-bottom: 3px solid var(--sheikah-gold);
       box-shadow: 0 4px 15px rgba(0,0,0,0.8);
       overflow: hidden;
+      /* iPhoneのカメラ・切り欠きを避けるため上にセーフエリア余白を追加 */
+      padding-top: max(env(safe-area-inset-top), 24px);
     }
 
     .relic-circuit {
@@ -71,14 +76,16 @@
         radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
     }
 
+    /* 正円外枠（少し下にずらしてカメラ干渉を解消） */
     .circle-map-wrapper {
       position: relative;
-      width: min(94vw, 360px);
-      height: min(94vw, 360px);
+      width: min(88vw, 340px);
+      height: min(88vw, 340px);
       border-radius: 50%;
       padding: 6px;
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
       box-shadow: 0 0 28px rgba(0, 243, 255, 0.45), inset 0 0 10px #000;
+      margin-top: 6px;
     }
 
     #map-container {
@@ -137,6 +144,9 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
     }
 
+    /* ===================================================
+       下部：操作パネル
+    =================================================== */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -310,7 +320,6 @@
       box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
     }
 
-    /* v0.年下2桁.月1.日時分 フォーマット */
     .app-version-footer {
       text-align: right;
       font-size: 0.62rem;
@@ -454,18 +463,18 @@
     <div class="bottom-section">
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="東京駅" placeholder="探す対象を入力...">
+          <input type="text" id="keyword-input" value="大学" placeholder="探す対象を入力...">
         </div>
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
-          <div class="dial-value" id="radius-val">100m</div>
+          <div class="dial-value" id="radius-val">3km</div>
         </div>
         <button class="btn-set" id="set-btn">SET</button>
       </div>
 
       <div class="status-panel">
         <div>
-          <div class="target-meta-info" id="target-meta-info">[対象: 東京駅 / 範囲: 100m]</div>
+          <div class="target-meta-info" id="target-meta-info">[対象: 大学 / 範囲: 3km]</div>
           <div class="unknown-badge">
             <span style="font-size: 0.75rem; color: #889;">未踏:</span>
             <span class="unknown-count" id="unknown-count">0</span>
@@ -485,9 +494,9 @@
         <button class="btn-sheikah" id="open-keywords-btn">到達済みリスト (図鑑)</button>
       </div>
 
-      <!-- v0.年下2桁.月1.日時分 表示 -->
+      <!-- 更新バージョン -->
       <div class="app-version-footer">
-        VER: <span id="app-build-ver">v0.26.091.252141</span>
+        VER: <span id="app-build-ver">v0.26.091.252148</span>
       </div>
     </div>
 
@@ -581,7 +590,7 @@
     // 2. 状態管理
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = 0;
+    let radiusIndex = 2; // 初期値: 3km
 
     let appState = {
       isTracking: false,
@@ -593,7 +602,7 @@
       visualMapRotation: 0,
       isWalking: false,
       lastMoveTimestamp: 0,
-      activeKeyword: "東京駅",
+      activeKeyword: "大学",
       selectedKeywordForHistory: null,
       places: []
     };
@@ -876,6 +885,7 @@
       evaluateSensorCycle();
     }
 
+    // 【修正】検索クエリの最適化（大学や学校、店舗などの曖昧検索に対応）
     function executeSearch() {
       if (!appState.currentPos) return;
       appState.lastSearchedPos = { ...appState.currentPos };
@@ -885,22 +895,40 @@
       document.getElementById('target-meta-info').textContent = `[対象: ${appState.activeKeyword} / 範囲: ${rText}]`;
 
       if (placesService) {
+        const queryWord = appState.activeKeyword.trim();
+        
+        // 施設カテゴリタイプと名詞の両面で探索
         const request = {
           location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
           radius: currentRadius,
-          keyword: appState.activeKeyword
+          query: queryWord
         };
 
-        placesService.nearbySearch(request, (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            appState.places = results.map(place => ({
+        // textSearchを使うことで、「大学」のような広域施設や曖昧な名称も確実に検出可能にする
+        placesService.textSearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            // 半径内に収まるものだけを厳密にフィルタ
+            const filtered = results.filter(place => {
+              const d = getDistance(
+                appState.currentPos.lat, appState.currentPos.lng,
+                place.geometry.location.lat(), place.geometry.location.lng()
+              );
+              return d <= currentRadius;
+            });
+
+            appState.places = filtered.map(place => ({
               id: place.place_id,
               name: place.name,
               lat: place.geometry.location.lat(),
               lng: place.geometry.location.lng()
             }));
           } else {
+            // 0件または該当なし
             appState.places = [];
+            if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== google.maps.places.PlacesServiceStatus.OK) {
+              console.warn("Places API Status:", status);
+              document.getElementById('distance-info').textContent = `検索状況: ${status}`;
+            }
           }
           evaluateSensorCycle();
         });
@@ -955,7 +983,7 @@
       }
 
       const inputVal = document.getElementById('keyword-input').value.trim();
-      appState.activeKeyword = inputVal || "駅";
+      appState.activeKeyword = inputVal || "大学";
       appState.isTracking = true;
       appState.isPaused = false;
 
