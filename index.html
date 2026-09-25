@@ -138,11 +138,12 @@
       padding-top: max(env(safe-area-inset-top), 32px);
     }
 
+    /* 【改善】地図円枠と完全に太さ・質感・光沢を一致させた仕切り線 */
     .sheikah-divider-bar {
       width: 100%;
       height: 6px;
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 6px #000;
       z-index: 10;
       flex-shrink: 0;
     }
@@ -335,6 +336,7 @@
       display: flex;
     }
 
+    /* 【改善】ポップアップ選択可能なRADIUS計器UI */
     .dial-lock {
       width: 72px;
       height: 46px;
@@ -345,9 +347,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,0.8);
       flex-shrink: 0;
+      position: relative;
     }
     .dial-label {
       font-size: 0.58rem;
@@ -358,6 +360,18 @@
       font-size: 0.88rem;
       font-weight: bold;
       color: var(--sheikah-cyan);
+    }
+
+    /* 透明セレクトボックス（タップでOS標準ピッカー/ポップアップ起動） */
+    .dial-select-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      -webkit-appearance: none;
     }
 
     .btn-set {
@@ -569,13 +583,13 @@
       color: #000;
     }
 
-    /* モノトーン調ホームSVGショートカットボタン */
+    /* 【改善】横幅を広げ押しやすくしたホームショートカットボタン */
     .btn-home-shortcut {
       color: var(--sheikah-gold);
       background: rgba(197, 160, 89, 0.12);
       border: 1.5px solid var(--sheikah-gold);
       cursor: pointer;
-      padding: 7px 11px;
+      padding: 7px 18px;
       border-radius: 20px;
       display: flex;
       align-items: center;
@@ -586,6 +600,10 @@
     .btn-home-shortcut:active {
       background: var(--sheikah-gold);
       color: #000;
+    }
+    .btn-home-shortcut .svg-icon {
+      width: 17px;
+      height: 17px;
     }
 
     .page-title-text {
@@ -895,14 +913,12 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 左上：道路コントラスト切り替え（太陽アイコン） -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Map Contrast">
         <svg class="svg-icon" id="svg-map-contrast" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
       </button>
     </div>
 
-    <!-- 右上：言語切り替えトグル（地球儀 ＋ →EN/→JP） -->
     <div class="top-right-ctrl">
       <button class="lang-toggle-btn" id="lang-toggle-btn">
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
@@ -927,7 +943,7 @@
       </div>
     </div>
 
-    <!-- 立体ゴールドモールドライン -->
+    <!-- 立体ゴールドモールドライン（円枠と完全一致） -->
     <div class="sheikah-divider-bar"></div>
 
     <!-- 下部：操作パネル -->
@@ -937,10 +953,21 @@
           <input type="text" id="keyword-input" value="マクドナルド" placeholder="探す対象を入力...">
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
+
+        <!-- 【改善】ポップアップ選択形式のRADIUS計器ボタン -->
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
           <div class="dial-value" id="radius-val">3km</div>
+          <select class="dial-select-overlay" id="radius-select">
+            <option value="0">100m</option>
+            <option value="1">1km</option>
+            <option value="2" selected>3km</option>
+            <option value="3">10km</option>
+            <option value="4">50km</option>
+            <option value="5">100km</option>
+          </select>
         </div>
+
         <button class="btn-set" id="set-btn">SET</button>
       </div>
 
@@ -984,7 +1011,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.260056</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.260825</span></span>
       </div>
     </div>
 
@@ -1035,7 +1062,6 @@
           <option value="name_asc" id="opt-hsort-name">名称あいうえお順</option>
         </select>
       </div>
-      <!-- 第2画面と同様に並び順の下部に一括削除ボタンを配置 -->
       <div class="action-sub-bar">
         <button class="btn-clean-zero" id="btn-delete-current-keyword">このキーワードの履歴を一括削除</button>
       </div>
@@ -1854,7 +1880,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ クリアボタン
+    // 6. UI制御 ＆ ポップアップRADIUS選択
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -1862,6 +1888,17 @@
 
     document.getElementById('keyword-input').value = appState.activeKeyword;
     document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+    document.getElementById('radius-select').value = radiusIndex.toString();
+
+    // 【新仕様】セレクトボックスポップアップによるRADIUS変更
+    document.getElementById('radius-select').addEventListener('change', (e) => {
+      radiusIndex = parseInt(e.target.value, 10);
+      document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+      localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
+      if (appState.isTracking) {
+        executeSearch();
+      }
+    });
 
     function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
       function check() {
@@ -1897,12 +1934,6 @@
       document.getElementById('btn-history-filter-clear'),
       () => renderHistoryList()
     );
-
-    document.getElementById('dial-btn').addEventListener('click', () => {
-      radiusIndex = (radiusIndex + 1) % RADIUS_OPTIONS.length;
-      document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
-      localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
-    });
 
     function updateButtonStateUI() {
       const t = I18N[currentLang];
@@ -2340,7 +2371,7 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：Googleマップ詳細・写真・完全固定ミニマップ
+    // 第4画面：ミニマップ ＋ Googleマップ写真ビューア
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2351,11 +2382,9 @@
       const photosBox = document.getElementById('detail-photos-container');
       photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
 
-      // 第4画面アクションボタンの同期
       document.getElementById('detail-btn-pinpoint-set').onclick = () => setPinpointTargetAndStart(item);
       document.getElementById('detail-btn-copy').onclick = () => copyPlaceNameToClipboard(item.name);
 
-      // 第4画面 レーダーON/OFFボタン
       const radarBtn = document.getElementById('detail-btn-toggle-radar');
       function updateDetailRadarBtn() {
         if (item.muted) {
@@ -2374,7 +2403,6 @@
         updateDetailRadarBtn();
       };
 
-      // 第4画面 個別削除ボタン
       document.getElementById('detail-btn-delete-single').onclick = () => {
         if (confirm(t.confirmDeleteSingle(item.name))) {
           db.arrivals = db.arrivals.filter(a => a.id !== item.id);
@@ -2389,7 +2417,6 @@
       const gallery = document.createElement('div');
       gallery.className = 'photo-gallery-scroll';
 
-      // 1枚目：操作完全固定のシーカーミニマップ
       const mapWrap = document.createElement('div');
       mapWrap.className = 'gallery-minimap-wrap';
       mapWrap.innerHTML = `
@@ -2421,15 +2448,14 @@
           photosBox.innerHTML = '';
           photosBox.appendChild(gallery);
 
-          // ミニマップを完全固定（指2本スクロール・探索無効化）で描画
           setTimeout(() => {
             detailMinimapInstance = new google.maps.Map(document.getElementById('detail-minimap'), {
               center: { lat: item.lat, lng: item.lng },
               zoom: 17,
               disableDefaultUI: true,
               styles: currentMapStyleMode === 'high' ? mapStyleHighContrast : mapStyleNormal,
-              gestureHandling: 'none',   // 操作・スクロール完全無効
-              draggable: false,          // ドラッグ不可
+              gestureHandling: 'none',
+              draggable: false,
               scrollwheel: false,
               disableDoubleClickZoom: true
             });
@@ -2455,7 +2481,6 @@
       }
     }
 
-    // 第3画面：キーワード全体の履歴を一括削除
     document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
       const targetKey = appState.selectedKeywordForHistory;
       if (!targetKey) return;
