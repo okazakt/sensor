@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>SHEIKAH SLATE SENSOR</title>
+  <title>Sensor Challenge</title>
   
-  <!-- PWA（スタンドアロン・ホーム画面追加）設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="シーカーストーン">
+  <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
   <style>
@@ -24,7 +23,6 @@
       --sheikah-border: #3b3226;
       --sheikah-danger: #ff4d4d;
       
-      /* 本家BotW 昼モード用イエローパレット */
       --botw-yellow: #ffee33;
       --botw-yellow-glow: rgba(255, 238, 51, 0.8);
       --botw-amber: #ffaa00;
@@ -62,7 +60,7 @@
     }
 
     /* ===================================================
-       【PWA誘導】シーカー石板 認証・ホーム追加要求オーバーレイ
+       Sensor Challenge 認証・ホーム追加要求オーバーレイ
     =================================================== */
     #pwa-prompt-overlay {
       position: absolute;
@@ -96,10 +94,32 @@
       position: relative;
     }
 
+    /* 認証画面用の言語切り替えボタン */
+    .pwa-lang-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(3, 8, 14, 0.85);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pwa-lang-btn:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
+
     .pwa-sheikah-eye {
       width: 60px;
       height: 60px;
-      margin: 0 auto 16px auto;
+      margin: 10px auto 16px auto;
       fill: var(--sheikah-cyan);
       filter: drop-shadow(0 0 10px var(--sheikah-cyan));
     }
@@ -113,7 +133,7 @@
     }
 
     .pwa-desc {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: #b0c4de;
       line-height: 1.55;
       margin-bottom: 20px;
@@ -133,7 +153,7 @@
     }
 
     .pwa-step-item {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #e0f8ff;
       display: flex;
       align-items: center;
@@ -151,7 +171,7 @@
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       flex-shrink: 0;
     }
 
@@ -162,7 +182,7 @@
       font-size: 0.72rem;
       text-decoration: underline;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     #arrival-flash-overlay {
@@ -280,7 +300,6 @@
       transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
 
-    /* 夜モード発光スタイル */
     .circle-map-wrapper.signal-idle {
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
       animation: none;
@@ -303,7 +322,6 @@
       border: 2px solid #fff;
     }
 
-    /* 昼モード発光スタイル */
     .day-mode .circle-map-wrapper.signal-level1 {
       box-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
     }
@@ -422,7 +440,6 @@
       100% { width: 340px; height: 340px; opacity: 0; border-color: var(--botw-yellow); }
     }
 
-    /* 下部：操作パネル */
     .bottom-section {
       width: 100%;
       height: 48vh;
@@ -827,7 +844,7 @@
     }
     .btn-clean-zero {
       background: rgba(255, 77, 77, 0.12);
-      border: 1px solid var(--sheikah-danger);
+      border: 1.5px solid var(--sheikah-danger);
       color: var(--sheikah-danger);
       font-size: 0.78rem;
       padding: 6px 10px;
@@ -1080,16 +1097,26 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内（通常ブラウザ起動時のみ全画面表示） -->
+    <!-- PWA推奨案内（通常ブラウザ起動時のみ表示、言語選択対応） -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
-        <svg class="pwa-sheikah-eye" viewBox="0 0 24 24">
-          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-          <circle cx="12" cy="12" r="1.5"/>
+        <button class="pwa-lang-btn" id="pwa-lang-btn">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+          <span id="pwa-lang-label">→EN</span>
+        </button>
+
+        <!-- ホーム画面用アイコン：昼の地図ビューにセンサー反応（パルス波紋）が表示されている様子 -->
+        <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
+          <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
+          <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="24" r="14" fill="none" stroke="#00f3ff" stroke-width="2" stroke-dasharray="3 3" opacity="0.9"/>
+          <circle cx="24" cy="24" r="8" fill="none" stroke="#ffee33" stroke-width="1.5" opacity="0.8"/>
+          <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ffee33"/>
         </svg>
-        <div class="pwa-title" id="pwa-prompt-title">シーカー石板の認証</div>
+
+        <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>
         <div class="pwa-desc" id="pwa-prompt-desc">
-          本端末のセンサーおよび探知記録の完全同期には、ホーム画面への追加（全画面アプリ起動）が必要です。
+          「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。
         </div>
 
         <div class="pwa-step-card">
@@ -1118,7 +1145,7 @@
       </button>
     </div>
 
-    <!-- 右上：言語切り替えトグル（地球儀 ＋ →EN/→JP） -->
+    <!-- 右上：言語切り替えトグル -->
     <div class="top-right-ctrl">
       <button class="lang-toggle-btn" id="lang-toggle-btn">
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
@@ -1137,7 +1164,6 @@
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
         <div id="map-container">
           <div id="map"></div>
-          <!-- 影あり（昼はソフト黒影、夜はシアン発光）の矢尻ポインター -->
           <div class="player-pointer" id="player-pointer">
             <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" />
@@ -1215,7 +1241,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262300</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262314</span></span>
       </div>
     </div>
 
@@ -1316,7 +1342,7 @@
 
   <script>
     // ===================================================
-    // 0. 国際化 ＆ マップスタイル定義
+    // 0. 国際化 ＆ 初期言語の自動判定
     // ===================================================
     const I18N = {
       ja: {
@@ -1375,8 +1401,8 @@
         noAddress: "住所情報なし",
         noPhotosText: "Googleマップに登録された写真がありません。",
         minimapBadge: "位置マップ",
-        pwaTitle: "シーカー石板の認証",
-        pwaDesc: "本端末のセンサーおよび探知記録の完全同期には、ホーム画面への追加（全画面アプリ起動）が必要です。",
+        pwaTitle: "Sensor Challenge",
+        pwaDesc: "「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。",
         pwaStep1: "ブラウザ下部の「共有（四角と矢印）」をタップ",
         pwaStep2: "メニューから「ホーム画面に追加」を選択",
         pwaStep3: "ホーム画面に生成されたアイコンから起動",
@@ -1442,8 +1468,8 @@
         noAddress: "No address available",
         noPhotosText: "No photos found on Google Maps.",
         minimapBadge: "Location Map",
-        pwaTitle: "Sheikah Slate Verification",
-        pwaDesc: "To ensure persistent exploration atlas data and full sensor access, add this app to your Home Screen.",
+        pwaTitle: "Sensor Challenge",
+        pwaDesc: "To fully enjoy 'Sensor Challenge', please add this app to your Home Screen for full-screen startup.",
         pwaStep1: "Tap 'Share' icon in the browser toolbar",
         pwaStep2: "Select 'Add to Home Screen'",
         pwaStep3: "Open from your Home Screen icon",
@@ -1455,6 +1481,7 @@
       }
     };
 
+    // 初期言語の自動判定（保存されていない場合はOSの言語設定に従う）
     let currentLang = localStorage.getItem('sheikah_lang');
     if (!currentLang) {
       const userSysLang = (navigator.language || '').toLowerCase();
@@ -1556,12 +1583,19 @@
       document.getElementById('pwa-step-2').textContent = t.pwaStep2;
       document.getElementById('pwa-step-3').textContent = t.pwaStep3;
       document.getElementById('btn-pwa-skip').textContent = t.pwaSkip;
+      document.getElementById('pwa-lang-label').textContent = t.langSwitchLabel;
 
       updateButtonStateUI();
       renderKeywordsList();
       if (appState.selectedKeywordForHistory) renderHistoryList();
     }
 
+    // 認証画面上の言語切替ボタン
+    document.getElementById('pwa-lang-btn').addEventListener('click', () => {
+      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
+
+    // メイン画面上の言語切替ボタン
     document.getElementById('lang-toggle-btn').addEventListener('click', () => {
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
     });
@@ -1787,7 +1821,7 @@
     }
 
     // ===================================================
-    // 3. PWA（スタンドアロン起動）の厳格判定
+    // 3. PWA判定と自動言語選択
     // ===================================================
     function isRunningStandalone() {
       const isIOSStandalone = ('standalone' in window.navigator) && (window.navigator.standalone === true);
@@ -1801,13 +1835,11 @@
       const skipBtn = document.getElementById('btn-pwa-skip');
 
       if (!isRunningStandalone()) {
-        // 通常ブラウザから開かれた場合は全画面案内オーバーレイを表示
         overlay.classList.add('show');
       } else {
         overlay.classList.remove('show');
       }
 
-      // デバッグ・テスト用スキップ
       skipBtn.addEventListener('click', () => {
         overlay.classList.remove('show');
       });
@@ -2798,7 +2830,6 @@
         }
       };
 
-      // クチコミ投稿ダイレクトリンク
       document.getElementById('detail-btn-maps-review').onclick = () => {
         const reviewUrl = item.id 
           ? `https://search.google.com/local/writereview?placeid=${item.id}`
@@ -2806,7 +2837,6 @@
         window.open(reviewUrl, '_blank');
       };
 
-      // 写真追加画面へダイレクトジャンプするディープリンク
       document.getElementById('detail-btn-maps-photo').onclick = () => {
         const photoUploadUrl = item.id 
           ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
