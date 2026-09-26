@@ -87,7 +87,7 @@
       z-index: 25;
     }
 
-    /* 昼夜切り替えボタン（常に一定の古代ゴールド枠・点灯なし） */
+    /* 昼夜切り替えボタン（常に一定の古代ゴールド枠・発光なし） */
     .top-icon-btn {
       width: 40px;
       height: 40px;
@@ -245,7 +245,7 @@
       display: none !important;
     }
 
-    /* 【本家BotW完全準拠】急勾配＋底辺くぼみ矢尻ポインター */
+    /* 【縁取り線なし】純粋ソリッド矢尻ポインター */
     .player-pointer {
       position: absolute;
       top: 50%;
@@ -259,11 +259,11 @@
     .player-pointer svg {
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 0 6px var(--sheikah-cyan));
+      filter: drop-shadow(0 0 8px var(--sheikah-cyan));
       transition: filter 0.3s;
     }
     .day-mode .player-pointer svg {
-      filter: drop-shadow(0 0 6px #000) drop-shadow(0 0 4px var(--botw-yellow));
+      filter: drop-shadow(0 0 4px rgba(0,0,0,0.6));
     }
 
     .radar-pulse-ring {
@@ -995,10 +995,10 @@
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
         <div id="map-container">
           <div id="map"></div>
-          <!-- 【本家BotW完全再現】急勾配＋底辺くぼみ矢尻ポインター -->
+          <!-- 【縁取りなし】急勾配＋底辺くぼみ矢尻ポインター -->
           <div class="player-pointer" id="player-pointer">
             <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round" />
+              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" />
             </svg>
           </div>
           <div class="radar-pulse-ring" id="radar-pulse"></div>
@@ -1013,7 +1013,6 @@
     <div class="bottom-section" id="main-bottom-panel">
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <!-- 起動時・リロード時は未セットでプレースホルダー表示 -->
           <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
@@ -1036,7 +1035,6 @@
 
       <div class="status-panel">
         <div>
-          <!-- 未セット時は待機表示 -->
           <div class="target-meta-info" id="target-meta-info">[対象: 未設定 / 範囲: 3km]</div>
           <div class="unknown-badge">
             <span id="label-unvisited" style="font-size: 0.8rem; color: #889;">未踏:</span>
@@ -1075,7 +1073,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.261936</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.261945</span></span>
       </div>
     </div>
 
@@ -1153,11 +1151,9 @@
             <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
           </div>
 
-          <!-- 右寄せに統一されたGoogleマップ公式アクション行 -->
           <div class="action-button-row" style="margin-top: 8px;">
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review">★ クチコミ投稿</button>
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-photo">
-              <!-- モノクロカメラベクターアイコン -->
               <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path d="M12 12c1.65 0 3-1.35 3-3s-1.35-3-3-3-3 1.35-3 3 1.35 3 3 3zm0-4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm6.5 1h-1.8l-1.12-1.5c-.38-.5-.98-.8-1.61-.8H10.03c-.63 0-1.23.3-1.61.8L7.3 9H5.5C4.67 9 4 9.67 4 10.5v8c0 .83.67 1.5 1.5 1.5h13c.83 0 1.5-.67 1.5-1.5v-8c0-.83-.67-1.5-1.5-1.5zm-.5 9.5H6v-7h2.2l1.35-1.8c.19-.25.49-.4.81-.4h3.28c.32 0 .62.15.81.4L15.8 11.5H18v7z"/></svg>
               <span>写真を追加</span>
             </button>
@@ -1419,25 +1415,25 @@
 
       if (isDay) {
         container.classList.add('day-mode');
+        // 昼モード：ソリッドなレモンイエロー（縁取りなし）
         pointerPath.setAttribute('fill', '#ffee33');
-        pointerPath.setAttribute('stroke', '#221b0e');
 
-        // 次に遷移する夜モードのミニマップを描画（ポインターを小さく縮小配置）
+        // 次に遷移する夜モードのミニマップを描画（水色三角・縁取りなし）
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#081018" />
           <path d="M 0 20 Q 18 16 36 20 M 16 0 Q 18 18 20 36" stroke="#1b3248" stroke-width="4.5" fill="none" />
-          <path d="M18 13 L14 23 L18 20.5 L22 23 Z" fill="#00f3ff" stroke="#ffffff" stroke-width="0.8" />
+          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#00f3ff" />
         `;
       } else {
         container.classList.remove('day-mode');
+        // 夜モード：ソリッドなシアンブルー（縁取りなし）
         pointerPath.setAttribute('fill', '#00f3ff');
-        pointerPath.setAttribute('stroke', '#ffffff');
 
-        // 次に遷移する昼モードのミニマップを描画（ポインターを小さく縮小配置）
+        // 次に遷移する昼モードのミニマップを描画（黄色三角・縁取りなし・水色と同等サイズに調整）
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#453820" />
           <path d="M 0 22 Q 16 17 36 21 M 17 0 Q 18 18 19 36" stroke="#e4d5a8" stroke-width="5" fill="none" />
-          <path d="M18 13 L14 23 L18 20.5 L22 23 Z" fill="#ffee33" stroke="#221b0e" stroke-width="0.8" />
+          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#ffee33" />
         `;
       }
 
@@ -2622,7 +2618,7 @@
         window.open(reviewUrl, '_blank');
       };
 
-      // 【新仕様】写真追加画面へダイレクトジャンプするディープリンク
+      // 写真追加画面へダイレクトジャンプするディープリンク
       document.getElementById('detail-btn-maps-photo').onclick = () => {
         const photoUploadUrl = item.id 
           ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
