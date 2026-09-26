@@ -245,7 +245,7 @@
       display: none !important;
     }
 
-    /* 影・枠線を排した純粋フラット矢尻ポインター */
+    /* 【影を復活】枠線なし＋自然なドロップシャドウを効かせた矢尻ポインター */
     .player-pointer {
       position: absolute;
       top: 50%;
@@ -260,6 +260,13 @@
       width: 100%;
       height: 100%;
       display: block;
+      /* 夜モード：シアンの発光グロー */
+      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+      transition: filter 0.3s ease;
+    }
+    /* 昼モード：道路・大地に立体的に落ちる自然な黒系ドロップシャドウ */
+    .day-mode .player-pointer svg {
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
     }
 
     .radar-pulse-ring {
@@ -965,7 +972,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示、影・枠線なしの純粋なアイコン） -->
+    <!-- 左上：昼夜切り替え（良好なミニマップ状態を維持） -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
@@ -991,7 +998,7 @@
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
         <div id="map-container">
           <div id="map"></div>
-          <!-- 【縁取りなし】急勾配＋底辺くぼみ矢尻ポインター -->
+          <!-- 【影を復活】メイン地図用の急勾配＋底辺くぼみ矢尻ポインター -->
           <div class="player-pointer" id="player-pointer">
             <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" />
@@ -1069,7 +1076,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262235</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262230</span></span>
       </div>
     </div>
 
@@ -1404,21 +1411,19 @@
     const mapContrastBtn = document.getElementById('map-style-toggle-btn');
     const svgMapContrast = document.getElementById('svg-map-contrast');
 
-    // 【新仕様】黒枠線・影を完全撤廃し、道と水面がポインターの背後を抜ける本家BotWレイアウト
     function updateMapStyleUI() {
       const isDay = (currentMapStyleMode === 'botw');
       const container = document.getElementById('app-container');
       const pointerPath = document.getElementById('pointer-path');
 
-      // 本家レイアウト：左上に水面が広がり、ポインターの脇を道が通る自然な軌道
       const roadPathD = "M 0 26 Q 16 23 20 18 T 36 10";
 
       if (isDay) {
         container.classList.add('day-mode');
-        // 昼モード：ソリッドなレモンイエロー単色塗り（影・枠線なし）
+        // 昼モード：ソリッドなレモンイエロー
         pointerPath.setAttribute('fill', '#ffee33');
 
-        // 次に遷移する「夜モード」のミニマップを描画
+        // 次に遷移する夜モードのミニマップを描画
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#081018" />
           <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d" />
@@ -1427,10 +1432,10 @@
         `;
       } else {
         container.classList.remove('day-mode');
-        // 夜モード：ソリッドなシアンブルー単色塗り（影・枠線なし）
+        // 夜モード：ソリッドなシアンブルー
         pointerPath.setAttribute('fill', '#00f3ff');
 
-        // 次に遷移する「昼モード」のミニマップを描画（水面・大地・道路が調和し黄色三角が土色上でくっきり映える）
+        // 次に遷移する昼モードのミニマップを描画
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#453820" />
           <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c" />
@@ -2571,6 +2576,7 @@
       evaluateSensorCycle();
     }
 
+    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル＆Googleマップ直接投稿連携）
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2611,6 +2617,7 @@
         }
       };
 
+      // クチコミ投稿ダイレクトリンク
       document.getElementById('detail-btn-maps-review').onclick = () => {
         const reviewUrl = item.id 
           ? `https://search.google.com/local/writereview?placeid=${item.id}`
@@ -2618,6 +2625,7 @@
         window.open(reviewUrl, '_blank');
       };
 
+      // 写真追加画面へダイレクトジャンプするディープリンク
       document.getElementById('detail-btn-maps-photo').onclick = () => {
         const photoUploadUrl = item.id 
           ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
