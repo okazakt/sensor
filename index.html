@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23453820'/%3E%3Cpath d='M 20 105 Q 90 85 160 98' stroke='%23e4d5a8' stroke-width='14' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='90' cy='90' r='55' fill='none' stroke='%2300f3ff' stroke-width='6' stroke-dasharray='10 8' opacity='0.95'/%3E%3Ccircle cx='90' cy='90' r='30' fill='none' stroke='%23ffee33' stroke-width='4' opacity='0.9'/%3E%3Cpolygon points='90,45 70,95 90,82 110,95' fill='%23ffee33'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/your-username/your-repo/main/icon.png">
 
   <style>
     :root {
@@ -79,9 +79,10 @@
       background: var(--sheikah-panel);
       border: 2px solid var(--sheikah-gold);
       border-radius: 12px;
-      padding: 24px 20px;
+      padding: 24px 20px 18px 20px;
       box-shadow: 0 0 35px rgba(255, 157, 0, 0.2), inset 0 0 15px rgba(0,0,0,0.8);
-      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      position: relative;
     }
 
     .warning-icon {
@@ -101,6 +102,13 @@
       cursor: pointer; box-shadow: 0 0 12px rgba(0, 243, 255, 0.3);
     }
     .btn-warning-ok:active { background: var(--sheikah-cyan); color: #000; }
+
+    .warning-version {
+      font-size: 0.62rem;
+      color: #556270;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
 
     /* PWA案内オーバーレイ */
     #pwa-prompt-overlay {
@@ -150,7 +158,7 @@
     .pwa-step-item { font-size: 0.8rem; color: #e0f8ff; display: flex; align-items: center; gap: 10px; }
     .pwa-step-num {
       width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(0, 243, 255, 0.15); border: 1px solid var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.15); border: 1.5px solid var(--sheikah-cyan);
       color: var(--sheikah-cyan); display: flex; align-items: center; justify-content: center;
       font-weight: bold; font-size: 0.72rem; flex-shrink: 0;
     }
@@ -190,7 +198,7 @@
 
     .top-section {
       width: 100%; height: 52vh; position: relative;
-      background: #080a0d; /* 青い光線を排除し真っ黒に修正 */
+      background: #080a0d;
       display: flex; align-items: center; justify-content: center;
       overflow: hidden; padding-top: max(env(safe-area-inset-top), 20px);
     }
@@ -225,6 +233,11 @@
     .day-mode .circle-map-wrapper.signal-level2 { box-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff; }
     .day-mode .circle-map-wrapper.signal-level3 { box-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff; }
     .day-mode .circle-map-wrapper.signal-level4 { box-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff; border: 2px solid var(--botw-yellow); }
+
+    @keyframes ring-pulse-1 { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.01); filter: brightness(1.2); } }
+    @keyframes ring-pulse-2 { 0%, 100% { transform: scale(1); filter: brightness(1.1); } 50% { transform: scale(1.02); filter: brightness(1.35); } }
+    @keyframes ring-pulse-3 { 0%, 100% { transform: scale(1); filter: brightness(1.2); } 50% { transform: scale(1.03); filter: brightness(1.55); } }
+    @keyframes ring-pulse-4 { 0%, 100% { transform: scale(1.01); filter: brightness(1.4) contrast(1.2); } 50% { transform: scale(1.05); filter: brightness(1.9) contrast(1.5); } }
 
     #map-container { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: relative; background: #03080e; }
     #map { width: 100%; height: 100%; transform-origin: center center; }
@@ -405,6 +418,7 @@
         </div>
 
         <button class="btn-warning-ok" id="btn-warning-ok">OK / 同意して始める</button>
+        <div class="warning-version">v0.26.092.0912</div>
       </div>
     </div>
 
@@ -551,7 +565,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.092.0846</span></span>
+        <span>v0.26.092.0912</span>
       </div>
     </div>
 
@@ -968,9 +982,6 @@
       updateMapStyleUI();
     });
 
-    // ===================================================
-    // 1. Web Audio API 音源
-    // ===================================================
     let audioCtx = null;
     let silentAudioElement = null;
 
@@ -980,16 +991,12 @@
         silentAudioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
         silentAudioElement.loop = true;
       }
-      try {
-        silentAudioElement.play().catch(() => {});
-      } catch (e) {}
+      try { silentAudioElement.play().catch(() => {}); } catch (e) {}
 
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       try {
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
@@ -1008,20 +1015,14 @@
             window.addEventListener('deviceorientation', onDeviceOrientation, true);
             compassActive = true;
           }
-        } catch (e) {
-          console.warn("コンパス権限エラー:", e);
-        }
+        } catch (e) {}
       } else {
         window.addEventListener('deviceorientation', onDeviceOrientation, true);
         compassActive = true;
       }
     }
 
-    // ===================================================
-    // 2. 状態管理
-    // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    
     let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
     let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
 
@@ -1032,26 +1033,11 @@
     } catch(e) {}
 
     let appState = {
-      isTracking: false,
-      isPaused: false,
-      isMuted: false,
-      wakeLockActive: true,
-      currentPos: null,
-      lastSearchedPos: null,
-
-      currentHeading: 0,
-      visualMapRotation: 0,
-      lastCompassHeading: null,
-
-      locationHistory: [],
-      isWalking: false,
-      lastWalkTimestamp: 0,
-
-      activeKeyword: "",
-      selectedKeywordForHistory: null,
-      selectedSpotForDetail: null,
-      places: [],
-      pinpointTarget: null
+      isTracking: false, isPaused: false, isMuted: false, wakeLockActive: true,
+      currentPos: null, lastSearchedPos: null, currentHeading: 0, visualMapRotation: 0,
+      lastCompassHeading: null, locationHistory: [], isWalking: false, lastWalkTimestamp: 0,
+      activeKeyword: "", selectedKeywordForHistory: null, selectedSpotForDetail: null,
+      places: [], pinpointTarget: null
     };
 
     let wakeLockSentinel = null;
@@ -1078,7 +1064,6 @@
       return isIOSStandalone || isWebStandardStandalone;
     }
 
-    // 24時間経過自動リロード ＆ ブラウザ時毎回PWA誘因チェック
     function checkReloadAndPWA() {
       const now = Date.now();
       const lastReload = localStorage.getItem('sheikah_last_reload_time');
@@ -1100,20 +1085,14 @@
       }
     }
 
-    // ===================================================
-    // 3. Google Maps
-    // ===================================================
     let map = null;
-
     function initMap(lat, lng) {
       if (typeof google === 'undefined' || !google.maps) return;
       const centerPos = { lat, lng };
 
       if (!map) {
         map = new google.maps.Map(document.getElementById('map'), {
-          center: centerPos,
-          zoom: 17,
-          disableDefaultUI: true,
+          center: centerPos, zoom: 17, disableDefaultUI: true,
           styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark,
           gestureHandling: 'none'
         });
@@ -1135,22 +1114,14 @@
             appState.currentPos = p;
             lastKnownPos = p;
             localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
-            if (map) {
-              map.setCenter(p);
-              google.maps.event.trigger(map, 'resize');
-            }
+            if (map) { map.setCenter(p); google.maps.event.trigger(map, 'resize'); }
           },
-          (err) => {
-            console.warn("初期位置測位:", err.message);
-          },
+          (err) => {},
           { enableHighAccuracy: true, timeout: 8000 }
         );
       }
     }
 
-    // ===================================================
-    // 4. 幾何計算 ＆ センサーロジック
-    // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1182,8 +1153,7 @@
 
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null;
-        updateVisualRing('idle');
+        scheduledInterval = null; updateVisualRing('idle');
         countEl.textContent = "--";
         if (appState.isPaused) distInfoEl.textContent = "--";
         return;
@@ -1201,14 +1171,10 @@
       }
 
       countEl.textContent = activeTargets.length;
-
       if (activeTargets.length === 0) {
-        if (!distInfoEl.textContent.includes("API")) {
-          distInfoEl.textContent = t.noSpotsInRange;
-        }
+        if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = t.noSpotsInRange;
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null;
-        updateVisualRing('idle');
+        scheduledInterval = null; updateVisualRing('idle');
         return;
       }
 
@@ -1219,8 +1185,7 @@
       activeTargets.forEach(tItem => {
         const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
         if (d < minDistance) {
-          minDistance = d;
-          closestTarget = tItem;
+          minDistance = d; closestTarget = tItem;
           const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
           let diff = Math.abs(appState.currentHeading - bearing);
           if (diff > 180) diff = 360 - diff;
@@ -1228,73 +1193,37 @@
         }
       });
 
-      if (minDistance <= 20) {
-        handleArrival(closestTarget);
-        return;
-      }
+      if (minDistance <= 20) { handleArrival(closestTarget); return; }
 
       let interval = null;
       let level = 'idle';
 
-      if (targetBearingDiff >= 90) {
-        level = 'idle';
-        interval = null;
-      } else if (minDistance <= 50 && targetBearingDiff <= 20) {
-        level = 'level4';
-        interval = 450;
-      } else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
-        level = 'level3';
-        interval = 800;
-      } else if (minDistance <= 300 && targetBearingDiff <= 55) {
-        level = 'level2';
-        interval = 1500;
-      } else if (targetBearingDiff < 85) {
-        level = 'level1';
-        interval = 2600;
-      }
+      if (targetBearingDiff >= 90) { level = 'idle'; interval = null; }
+      else if (minDistance <= 50 && targetBearingDiff <= 20) { level = 'level4'; interval = 450; }
+      else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) { level = 'level3'; interval = 800; }
+      else if (minDistance <= 300 && targetBearingDiff <= 55) { level = 'level2'; interval = 1500; }
+      else if (targetBearingDiff < 85) { level = 'level1'; interval = 2600; }
 
       updateVisualRing(level);
+      if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
 
-      if (!distInfoEl.textContent.includes("API")) {
-        distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
-      }
-
-      if (interval !== null) {
-        scheduleRadarSound(interval, level === 'level4');
-      } else {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null;
-      }
+      if (interval !== null) scheduleRadarSound(interval, level === 'level4');
+      else { if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; } scheduledInterval = null; }
     }
 
     function scheduleRadarSound(interval, isDoubleBeep = false) {
-      if (radarTimer && scheduledInterval === interval) {
-        return;
-      }
-
+      if (radarTimer && scheduledInterval === interval) return;
       if (radarTimer) clearTimeout(radarTimer);
       scheduledInterval = interval;
 
       function pulse() {
-        if (!appState.isTracking || appState.isPaused) {
-          radarTimer = null;
-          scheduledInterval = null;
-          return;
-        }
-
-        if (isDoubleBeep) {
-          playDoubleBeep();
-        } else {
-          playBeep(interval <= 900 ? 2100 : 1750);
-        }
-
+        if (!appState.isTracking || appState.isPaused) { radarTimer = null; scheduledInterval = null; return; }
+        if (isDoubleBeep) playDoubleBeep(); else playBeep(interval <= 900 ? 2100 : 1750);
         const wave = document.getElementById('radar-pulse');
         if (wave) {
-          wave.className = 'radar-pulse-ring';
-          void wave.offsetWidth;
+          wave.className = 'radar-pulse-ring'; void wave.offsetWidth;
           wave.classList.add(isDoubleBeep ? 'pulse-double-anim' : 'pulse-anim');
         }
-
         radarTimer = setTimeout(pulse, interval);
       }
       pulse();
@@ -1302,27 +1231,14 @@
 
     function handleArrival(target) {
       const flash = document.getElementById('arrival-flash-overlay');
-      if (flash) {
-        flash.classList.remove('flash-anim');
-        void flash.offsetWidth;
-        flash.classList.add('flash-anim');
-      }
-
+      if (flash) { flash.classList.remove('flash-anim'); void flash.offsetWidth; flash.classList.add('flash-anim'); }
       playTreasureFanfare();
 
       const db = loadSavedData();
       const now = new Date().toISOString();
       const existing = db.arrivals.find(a => a.id === target.id);
       if (!existing) {
-        db.arrivals.push({
-          id: target.id,
-          name: target.name,
-          keyword: appState.activeKeyword,
-          lat: target.lat,
-          lng: target.lng,
-          date: now,
-          muted: true
-        });
+        db.arrivals.push({ id: target.id, name: target.name, keyword: appState.activeKeyword, lat: target.lat, lng: target.lng, date: now, muted: true });
       }
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
@@ -1333,171 +1249,98 @@
 
       if (map) {
         const isDay = (currentMapStyleMode === 'botw');
-        const marker = new google.maps.Marker({
-          position: { lat: target.lat, lng: target.lng },
-          map: map,
-          title: target.name,
-          icon: getMarkerIcon(isDay)
-        });
+        const marker = new google.maps.Marker({ position: { lat: target.lat, lng: target.lng }, map: map, title: target.name, icon: getMarkerIcon(isDay) });
         markersList.push(marker);
       }
 
       const t = I18N[currentLang];
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 5000);
+      toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 5000);
 
-      if (appState.pinpointTarget) {
-        appState.pinpointTarget = null;
-        executeSearch();
-      }
-
-      setTimeout(() => {
-        evaluateSensorCycle();
-      }, 1500);
+      if (appState.pinpointTarget) { appState.pinpointTarget = null; executeSearch(); }
+      setTimeout(() => { evaluateSensorCycle(); }, 1500);
     }
 
-    // ===================================================
-    // 5. 直進安定化（移動ベクトルの平滑化）
-    // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
       if (!mapDiv) return;
-
       const desiredAngle = -targetBearing;
       let diff = (desiredAngle - appState.visualMapRotation) % 360;
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
-
       appState.visualMapRotation += diff;
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
     function calculateSmoothedHeading(newPos) {
       appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
-      if (appState.locationHistory.length > 5) {
-        appState.locationHistory.shift();
-      }
-
+      if (appState.locationHistory.length > 5) appState.locationHistory.shift();
       if (appState.locationHistory.length < 2) return null;
-
       const oldest = appState.locationHistory[0];
-      const totalMoved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
-      if (totalMoved < 2.5) {
-        return null;
-      }
+      if (getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng) < 2.5) return null;
 
-      let sinSum = 0;
-      let cosSum = 0;
+      let sinSum = 0, cosSum = 0;
       for (let i = 1; i < appState.locationHistory.length; i++) {
-        const p1 = appState.locationHistory[i - 1];
-        const p2 = appState.locationHistory[i];
-        const d = getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
-        if (d > 0.5) {
+        const p1 = appState.locationHistory[i - 1], p2 = appState.locationHistory[i];
+        if (getDistance(p1.lat, p1.lng, p2.lat, p2.lng) > 0.5) {
           const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
-          const rad = b * Math.PI / 180;
-          const weight = i;
-          sinSum += Math.sin(rad) * weight;
-          cosSum += Math.cos(rad) * weight;
+          sinSum += Math.sin(b * Math.PI / 180) * i;
+          cosSum += Math.cos(b * Math.PI / 180) * i;
         }
       }
-
       if (sinSum === 0 && cosSum === 0) return null;
       return (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
     }
 
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
+      let heading = e.webkitCompassHeading !== undefined ? e.webkitCompassHeading : (e.alpha !== null ? (360 - e.alpha) % 360 : null);
+      if (heading === null || isNaN(heading)) return;
 
-      let compassHeading = null;
-      if (e.webkitCompassHeading !== undefined) {
-        compassHeading = e.webkitCompassHeading;
-      } else if (e.alpha !== null) {
-        compassHeading = (360 - e.alpha) % 360;
-      }
-
-      if (compassHeading === null || isNaN(compassHeading)) return;
-
-      const now = Date.now();
-      const isCompletelyStopped = (!appState.isWalking && (now - appState.lastWalkTimestamp > 5000));
-
-      if (isCompletelyStopped) {
-        if (appState.lastCompassHeading !== null) {
-          let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
-          if (cDiff > 180) cDiff = 360 - cDiff;
-          if (cDiff < 6.0) return;
-        }
-
-        appState.lastCompassHeading = compassHeading;
-        appState.currentHeading = compassHeading;
-        rotateMapSmoothly(compassHeading);
+      if (!appState.isWalking && (Date.now() - appState.lastWalkTimestamp > 5000)) {
+        if (appState.lastCompassHeading !== null && Math.abs(heading - appState.lastCompassHeading) < 6.0) return;
+        appState.lastCompassHeading = heading;
+        appState.currentHeading = heading;
+        rotateMapSmoothly(heading);
         evaluateSensorCycle();
       }
     }
 
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      appState.currentPos = newPos;
-      lastKnownPos = newPos;
+      appState.currentPos = newPos; lastKnownPos = newPos;
       localStorage.setItem('sheikah_last_pos', JSON.stringify(newPos));
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
-      const now = Date.now();
-      const speed = pos.coords.speed;
-      const gpsHeading = pos.coords.heading;
-
-      let determinedHeading = null;
-
+      const speed = pos.coords.speed, gpsHeading = pos.coords.heading;
+      let heading = null;
       if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 1.2) {
-        determinedHeading = gpsHeading;
-        appState.isWalking = true;
-        appState.lastWalkTimestamp = now;
+        heading = gpsHeading; appState.isWalking = true; appState.lastWalkTimestamp = Date.now();
       } else {
         const smoothed = calculateSmoothedHeading(newPos);
-        if (smoothed !== null) {
-          determinedHeading = smoothed;
-          appState.isWalking = true;
-          appState.lastWalkTimestamp = now;
-        }
+        if (smoothed !== null) { heading = smoothed; appState.isWalking = true; appState.lastWalkTimestamp = Date.now(); }
       }
 
-      if (determinedHeading !== null) {
-        let diffFromCurrent = Math.abs(determinedHeading - appState.currentHeading);
-        if (diffFromCurrent > 180) diffFromCurrent = 360 - diffFromCurrent;
-
-        if (diffFromCurrent >= 7.0 || appState.currentHeading === 0) {
-          appState.currentHeading = determinedHeading;
-          rotateMapSmoothly(determinedHeading);
+      if (heading !== null) {
+        let diff = Math.abs(heading - appState.currentHeading);
+        if (diff > 180) diff = 360 - diff;
+        if (diff >= 7.0 || appState.currentHeading === 0) {
+          appState.currentHeading = heading; rotateMapSmoothly(heading);
         }
-      } else {
-        if (now - appState.lastWalkTimestamp > 5000) {
-          appState.isWalking = false;
-        }
+      } else if (Date.now() - appState.lastWalkTimestamp > 5000) {
+        appState.isWalking = false;
       }
 
-      if (map) {
-        map.setCenter(newPos);
-      }
+      if (map) map.setCenter(newPos);
 
       if (!appState.pinpointTarget) {
-        const currentRadius = RADIUS_OPTIONS[radiusIndex];
-        const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
-
-        if (appState.lastSearchedPos) {
-          const movedSinceSearch = getDistance(
-            appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
-            newPos.lat, newPos.lng
-          );
-          if (movedSinceSearch >= refreshThreshold) {
-            executeSearch();
-          }
-        } else {
+        const r = RADIUS_OPTIONS[radiusIndex];
+        if (!appState.lastSearchedPos || getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng) >= Math.max(30, r * 0.05)) {
           executeSearch();
         }
       }
-
       evaluateSensorCycle();
     }
 
@@ -1505,105 +1348,42 @@
       if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
       isSearchInProgress = true;
       appState.lastSearchedPos = { ...appState.currentPos };
-      const currentRadius = RADIUS_OPTIONS[radiusIndex];
-
-      const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
+      const r = RADIUS_OPTIONS[radiusIndex];
       const t = I18N[currentLang];
-      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, rText);
+      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, r >= 1000 ? `${r/1000}km` : `${r}m`);
 
       if (placesService) {
-        const queryWord = appState.activeKeyword.trim();
-        
-        const request = {
-          location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
-          radius: currentRadius,
-          query: queryWord
-        };
-
-        placesService.textSearch(request, (results, status) => {
+        placesService.textSearch({ location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng), radius: r, query: appState.activeKeyword.trim() }, (results, status) => {
           isSearchInProgress = false;
           if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-            const filtered = results.filter(place => {
-              const d = getDistance(
-                appState.currentPos.lat, appState.currentPos.lng,
-                place.geometry.location.lat(), place.geometry.location.lng()
-              );
-              return d <= currentRadius;
-            });
-
-            appState.places = filtered.map(place => ({
-              id: place.place_id,
-              name: place.name,
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng()
-            }));
+            appState.places = results.filter(p => getDistance(appState.currentPos.lat, appState.currentPos.lng, p.geometry.location.lat(), p.geometry.location.lng()) <= r)
+              .map(p => ({ id: p.place_id, name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() }));
           } else {
             appState.places = [];
-            if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== google.maps.places.PlacesServiceStatus.OK) {
-              console.warn("Places API Status:", status);
-              document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
-            }
           }
           evaluateSensorCycle();
         });
-      } else {
-        isSearchInProgress = false;
-      }
+      } else { isSearchInProgress = false; }
     }
 
-    // ===================================================
-    // 6. UI制御 ＆ ポップアップRADIUS選択
-    // ===================================================
-    function getRadiusText(r) {
-      return r >= 1000 ? `${r/1000}km` : `${r}m`;
-    }
-
-    document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     document.getElementById('radius-select').value = radiusIndex.toString();
+    document.getElementById('radius-val').textContent = RADIUS_OPTIONS[radiusIndex] >= 1000 ? `${RADIUS_OPTIONS[radiusIndex]/1000}km` : `${RADIUS_OPTIONS[radiusIndex]}m`;
 
     document.getElementById('radius-select').addEventListener('change', (e) => {
       radiusIndex = parseInt(e.target.value, 10);
-      document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+      document.getElementById('radius-val').textContent = RADIUS_OPTIONS[radiusIndex] >= 1000 ? `${RADIUS_OPTIONS[radiusIndex]/1000}km` : `${RADIUS_OPTIONS[radiusIndex]}m`;
       localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
-      if (appState.isTracking) {
-        executeSearch();
-      }
+      if (appState.isTracking) executeSearch();
     });
 
-    function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
-      function check() {
-        if (inputEl.value.trim().length > 0) {
-          clearBtnEl.classList.add('show');
-        } else {
-          clearBtnEl.classList.remove('show');
-        }
-      }
-      inputEl.addEventListener('input', check);
-      check();
-
-      clearBtnEl.addEventListener('click', (e) => {
-        e.preventDefault();
-        inputEl.value = '';
-        check();
-        inputEl.focus();
-        if (onClearCallback) onClearCallback();
-      });
+    function setupInputClear(inputEl, clearBtnEl, cb) {
+      function check() { clearBtnEl.classList.toggle('show', inputEl.value.trim().length > 0); }
+      inputEl.addEventListener('input', check); check();
+      clearBtnEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = ''; check(); inputEl.focus(); if(cb) cb(); });
     }
-
-    setupInputClear(
-      document.getElementById('keyword-input'),
-      document.getElementById('btn-input-clear')
-    );
-    setupInputClear(
-      document.getElementById('keyword-filter'),
-      document.getElementById('btn-keyword-filter-clear'),
-      () => renderKeywordsList()
-    );
-    setupInputClear(
-      document.getElementById('history-filter'),
-      document.getElementById('btn-history-filter-clear'),
-      () => renderHistoryList()
-    );
+    setupInputClear(document.getElementById('keyword-input'), document.getElementById('btn-input-clear'));
+    setupInputClear(document.getElementById('keyword-filter'), document.getElementById('btn-keyword-filter-clear'), () => renderKeywordsList());
+    setupInputClear(document.getElementById('history-filter'), document.getElementById('btn-history-filter-clear'), () => renderHistoryList());
 
     function updateButtonStateUI() {
       const t = I18N[currentLang];
@@ -1613,23 +1393,17 @@
       const labelSensor = document.getElementById('label-sensor-state');
 
       if (!appState.isTracking) {
-        indicator.textContent = t.standby;
-        indicator.className = "status-indicator paused";
+        indicator.textContent = t.standby; indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-        labelSensor.textContent = t.sensorStandby;
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; labelSensor.textContent = t.sensorStandby;
       } else if (appState.isPaused) {
-        indicator.textContent = t.paused;
-        indicator.className = "status-indicator paused";
+        indicator.textContent = t.paused; indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-        labelSensor.textContent = t.sensorPaused;
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; labelSensor.textContent = t.sensorPaused;
       } else {
-        indicator.textContent = t.searching;
-        indicator.className = "status-indicator active";
+        indicator.textContent = t.searching; indicator.className = "status-indicator active";
         pauseBtn.className = "btn-sheikah btn-pause-toggle";
-        svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
-        labelSensor.textContent = t.sensorActive;
+        svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>'; labelSensor.textContent = t.sensorActive;
       }
 
       const muteBtn = document.getElementById('mute-toggle-btn');
@@ -1661,104 +1435,61 @@
 
     async function requestWakeLock() {
       if ('wakeLock' in navigator && appState.wakeLockActive) {
-        try {
-          wakeLockSentinel = await navigator.wakeLock.request('screen');
-        } catch (err) {}
+        try { wakeLockSentinel = await navigator.wakeLock.request('screen'); } catch (err) {}
       }
     }
-
-    function releaseWakeLock() {
-      if (wakeLockSentinel !== null) {
-        wakeLockSentinel.release();
-        wakeLockSentinel = null;
-      }
-    }
+    function releaseWakeLock() { if (wakeLockSentinel !== null) { wakeLockSentinel.release(); wakeLockSentinel = null; } }
 
     document.addEventListener('visibilitychange', async () => {
-      if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
-        await requestWakeLock();
-      }
+      if (wakeLockSentinel !== null && document.visibilityState === 'visible') await requestWakeLock();
     });
 
     document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
       appState.wakeLockActive = !appState.wakeLockActive;
-      if (appState.wakeLockActive) {
-        await requestWakeLock();
-      } else {
-        releaseWakeLock();
-      }
+      if (appState.wakeLockActive) await requestWakeLock(); else releaseWakeLock();
       updateButtonStateUI();
     });
 
     document.getElementById('mute-toggle-btn').addEventListener('click', () => {
       appState.isMuted = !appState.isMuted;
-      if (!appState.isMuted) {
-        initAudio();
-        playBeep(2000, 0.08);
-      }
+      if (!appState.isMuted) { initAudio(); playBeep(2000, 0.08); }
       updateButtonStateUI();
     });
 
     async function startSearchFromSet() {
-      initAudio();
-      playBeep(2200);
-      requestCompassPermissionIfNeeded();
+      initAudio(); playBeep(2200); requestCompassPermissionIfNeeded();
       if (appState.wakeLockActive) requestWakeLock();
 
       const inputVal = document.getElementById('keyword-input').value.trim();
-      if (!inputVal) {
-        alert("キーワードを入力してください");
-        return;
-      }
+      if (!inputVal) { alert("キーワードを入力してください"); return; }
 
-      appState.activeKeyword = inputVal;
-      appState.pinpointTarget = null;
-      appState.isTracking = true;
-      appState.isPaused = false;
+      appState.activeKeyword = inputVal; appState.pinpointTarget = null;
+      appState.isTracking = true; appState.isPaused = false;
 
       const db = loadSavedData();
       const now = new Date().toISOString();
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
-      } else {
-        db.keywordHistory[appState.activeKeyword].lastArrival = now;
-      }
+      } else { db.keywordHistory[appState.activeKeyword].lastSearch = now; }
       saveAppData(db);
-
       updateButtonStateUI();
 
       if (!watchId && 'geolocation' in navigator) {
         watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
           document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
-        }, { 
-          enableHighAccuracy: true,
-          maximumAge: 1000,
-          timeout: 10000
-        });
-      } else {
-        executeSearch();
-      }
+        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+      } else { executeSearch(); }
     }
 
     document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
-    document.getElementById('keyword-input').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') startSearchFromSet();
-    });
+    document.getElementById('keyword-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') startSearchFromSet(); });
 
     document.getElementById('pause-toggle-btn').addEventListener('click', () => {
       initAudio();
-      if (!appState.isTracking) {
-        startSearchFromSet();
-        return;
-      }
-
+      if (!appState.isTracking) { startSearchFromSet(); return; }
       appState.isPaused = !appState.isPaused;
-      if (appState.isPaused) {
-        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null;
-      }
-      updateButtonStateUI();
-      evaluateSensorCycle();
+      if (appState.isPaused) { if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; } scheduledInterval = null; }
+      updateButtonStateUI(); evaluateSensorCycle();
     });
 
     const pageKeywords = document.getElementById('page-keywords');
@@ -1766,285 +1497,126 @@
     const pageSpotDetail = document.getElementById('page-spot-detail');
 
     function navigateToMain() {
-      pageSpotDetail.classList.remove('open');
-      pageHistory.classList.remove('open');
-      pageKeywords.classList.remove('open');
+      pageSpotDetail.classList.remove('open'); pageHistory.classList.remove('open'); pageKeywords.classList.remove('open');
       evaluateSensorCycle();
     }
 
     document.getElementById('home-from-keywords').addEventListener('click', navigateToMain);
     document.getElementById('home-from-history').addEventListener('click', navigateToMain);
     document.getElementById('home-from-detail').addEventListener('click', navigateToMain);
+    document.getElementById('open-keywords-btn').addEventListener('click', () => { renderKeywordsList(); pageKeywords.classList.add('open'); });
+    document.getElementById('back-to-main').addEventListener('click', () => { pageKeywords.classList.remove('open'); evaluateSensorCycle(); });
+    document.getElementById('back-to-keywords').addEventListener('click', () => { pageHistory.classList.remove('open'); renderKeywordsList(); });
+    document.getElementById('back-to-history-list').addEventListener('click', () => { pageSpotDetail.classList.remove('open'); renderHistoryList(); });
 
-    document.getElementById('open-keywords-btn').addEventListener('click', () => {
-      renderKeywordsList();
-      pageKeywords.classList.add('open');
-    });
-
-    document.getElementById('back-to-main').addEventListener('click', () => {
-      pageKeywords.classList.remove('open');
-      evaluateSensorCycle();
-    });
-
-    document.getElementById('back-to-keywords').addEventListener('click', () => {
-      pageHistory.classList.remove('open');
-      renderKeywordsList();
-    });
-
-    document.getElementById('back-to-history-list').addEventListener('click', () => {
-      pageSpotDetail.classList.remove('open');
-      renderHistoryList();
-    });
-
-    const mainBottomPanel = document.getElementById('main-bottom-panel');
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    mainBottomPanel.addEventListener('touchstart', (e) => {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-
-    mainBottomPanel.addEventListener('touchend', (e) => {
-      const diffX = e.changedTouches[0].clientX - touchStartX;
-      const diffY = e.changedTouches[0].clientY - touchStartY;
-      if (diffX < -60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
-        document.getElementById('open-keywords-btn').click();
-      }
-    }, { passive: true });
-
-    function setupSwipeBack(el, backCallback) {
-      let startX = 0;
-      el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-      el.addEventListener('touchend', (e) => {
-        const diffX = e.changedTouches[0].clientX - startX;
-        if (diffX > 75) backCallback();
-      }, { passive: true });
-    }
-    setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
-    setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
-    setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
-
-    // ===================================================
-    // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
-    // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
-      const container = document.getElementById('keywords-list-container');
-      container.innerHTML = '';
+      const container = document.getElementById('keywords-list-container'); container.innerHTML = '';
       const t = I18N[currentLang];
-
       const filterText = document.getElementById('keyword-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-keywords').value;
 
       let keys = Object.keys(db.keywordHistory).filter(k => k.toLowerCase().includes(filterText));
-
       keys.sort((a, b) => {
-        const dataA = db.keywordHistory[a];
-        const dataB = db.keywordHistory[b];
         const countA = db.arrivals.filter(item => item.keyword === a).length;
         const countB = db.arrivals.filter(item => item.keyword === b).length;
-
-        if (sortType === 'recent_search') {
-          return new Date(dataB.lastSearch || 0) - new Date(dataA.lastSearch || 0);
-        } else if (sortType === 'recent_arrival') {
-          return new Date(dataB.lastArrival || 0) - new Date(dataA.lastArrival || 0);
-        } else if (sortType === 'count_desc') {
-          return countB - countA;
-        }
+        if (sortType === 'recent_search') return new Date(db.keywordHistory[b].lastSearch || 0) - new Date(db.keywordHistory[a].lastSearch || 0);
+        if (sortType === 'recent_arrival') return new Date(db.keywordHistory[b].lastArrival || 0) - new Date(db.keywordHistory[a].lastArrival || 0);
+        return countB - countA;
       });
 
       keys.forEach(k => {
         const count = db.arrivals.filter(item => item.keyword === k).length;
-        const div = document.createElement('div');
-        div.className = 'list-item';
+        const div = document.createElement('div'); div.className = 'list-item';
         div.innerHTML = `
           <div class="list-item-row">
-            <div class="list-item-left">
-              <span class="list-item-title">${k}</span>
-              <div class="list-item-sub">${t.arrivalCount(count)}</div>
-            </div>
-            <div class="item-right-actions">
-              <button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button>
-              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-            </div>
+            <div class="list-item-left"><span class="list-item-title">${k}</span><div class="list-item-sub">${t.arrivalCount(count)}</div></div>
+            <div class="item-right-actions"><button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button><div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div></div>
           </div>
         `;
-
         div.addEventListener('click', (e) => {
           if (e.target.classList.contains('btn-reset-search')) return;
           appState.selectedKeywordForHistory = k;
-          document.getElementById('history-header-title').textContent = `${k}`;
+          document.getElementById('history-header-title').textContent = k;
           document.getElementById('history-filter').value = '';
           document.getElementById('btn-history-filter-clear').classList.remove('show');
-          renderHistoryList();
-          pageHistory.classList.add('open');
+          renderHistoryList(); pageHistory.classList.add('open');
         });
-
         div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
-          e.stopPropagation();
-          document.getElementById('keyword-input').value = k;
+          e.stopPropagation(); document.getElementById('keyword-input').value = k;
           document.getElementById('btn-input-clear').classList.add('show');
-          pageKeywords.classList.remove('open');
-          startSearchFromSet();
+          pageKeywords.classList.remove('open'); startSearchFromSet();
         });
-
         container.appendChild(div);
       });
     }
 
     document.getElementById('btn-delete-zero-keywords').addEventListener('click', () => {
-      const db = loadSavedData();
-      const t = I18N[currentLang];
-      const zeroKeys = Object.keys(db.keywordHistory).filter(k => {
-        const count = db.arrivals.filter(item => item.keyword === k).length;
-        return count === 0;
-      });
-
-      if (zeroKeys.length === 0) {
-        alert(t.noZeroKeywords);
-        return;
-      }
-
+      const db = loadSavedData(); const t = I18N[currentLang];
+      const zeroKeys = Object.keys(db.keywordHistory).filter(k => db.arrivals.filter(item => item.keyword === k).length === 0);
+      if (zeroKeys.length === 0) { alert(t.noZeroKeywords); return; }
       if (confirm(t.confirmCleanZero(zeroKeys.length))) {
-        zeroKeys.forEach(k => {
-          delete db.keywordHistory[k];
-        });
-        saveAppData(db);
-        renderKeywordsList();
+        zeroKeys.forEach(k => delete db.keywordHistory[k]);
+        saveAppData(db); renderKeywordsList();
       }
     });
 
     document.getElementById('btn-data-transfer').addEventListener('click', () => {
       const db = loadSavedData();
-      const jsonStr = JSON.stringify(db);
-      const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
-
-      const choice = prompt(
-        "【データ引き継ぎ】\n" +
-        "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
-        "2: 引き継ぎコードを読み込む（データを復元する）\n" +
-        "半角数字「1」または「2」を入力してください:",
-        "1"
-      );
-
+      const base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
+      const choice = prompt("【データ引き継ぎ】\n1: コード発行\n2: コード読込\n半角で選択:", "1");
       if (choice === "1") {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(base64Code).then(() => {
-            alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、「データ引き継ぎ ➔ 2」で貼り付けてください。");
-          }).catch(() => {
-            prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
-          });
-        } else {
-          prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
-        }
+        if (navigator.clipboard) navigator.clipboard.writeText(base64Code).then(() => alert("コピーしました！")).catch(() => prompt("コピー:", base64Code));
+        else prompt("コピー:", base64Code);
       } else if (choice === "2") {
-        const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
+        const inputCode = prompt("コードを貼り付け:");
         if (inputCode && inputCode.trim()) {
           try {
-            const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
-            const restoredDb = JSON.parse(restoredJson);
-            if (restoredDb && restoredDb.arrivals) {
-              saveAppData(restoredDb);
-              renderKeywordsList();
-              alert("データの引き継ぎが完了しました！");
-            } else {
-              alert("無効な引き継ぎコードです。");
-            }
-          } catch (e) {
-            alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
-          }
+            const restored = JSON.parse(decodeURIComponent(escape(atob(inputCode.trim()))));
+            if (restored && restored.arrivals) { saveAppData(restored); renderKeywordsList(); alert("完了！"); }
+          } catch (e) { alert("エラー"); }
         }
       }
     });
 
     function renderHistoryList() {
       const db = loadSavedData();
-      const container = document.getElementById('history-list-container');
-      container.innerHTML = '';
+      const container = document.getElementById('history-list-container'); container.innerHTML = '';
       const t = I18N[currentLang];
-
       const filterText = document.getElementById('history-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-history').value;
 
-      let items = db.arrivals.filter(a => 
-        a.keyword === appState.selectedKeywordForHistory &&
-        a.name.toLowerCase().includes(filterText)
-      );
-
+      let items = db.arrivals.filter(a => a.keyword === appState.selectedKeywordForHistory && a.name.toLowerCase().includes(filterText));
       const basePos = appState.currentPos || lastKnownPos;
-      if (basePos) {
-        items.forEach(item => {
-          item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng);
-        });
-      }
+      items.forEach(item => { item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng); });
 
       items.sort((a, b) => {
-        if (sortType === 'near_asc') {
-          return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
-        } else if (sortType === 'date_desc') {
-          return new Date(b.date) - new Date(a.date);
-        } else if (sortType === 'date_asc') {
-          return new Date(a.date) - new Date(b.date);
-        } else if (sortType === 'name_asc') {
-          return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
-        }
+        if (sortType === 'near_asc') return a.calcDistance - b.calcDistance;
+        if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
+        if (sortType === 'date_asc') return new Date(a.date) - new Date(b.date);
+        return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
       });
 
       if (items.length === 0) {
-        container.innerHTML = `
-          <div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">
-            ${t.emptyHistory}
-          </div>
-        `;
+        container.innerHTML = `<div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">${t.emptyHistory}</div>`;
       } else {
         items.forEach(item => {
           const d = new Date(item.date);
           const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-          let distStr = "";
-          if (item.calcDistance !== undefined) {
-            distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
-          }
-
-          const div = document.createElement('div');
-          div.className = 'list-item';
+          const distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
+          const div = document.createElement('div'); div.className = 'list-item';
           div.innerHTML = `
-            <div class="list-item-left">
-              <span class="list-item-title">${item.name}</span>
-              <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
-            </div>
+            <div class="list-item-left"><span class="list-item-title">${item.name}</span><div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div></div>
             <div class="action-button-row">
               <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
-              <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">
-                ${item.muted ? t.radarOff : t.radarOn}
-              </button>
+              <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">${item.muted ? t.radarOff : t.radarOn}</button>
               <button class="btn-sheikah-sm btn-copy-sm">${t.copyBtn}</button>
             </div>
           `;
-
-          div.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            openSpotDetailModal(item);
-          });
-
-          div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
-            e.stopPropagation();
-            setPinpointTargetAndStart(item);
-          });
-
-          div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => {
-            e.stopPropagation();
-            item.muted = !item.muted;
-            saveAppData(db);
-            renderHistoryList();
-          });
-
-          div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            copyPlaceNameToClipboard(item.name);
-          });
-
+          div.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') return; openSpotDetailModal(item); });
+          div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => { e.stopPropagation(); setPinpointTargetAndStart(item); });
+          div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => { e.stopPropagation(); item.muted = !item.muted; saveAppData(db); renderHistoryList(); });
+          div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => { e.stopPropagation(); copyPlaceNameToClipboard(item.name); });
           container.appendChild(div);
         });
       }
@@ -2052,50 +1624,31 @@
 
     function copyPlaceNameToClipboard(text) {
       const t = I18N[currentLang];
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          showToast(t.toastCopied(text));
-        }).catch(() => prompt("Copy:", text));
-      } else {
-        prompt("Copy:", text);
-      }
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast(t.toastCopied(text))).catch(() => prompt("Copy:", text));
+      else prompt("Copy:", text);
     }
 
     function showToast(msg) {
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
+      toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
     function setPinpointTargetAndStart(item) {
       const t = I18N[currentLang];
-      appState.pinpointTarget = {
-        id: item.id,
-        name: item.name,
-        lat: item.lat,
-        lng: item.lng
-      };
+      appState.pinpointTarget = { id: item.id, name: item.name, lat: item.lat, lng: item.lng };
       appState.activeKeyword = item.name;
       document.getElementById('keyword-input').value = item.name;
       document.getElementById('btn-input-clear').classList.add('show');
       document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
-
-      pageSpotDetail.classList.remove('open');
-      pageHistory.classList.remove('open');
-      pageKeywords.classList.remove('open');
-
-      appState.isTracking = true;
-      appState.isPaused = false;
-      updateButtonStateUI();
-      evaluateSensorCycle();
+      pageSpotDetail.classList.remove('open'); pageHistory.classList.remove('open'); pageKeywords.classList.remove('open');
+      appState.isTracking = true; appState.isPaused = false; updateButtonStateUI(); evaluateSensorCycle();
     }
 
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
       const db = loadSavedData();
-
       document.getElementById('detail-spot-name').textContent = item.name;
       document.getElementById('detail-spot-address').textContent = t.loadingAddress;
       const photosBox = document.getElementById('detail-photos-container');
@@ -2106,127 +1659,64 @@
 
       const radarBtn = document.getElementById('detail-btn-toggle-radar');
       function updateDetailRadarBtn() {
-        if (item.muted) {
-          radarBtn.textContent = t.radarOff;
-          radarBtn.className = "btn-sheikah-sm off";
-        } else {
-          radarBtn.textContent = t.radarOn;
-          radarBtn.className = "btn-sheikah-sm active";
-        }
+        radarBtn.textContent = item.muted ? t.radarOff : t.radarOn;
+        radarBtn.className = `btn-sheikah-sm ${item.muted ? 'off' : 'active'}`;
       }
       updateDetailRadarBtn();
-
-      radarBtn.onclick = () => {
-        item.muted = !item.muted;
-        saveAppData(db);
-        updateDetailRadarBtn();
-      };
+      radarBtn.onclick = () => { item.muted = !item.muted; saveAppData(db); updateDetailRadarBtn(); };
 
       document.getElementById('detail-btn-delete-single').onclick = () => {
         if (confirm(t.confirmDeleteSingle(item.name))) {
           db.arrivals = db.arrivals.filter(a => a.id !== item.id);
-          saveAppData(db);
-          pageSpotDetail.classList.remove('open');
-          renderHistoryList();
+          saveAppData(db); pageSpotDetail.classList.remove('open'); renderHistoryList();
         }
       };
 
-      document.getElementById('detail-btn-maps-review').onclick = () => {
-        const reviewUrl = item.id 
-          ? `https://search.google.com/local/writereview?placeid=${item.id}`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-        window.open(reviewUrl, '_blank');
-      };
-
-      document.getElementById('detail-btn-maps-photo').onclick = () => {
-        const photoUploadUrl = item.id 
-          ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-        window.open(photoUploadUrl, '_blank');
-      };
+      document.getElementById('detail-btn-maps-review').onclick = () => window.open(item.id ? `https://search.google.com/local/writereview?placeid=${item.id}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
+      document.getElementById('detail-btn-maps-photo').onclick = () => window.open(item.id ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
 
       pageSpotDetail.classList.add('open');
 
-      const gallery = document.createElement('div');
-      gallery.className = 'photo-gallery-scroll';
-
-      const mapWrap = document.createElement('div');
-      mapWrap.className = 'gallery-minimap-wrap';
-      mapWrap.innerHTML = `
-        <div id="detail-minimap"></div>
-        <div class="minimap-badge">${t.minimapBadge}</div>
-      `;
+      const gallery = document.createElement('div'); gallery.className = 'photo-gallery-scroll';
+      const mapWrap = document.createElement('div'); mapWrap.className = 'gallery-minimap-wrap';
+      mapWrap.innerHTML = `<div id="detail-minimap"></div><div class="minimap-badge">${t.minimapBadge}</div>`;
       gallery.appendChild(mapWrap);
 
-      if (!placesService) {
-        initMap(item.lat, item.lng);
-      }
+      if (!placesService) initMap(item.lat, item.lng);
 
       if (placesService && item.id) {
-        placesService.getDetails({
-          placeId: item.id,
-          fields: ['name', 'formatted_address', 'photos']
-        }, (place, status) => {
+        placesService.getDetails({ placeId: item.id, fields: ['name', 'formatted_address', 'photos'] }, (place, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             document.getElementById('detail-spot-address').textContent = place.formatted_address || t.noAddress;
             if (place.photos && place.photos.length > 0) {
               place.photos.forEach(photo => {
-                const url = photo.getUrl({ maxWidth: 800, maxHeight: 600 });
-                const wrap = document.createElement('div');
-                wrap.className = 'gallery-img-wrap';
-                wrap.innerHTML = `<img src="${url}" alt="${item.name}" loading="lazy">`;
+                const wrap = document.createElement('div'); wrap.className = 'gallery-img-wrap';
+                wrap.innerHTML = `<img src="${photo.getUrl({ maxWidth: 800, maxHeight: 600 })}" alt="${item.name}" loading="lazy">`;
                 gallery.appendChild(wrap);
               });
             }
-          } else {
-            document.getElementById('detail-spot-address').textContent = t.noAddress;
-          }
-
-          photosBox.innerHTML = '';
-          photosBox.appendChild(gallery);
-
+          } else { document.getElementById('detail-spot-address').textContent = t.noAddress; }
+          photosBox.innerHTML = ''; photosBox.appendChild(gallery);
           setTimeout(() => {
             const isDay = (currentMapStyleMode === 'botw');
             detailMinimapInstance = new google.maps.Map(document.getElementById('detail-minimap'), {
-              center: { lat: item.lat, lng: item.lng },
-              zoom: 17,
-              disableDefaultUI: true,
-              styles: isDay ? mapStyleBotw : mapStyleSheikahDark,
-              gestureHandling: 'none',
-              draggable: false,
-              scrollwheel: false,
-              disableDoubleClickZoom: true
+              center: { lat: item.lat, lng: item.lng }, zoom: 17, disableDefaultUI: true,
+              styles: isDay ? mapStyleBotw : mapStyleSheikahDark, gestureHandling: 'none', draggable: false, scrollwheel: false
             });
-
-            new google.maps.Marker({
-              position: { lat: item.lat, lng: item.lng },
-              map: detailMinimapInstance,
-              title: item.name,
-              icon: getMarkerIcon(isDay)
-            });
+            new google.maps.Marker({ position: { lat: item.lat, lng: item.lng }, map: detailMinimapInstance, title: item.name, icon: getMarkerIcon(isDay) });
           }, 80);
         });
-      } else {
-        photosBox.innerHTML = '';
-        photosBox.appendChild(gallery);
-      }
+      } else { photosBox.innerHTML = ''; photosBox.appendChild(gallery); }
     }
 
     document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
-      const targetKey = appState.selectedKeywordForHistory;
-      if (!targetKey) return;
+      const targetKey = appState.selectedKeywordForHistory; if (!targetKey) return;
       const t = I18N[currentLang];
-
       if (confirm(t.confirmDeleteKeyword(targetKey))) {
         const db = loadSavedData();
-        if (db.keywordHistory[targetKey]) {
-          delete db.keywordHistory[targetKey];
-        }
+        delete db.keywordHistory[targetKey];
         db.arrivals = db.arrivals.filter(item => item.keyword !== targetKey);
-        saveAppData(db);
-
-        pageHistory.classList.remove('open');
-        renderKeywordsList();
+        saveAppData(db); pageHistory.classList.remove('open'); renderKeywordsList();
       }
     });
 
@@ -2236,25 +1726,21 @@
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
     // ===================================================
-    // 8. 起動時の初期化 ＆ 安全警告モーダル連動
+    // 8. 起動時処理 ＆ Service Worker 自動強制アップデート機構
     // ===================================================
     applyLanguage(currentLang);
 
     // ポケモンGO風警告の「OK」ボタンをタップした瞬間をトリガーにする
     document.getElementById('btn-warning-ok').addEventListener('click', () => {
-      const warningOverlay = document.getElementById('safety-warning-overlay');
-      warningOverlay.style.display = 'none';
+      document.getElementById('safety-warning-overlay').style.display = 'none';
 
-      // 各種許可と地図初期化を安全に発火
       initAudio();
       requestCompassPermissionIfNeeded();
       bootstrapMapAndLocation();
-
-      // ブラウザ起動時のPWA案内チェック
       checkReloadAndPWA();
     });
 
-    // 「ブラウザのままテスト起動」ボタンの修正（確実に両方消してメインへ進む）
+    // 「ブラウザのままテスト起動」ボタン
     document.getElementById('btn-pwa-skip').addEventListener('click', () => {
       const warningOverlay = document.getElementById('safety-warning-overlay');
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
@@ -2265,6 +1751,29 @@
       requestCompassPermissionIfNeeded();
       bootstrapMapAndLocation();
     });
+
+    // PWAキャッシュ自動強制アップデート登録（Service Worker）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        const swCode = `
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).then(reg => {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                window.location.reload();
+              }
+            });
+          });
+        }).catch(err => console.log('SW registration failed: ', err));
+      });
+    }
   </script>
 </body>
 </html>
