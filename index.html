@@ -87,7 +87,7 @@
       z-index: 25;
     }
 
-    /* 昼夜切り替えボタン（常に一定の古代ゴールド枠を維持） */
+    /* 昼夜切り替えボタン（常に一定の古代ゴールド枠・点灯なし） */
     .top-icon-btn {
       width: 40px;
       height: 40px;
@@ -245,24 +245,25 @@
       display: none !important;
     }
 
+    /* 【本家BotW完全準拠】急勾配＋底辺くぼみ矢尻ポインター */
     .player-pointer {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 22px;
-      height: 22px;
-      border-left: 11px solid transparent;
-      border-right: 11px solid transparent;
-      border-bottom: 22px solid var(--sheikah-cyan);
-      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+      width: 24px;
+      height: 28px;
       pointer-events: none;
       z-index: 5;
-      transition: border-bottom-color 0.3s ease, filter 0.3s ease;
     }
-    .day-mode .player-pointer {
-      border-bottom-color: var(--botw-yellow);
-      filter: drop-shadow(0 0 8px #000) drop-shadow(0 0 5px var(--botw-yellow));
+    .player-pointer svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 6px var(--sheikah-cyan));
+      transition: filter 0.3s;
+    }
+    .day-mode .player-pointer svg {
+      filter: drop-shadow(0 0 6px #000) drop-shadow(0 0 4px var(--botw-yellow));
     }
 
     .radar-pulse-ring {
@@ -836,7 +837,6 @@
       color: #fff;
     }
 
-    /* 右寄せ配置に統一されたアクション行 */
     .action-button-row {
       display: flex;
       gap: 8px;
@@ -969,7 +969,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示、発光なしのゴールド枠固定） -->
+    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示、発光なしゴールド枠） -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
@@ -995,7 +995,12 @@
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
         <div id="map-container">
           <div id="map"></div>
-          <div class="player-pointer"></div>
+          <!-- 【本家BotW完全再現】急勾配＋底辺くぼみ矢尻ポインター -->
+          <div class="player-pointer" id="player-pointer">
+            <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round" />
+            </svg>
+          </div>
           <div class="radar-pulse-ring" id="radar-pulse"></div>
         </div>
       </div>
@@ -1008,7 +1013,8 @@
     <div class="bottom-section" id="main-bottom-panel">
       <div class="input-row">
         <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="マクドナルド" placeholder="探す対象を入力...">
+          <!-- 起動時・リロード時は未セットでプレースホルダー表示 -->
+          <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
 
@@ -1030,10 +1036,11 @@
 
       <div class="status-panel">
         <div>
-          <div class="target-meta-info" id="target-meta-info">[対象: マクドナルド / 範囲: 3km]</div>
+          <!-- 未セット時は待機表示 -->
+          <div class="target-meta-info" id="target-meta-info">[対象: 未設定 / 範囲: 3km]</div>
           <div class="unknown-badge">
             <span id="label-unvisited" style="font-size: 0.8rem; color: #889;">未踏:</span>
-            <span class="unknown-count" id="unknown-count">0</span>
+            <span class="unknown-count" id="unknown-count">--</span>
             <span id="label-detecting" style="font-size: 0.85rem; color: #bbb;">件探知中</span>
           </div>
         </div>
@@ -1068,7 +1075,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.261910</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.261936</span></span>
       </div>
     </div>
 
@@ -1215,7 +1222,7 @@
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `マップに「${name}」が記録されました`,
         toastCopied: (name) => `「${name}」をコピーしました`,
-        targetMeta: (k, r) => `[対象: ${k} / 範囲: ${r}]`,
+        targetMeta: (k, r) => `[対象: ${k || '未設定'} / 範囲: ${r}]`,
         targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
         arrivalCount: (c) => `到達数: ${c} 箇所`,
         arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
@@ -1276,7 +1283,7 @@
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `Recorded "${name}" to slate map`,
         toastCopied: (name) => `Copied "${name}"`,
-        targetMeta: (k, r) => `[Target: ${k} / Range: ${r}]`,
+        targetMeta: (k, r) => `[Target: ${k || 'None'} / Range: ${r}]`,
         targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
         arrivalCount: (c) => `Discovered: ${c} spots`,
         arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
@@ -1408,22 +1415,29 @@
     function updateMapStyleUI() {
       const isDay = (currentMapStyleMode === 'botw');
       const container = document.getElementById('app-container');
+      const pointerPath = document.getElementById('pointer-path');
 
       if (isDay) {
         container.classList.add('day-mode');
-        // 次に遷移する夜モードのミニマップを描画
+        pointerPath.setAttribute('fill', '#ffee33');
+        pointerPath.setAttribute('stroke', '#221b0e');
+
+        // 次に遷移する夜モードのミニマップを描画（ポインターを小さく縮小配置）
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#081018" />
           <path d="M 0 20 Q 18 16 36 20 M 16 0 Q 18 18 20 36" stroke="#1b3248" stroke-width="4.5" fill="none" />
-          <polygon points="18,12 13,24 23,24" fill="#00f3ff" filter="drop-shadow(0 0 2px #00f3ff)" />
+          <path d="M18 13 L14 23 L18 20.5 L22 23 Z" fill="#00f3ff" stroke="#ffffff" stroke-width="0.8" />
         `;
       } else {
         container.classList.remove('day-mode');
-        // 次に遷移する昼モードのミニマップを描画
+        pointerPath.setAttribute('fill', '#00f3ff');
+        pointerPath.setAttribute('stroke', '#ffffff');
+
+        // 次に遷移する昼モードのミニマップを描画（ポインターを小さく縮小配置）
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#453820" />
           <path d="M 0 22 Q 16 17 36 21 M 17 0 Q 18 18 19 36" stroke="#e4d5a8" stroke-width="5" fill="none" />
-          <polygon points="18,12 13,24 23,24" fill="#ffee33" filter="drop-shadow(0 0 2px #000)" />
+          <path d="M18 13 L14 23 L18 20.5 L22 23 Z" fill="#ffee33" stroke="#221b0e" stroke-width="0.8" />
         `;
       }
 
@@ -1441,7 +1455,7 @@
     });
 
     // ===================================================
-    // 1. Web Audio API 音源（マナーモード突破対応）
+    // 1. Web Audio API 音源
     // ===================================================
     let audioCtx = null;
     let silentAudioElement = null;
@@ -1471,7 +1485,6 @@
       } catch (e) {}
     }
 
-    // 【新仕様】初回操作時にコンパス許可ダイアログを起動
     async function requestCompassPermissionIfNeeded() {
       if (compassActive) return;
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -1563,13 +1576,12 @@
     }
 
     // ===================================================
-    // 2. 状態管理
+    // 2. 状態管理（リロード時は未セットで待機）
     // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
     
     let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
     let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
-    let savedLastKeyword = localStorage.getItem('sheikah_last_keyword') || "マクドナルド";
 
     let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
     try {
@@ -1593,7 +1605,7 @@
       isWalking: false,
       lastWalkTimestamp: 0,
 
-      activeKeyword: savedLastKeyword,
+      activeKeyword: "", // 起動時は未セット状態
       selectedKeywordForHistory: null,
       selectedSpotForDetail: null,
       places: [],
@@ -1618,7 +1630,7 @@
     }
 
     // ===================================================
-    // 3. Google Maps（起動時自動初期化対応）
+    // 3. Google Maps（起動時自動初期化）
     // ===================================================
     let map = null;
 
@@ -1654,7 +1666,7 @@
             if (map) map.setCenter(p);
           },
           (err) => {
-            console.warn("初期位置測位エラー:", err.message);
+            console.warn("初期位置測位:", err.message);
           },
           { enableHighAccuracy: true, timeout: 8000 }
         );
@@ -2015,7 +2027,7 @@
     }
 
     function executeSearch() {
-      if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget) return;
+      if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
       isSearchInProgress = true;
       appState.lastSearchedPos = { ...appState.currentPos };
       const currentRadius = RADIUS_OPTIONS[radiusIndex];
@@ -2071,7 +2083,6 @@
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
     }
 
-    document.getElementById('keyword-input').value = appState.activeKeyword;
     document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     document.getElementById('radius-select').value = radiusIndex.toString();
 
@@ -2220,13 +2231,15 @@
       if (appState.wakeLockActive) requestWakeLock();
 
       const inputVal = document.getElementById('keyword-input').value.trim();
-      appState.activeKeyword = inputVal || "マクドナルド";
+      if (!inputVal) {
+        alert("キーワードを入力してください");
+        return;
+      }
+
+      appState.activeKeyword = inputVal;
       appState.pinpointTarget = null;
       appState.isTracking = true;
       appState.isPaused = false;
-
-      localStorage.setItem('sheikah_last_keyword', appState.activeKeyword);
-      localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
 
       const db = loadSavedData();
       const now = new Date().toISOString();
@@ -2609,10 +2622,10 @@
         window.open(reviewUrl, '_blank');
       };
 
-      // 【新仕様】写真追加画面へ直接ダイレクトジャンプするリンク
+      // 【新仕様】写真追加画面へダイレクトジャンプするディープリンク
       document.getElementById('detail-btn-maps-photo').onclick = () => {
         const photoUploadUrl = item.id 
-          ? `https://search.google.com/local/writereview?placeid=${item.id}&action=media`
+          ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
           : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
         window.open(photoUploadUrl, '_blank');
       };
