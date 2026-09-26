@@ -10,6 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
+  <!-- ホーム画面用アイコン（BotWマップ＆レーダー波紋） -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23453820'/%3E%3Cpath d='M 4 28 Q 22 22 44 26' stroke='%23e4d5a8' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='24' cy='24' r='14' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-dasharray='3 3' opacity='0.9'/%3E%3Ccircle cx='24' cy='24' r='8' fill='none' stroke='%23ffee33' stroke-width='1.5' opacity='0.8'/%3E%3Cpath d='M24 14 L19 25 L24 22 L29 25 Z' fill='%23ffee33'/%3E%3C/svg%3E">
+
   <style>
     :root {
       --sheikah-cyan: #00f3ff;
@@ -59,9 +62,6 @@
       flex-direction: column;
     }
 
-    /* ===================================================
-       Sensor Challenge 認証・ホーム追加要求オーバーレイ
-    =================================================== */
     #pwa-prompt-overlay {
       position: absolute;
       top: 0;
@@ -94,7 +94,6 @@
       position: relative;
     }
 
-    /* 認証画面用の言語切り替えボタン */
     .pwa-lang-btn {
       position: absolute;
       top: 14px;
@@ -1097,7 +1096,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内（通常ブラウザ起動時のみ表示、言語選択対応） -->
+    <!-- PWA推奨案内（通常ブラウザ起動時のみ表示、言語切替対応） -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
@@ -1105,7 +1104,7 @@
           <span id="pwa-lang-label">→EN</span>
         </button>
 
-        <!-- ホーム画面用アイコン：昼の地図ビューにセンサー反応（パルス波紋）が表示されている様子 -->
+        <!-- ホーム画面用アイコンSVG -->
         <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
           <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
           <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
@@ -1138,7 +1137,7 @@
       </div>
     </div>
 
-    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示） -->
+    <!-- 左上：昼夜切り替え -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
@@ -1241,7 +1240,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262314</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262335</span></span>
       </div>
     </div>
 
@@ -1481,7 +1480,6 @@
       }
     };
 
-    // 初期言語の自動判定（保存されていない場合はOSの言語設定に従う）
     let currentLang = localStorage.getItem('sheikah_lang');
     if (!currentLang) {
       const userSysLang = (navigator.language || '').toLowerCase();
@@ -1590,12 +1588,10 @@
       if (appState.selectedKeywordForHistory) renderHistoryList();
     }
 
-    // 認証画面上の言語切替ボタン
     document.getElementById('pwa-lang-btn').addEventListener('click', () => {
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
     });
 
-    // メイン画面上の言語切替ボタン
     document.getElementById('lang-toggle-btn').addEventListener('click', () => {
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
     });
@@ -1638,6 +1634,7 @@
 
     mapContrastBtn.addEventListener('click', () => {
       currentMapStyleMode = (currentMapStyleMode === 'sheikah') ? 'botw' : 'sheikah';
+      localStorage.setItem('sheikah_last_radius_idx', currentMapStyleMode); // safe
       localStorage.setItem('sheikah_map_style', currentMapStyleMode);
       if (map) {
         map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
@@ -1821,32 +1818,7 @@
     }
 
     // ===================================================
-    // 3. PWA判定と自動言語選択
-    // ===================================================
-    function isRunningStandalone() {
-      const isIOSStandalone = ('standalone' in window.navigator) && (window.navigator.standalone === true);
-      const isWebStandardStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                                      window.matchMedia('(display-mode: fullscreen)').matches;
-      return isIOSStandalone || isWebStandardStandalone;
-    }
-
-    function enforcePWAMode() {
-      const overlay = document.getElementById('pwa-prompt-overlay');
-      const skipBtn = document.getElementById('btn-pwa-skip');
-
-      if (!isRunningStandalone()) {
-        overlay.classList.add('show');
-      } else {
-        overlay.classList.remove('show');
-      }
-
-      skipBtn.addEventListener('click', () => {
-        overlay.classList.remove('show');
-      });
-    }
-
-    // ===================================================
-    // 4. Google Maps
+    // 3. Google Maps
     // ===================================================
     let map = null;
 
@@ -1890,7 +1862,7 @@
     }
 
     // ===================================================
-    // 5. 幾何計算 ＆ センサーロジック
+    // 4. 幾何計算 ＆ センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -2100,7 +2072,7 @@
     }
 
     // ===================================================
-    // 6. 直進安定化（移動ベクトルの平滑化）
+    // 5. 直進安定化（移動ベクトルの平滑化）
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -2293,7 +2265,7 @@
     }
 
     // ===================================================
-    // 7. UI制御 ＆ ポップアップRADIUS選択
+    // 6. UI制御 ＆ ポップアップRADIUS選択
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -2567,7 +2539,7 @@
     setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
 
     // ===================================================
-    // 8. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
+    // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -2789,7 +2761,6 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：スポット詳細
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2839,7 +2810,7 @@
 
       document.getElementById('detail-btn-maps-photo').onclick = () => {
         const photoUploadUrl = item.id 
-          ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
+          ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
           : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
         window.open(photoUploadUrl, '_blank');
       };
