@@ -10,8 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <!-- ホーム画面用アイコン（iOS対応最適化） -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23453820'/%3E%3Cpath d='M 20 105 Q 90 85 160 98' stroke='%23e4d5a8' stroke-width='14' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='90' cy='90' r='55' fill='none' stroke='%2300f3ff' stroke-width='6' stroke-dasharray='10 8' opacity='0.95'/%3E%3Ccircle cx='90' cy='90' r='30' fill='none' stroke='%23ffee33' stroke-width='4' opacity='0.9'/%3E%3Cpolygon points='90,45 70,95 90,82 110,95' fill='%23ffee33'/%3E%3C/svg%3E">
+  <!-- 【GitHub配置対応】ご提示いただいた画像をホーム画面アイコンとして指定 -->
+  <!-- ※ "your-username" と "your-repo" をご自身のGitHubアカウント名・リポジトリ名に書き換えてください -->
+  <link rel="apple-touch-icon" href="https://okazakt.github.io/sensor/icon.png">
 
   <style>
     :root {
@@ -855,21 +856,6 @@
       color: #fff;
     }
 
-    .btn-data-transfer {
-      background: rgba(0, 243, 255, 0.1);
-      border: 1px solid var(--sheikah-cyan);
-      color: var(--sheikah-cyan);
-      font-size: 0.78rem;
-      padding: 6px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-data-transfer:active {
-      background: rgba(0, 243, 255, 0.15);
-      color: #000;
-    }
-
     .list-scroll {
       flex: 1;
       overflow-y: auto;
@@ -1111,7 +1097,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内オーバーレイ（Sensor Challenge） -->
+    <!-- PWA推奨案内オーバーレイ -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
