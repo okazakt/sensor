@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>SHEIKAH SLATE SENSOR</title>
+  
+  <!-- PWA（スタンドアロン・ホーム画面追加）設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="シーカーストーン">
+  <meta name="mobile-web-app-capable" content="yes">
+  
   <style>
     :root {
       --sheikah-cyan: #00f3ff;
@@ -54,6 +61,110 @@
       flex-direction: column;
     }
 
+    /* ===================================================
+       【PWA誘導】シーカー石板 認証・ホーム追加要求オーバーレイ
+    =================================================== */
+    #pwa-prompt-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 10, 13, 0.96);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 24px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    #pwa-prompt-overlay.show {
+      display: flex;
+    }
+
+    .pwa-relic-box {
+      width: 100%;
+      max-width: 380px;
+      background: var(--sheikah-panel);
+      border: 2px solid var(--sheikah-gold);
+      border-radius: 12px;
+      padding: 24px 20px;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 15px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .pwa-sheikah-eye {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px auto;
+      fill: var(--sheikah-cyan);
+      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+    }
+
+    .pwa-title {
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: var(--sheikah-gold);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .pwa-desc {
+      font-size: 0.85rem;
+      color: #b0c4de;
+      line-height: 1.55;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .pwa-step-card {
+      background: rgba(3, 8, 14, 0.85);
+      border: 1px solid var(--sheikah-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .pwa-step-item {
+      font-size: 0.82rem;
+      color: #e0f8ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pwa-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .btn-dev-skip {
+      background: transparent;
+      border: none;
+      color: #667788;
+      font-size: 0.72rem;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
     #arrival-flash-overlay {
       position: absolute;
       top: 0;
@@ -87,7 +198,6 @@
       z-index: 25;
     }
 
-    /* 昼夜切り替えボタン（常に一定の古代ゴールド枠） */
     .top-icon-btn {
       width: 40px;
       height: 40px;
@@ -245,7 +355,6 @@
       display: none !important;
     }
 
-    /* 【影を復活】枠線なし＋自然なドロップシャドウを効かせた矢尻ポインター */
     .player-pointer {
       position: absolute;
       top: 50%;
@@ -260,11 +369,9 @@
       width: 100%;
       height: 100%;
       display: block;
-      /* 夜モード：シアンの発光グロー */
       filter: drop-shadow(0 0 10px var(--sheikah-cyan));
       transition: filter 0.3s ease;
     }
-    /* 昼モード：道路・大地に立体的に落ちる自然な黒系ドロップシャドウ */
     .day-mode .player-pointer svg {
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
     }
@@ -716,13 +823,14 @@
       background: rgba(0,0,0,0.4);
       display: flex;
       justify-content: flex-end;
+      align-items: center;
     }
     .btn-clean-zero {
       background: rgba(255, 77, 77, 0.12);
       border: 1px solid var(--sheikah-danger);
       color: var(--sheikah-danger);
-      font-size: 0.8rem;
-      padding: 6px 12px;
+      font-size: 0.78rem;
+      padding: 6px 10px;
       border-radius: 4px;
       cursor: pointer;
     }
@@ -972,7 +1080,38 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 左上：昼夜切り替え（良好なミニマップ状態を維持） -->
+    <!-- PWA推奨案内（通常ブラウザ起動時のみ全画面表示） -->
+    <div id="pwa-prompt-overlay">
+      <div class="pwa-relic-box">
+        <svg class="pwa-sheikah-eye" viewBox="0 0 24 24">
+          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+          <circle cx="12" cy="12" r="1.5"/>
+        </svg>
+        <div class="pwa-title" id="pwa-prompt-title">シーカー石板の認証</div>
+        <div class="pwa-desc" id="pwa-prompt-desc">
+          本端末のセンサーおよび探知記録の完全同期には、ホーム画面への追加（全画面アプリ起動）が必要です。
+        </div>
+
+        <div class="pwa-step-card">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span>
+          </div>
+        </div>
+
+        <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
+      </div>
+    </div>
+
+    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示） -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
@@ -998,7 +1137,7 @@
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
         <div id="map-container">
           <div id="map"></div>
-          <!-- 【影を復活】メイン地図用の急勾配＋底辺くぼみ矢尻ポインター -->
+          <!-- 影あり（昼はソフト黒影、夜はシアン発光）の矢尻ポインター -->
           <div class="player-pointer" id="player-pointer">
             <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" />
@@ -1076,7 +1215,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262230</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262300</span></span>
       </div>
     </div>
 
@@ -1236,6 +1375,12 @@
         noAddress: "住所情報なし",
         noPhotosText: "Googleマップに登録された写真がありません。",
         minimapBadge: "位置マップ",
+        pwaTitle: "シーカー石板の認証",
+        pwaDesc: "本端末のセンサーおよび探知記録の完全同期には、ホーム画面への追加（全画面アプリ起動）が必要です。",
+        pwaStep1: "ブラウザ下部の「共有（四角と矢印）」をタップ",
+        pwaStep2: "メニューから「ホーム画面に追加」を選択",
+        pwaStep3: "ホーム画面に生成されたアイコンから起動",
+        pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
@@ -1297,6 +1442,12 @@
         noAddress: "No address available",
         noPhotosText: "No photos found on Google Maps.",
         minimapBadge: "Location Map",
+        pwaTitle: "Sheikah Slate Verification",
+        pwaDesc: "To ensure persistent exploration atlas data and full sensor access, add this app to your Home Screen.",
+        pwaStep1: "Tap 'Share' icon in the browser toolbar",
+        pwaStep2: "Select 'Add to Home Screen'",
+        pwaStep3: "Open from your Home Screen icon",
+        pwaSkip: "Continue in browser for testing (Data will be temporary)",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
@@ -1399,6 +1550,13 @@
       document.getElementById('toast-title').textContent = t.discoveryCompleted;
       document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
 
+      document.getElementById('pwa-prompt-title').textContent = t.pwaTitle;
+      document.getElementById('pwa-prompt-desc').textContent = t.pwaDesc;
+      document.getElementById('pwa-step-1').textContent = t.pwaStep1;
+      document.getElementById('pwa-step-2').textContent = t.pwaStep2;
+      document.getElementById('pwa-step-3').textContent = t.pwaStep3;
+      document.getElementById('btn-pwa-skip').textContent = t.pwaSkip;
+
       updateButtonStateUI();
       renderKeywordsList();
       if (appState.selectedKeywordForHistory) renderHistoryList();
@@ -1420,10 +1578,8 @@
 
       if (isDay) {
         container.classList.add('day-mode');
-        // 昼モード：ソリッドなレモンイエロー
         pointerPath.setAttribute('fill', '#ffee33');
 
-        // 次に遷移する夜モードのミニマップを描画
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#081018" />
           <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d" />
@@ -1432,10 +1588,8 @@
         `;
       } else {
         container.classList.remove('day-mode');
-        // 夜モード：ソリッドなシアンブルー
         pointerPath.setAttribute('fill', '#00f3ff');
 
-        // 次に遷移する昼モードのミニマップを描画
         svgMapContrast.innerHTML = `
           <circle cx="18" cy="18" r="18" fill="#453820" />
           <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c" />
@@ -1633,7 +1787,34 @@
     }
 
     // ===================================================
-    // 3. Google Maps
+    // 3. PWA（スタンドアロン起動）の厳格判定
+    // ===================================================
+    function isRunningStandalone() {
+      const isIOSStandalone = ('standalone' in window.navigator) && (window.navigator.standalone === true);
+      const isWebStandardStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                      window.matchMedia('(display-mode: fullscreen)').matches;
+      return isIOSStandalone || isWebStandardStandalone;
+    }
+
+    function enforcePWAMode() {
+      const overlay = document.getElementById('pwa-prompt-overlay');
+      const skipBtn = document.getElementById('btn-pwa-skip');
+
+      if (!isRunningStandalone()) {
+        // 通常ブラウザから開かれた場合は全画面案内オーバーレイを表示
+        overlay.classList.add('show');
+      } else {
+        overlay.classList.remove('show');
+      }
+
+      // デバッグ・テスト用スキップ
+      skipBtn.addEventListener('click', () => {
+        overlay.classList.remove('show');
+      });
+    }
+
+    // ===================================================
+    // 4. Google Maps
     // ===================================================
     let map = null;
 
@@ -1677,7 +1858,7 @@
     }
 
     // ===================================================
-    // 4. 幾何計算 ＆ センサーロジック
+    // 5. 幾何計算 ＆ センサーロジック
     // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -1887,7 +2068,7 @@
     }
 
     // ===================================================
-    // 5. 直進安定化（移動ベクトルの平滑化）
+    // 6. 直進安定化（移動ベクトルの平滑化）
     // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
@@ -2080,7 +2261,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ ポップアップRADIUS選択
+    // 7. UI制御 ＆ ポップアップRADIUS選択
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -2354,7 +2535,7 @@
     setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
 
     // ===================================================
-    // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
+    // 8. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
     // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
@@ -2576,7 +2757,7 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル＆Googleマップ直接投稿連携）
+    // 第4画面：スポット詳細
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
@@ -2728,6 +2909,7 @@
     // ===================================================
     applyLanguage(currentLang);
     window.addEventListener('load', () => {
+      enforcePWAMode();
       bootstrapMapAndLocation();
     });
   </script>
