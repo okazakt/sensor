@@ -87,28 +87,27 @@
       z-index: 25;
     }
 
+    /* 【新機能】ミニマップ・プレビューアイコンボタン */
     .top-icon-btn {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       background: rgba(3, 8, 14, 0.85);
-      border: 1.5px solid var(--sheikah-gold);
-      color: var(--sheikah-gold);
+      border: 2px solid var(--sheikah-gold);
       border-radius: 50%;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.9);
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      overflow: hidden;
+      padding: 0;
     }
     .top-icon-btn:active {
-      background: var(--sheikah-gold);
-      color: #000;
+      transform: scale(0.92);
     }
     .top-icon-btn.active {
       border-color: var(--botw-yellow);
-      color: var(--botw-yellow);
-      background: rgba(255, 238, 51, 0.15);
       box-shadow: 0 0 12px var(--botw-yellow-glow);
     }
 
@@ -198,7 +197,7 @@
       border: 2px solid #fff;
     }
 
-    /* 昼モード（BotW風アースマップ）発光スタイル（イエロー調） */
+    /* 昼モード発光スタイル（イエロー調） */
     .day-mode .circle-map-wrapper.signal-level1 {
       box-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
     }
@@ -250,7 +249,6 @@
       display: none !important;
     }
 
-    /* 本人位置ポインター（夜：水色、昼：添付画像再現の黄色三角） */
     .player-pointer {
       position: absolute;
       top: 50%;
@@ -271,7 +269,6 @@
       filter: drop-shadow(0 0 8px #000) drop-shadow(0 0 5px var(--botw-yellow));
     }
 
-    /* レーダー波紋リング（夜：水色、昼：黄色調） */
     .radar-pulse-ring {
       position: absolute;
       top: 50%;
@@ -972,10 +969,10 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 左上：マップスタイル切り替え（通常シーカー ⇄ 本家BotW風アースマップ） -->
+    <!-- 左上：昼夜切り替え（次に遷移するミニマップをプレビュー表示） -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
-        <svg class="svg-icon" id="svg-map-contrast" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
+        <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
       </button>
     </div>
 
@@ -1071,7 +1068,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.261840</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.261856</span></span>
       </div>
     </div>
 
@@ -1332,12 +1329,10 @@
     ];
 
     let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'sheikah';
-    let markersList = []; // マップ上のマーカー管理リスト
+    let markersList = [];
 
-    // 昼/夜モードに応じたマーカーアイコンを生成
     function getMarkerIcon(isDayMode) {
       if (isDayMode) {
-        // 【本家再現】2重同心円ゴールドマーカー（添付画像下部黄色丸）
         return {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
@@ -1350,7 +1345,6 @@
           anchor: new google.maps.Point(14, 14)
         };
       } else {
-        // 夜モード：シアン＆白マーカー
         return {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 8,
@@ -1408,21 +1402,31 @@
     const mapContrastBtn = document.getElementById('map-style-toggle-btn');
     const svgMapContrast = document.getElementById('svg-map-contrast');
 
+    // 【新仕様】次に遷移する側のミニマップをプレビュー描画
     function updateMapStyleUI() {
       const isDay = (currentMapStyleMode === 'botw');
       const container = document.getElementById('app-container');
 
       if (isDay) {
+        // 現在「昼モード」➔ ボタンには「夜モードのミニマップ」を表示
         container.classList.add('day-mode');
         mapContrastBtn.classList.add('active');
-        svgMapContrast.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>';
+        svgMapContrast.innerHTML = `
+          <circle cx="18" cy="18" r="18" fill="#081018" />
+          <path d="M 0 20 Q 18 16 36 20 M 16 0 Q 18 18 20 36" stroke="#1b3248" stroke-width="4.5" fill="none" />
+          <polygon points="18,12 13,24 23,24" fill="#00f3ff" filter="drop-shadow(0 0 2px #00f3ff)" />
+        `;
       } else {
+        // 現在「夜モード」➔ ボタンには「昼モードのミニマップ」を表示
         container.classList.remove('day-mode');
         mapContrastBtn.classList.remove('active');
-        svgMapContrast.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
+        svgMapContrast.innerHTML = `
+          <circle cx="18" cy="18" r="18" fill="#453820" />
+          <path d="M 0 22 Q 16 17 36 21 M 17 0 Q 18 18 19 36" stroke="#e4d5a8" stroke-width="5" fill="none" />
+          <polygon points="18,12 13,24 23,24" fill="#ffee33" filter="drop-shadow(0 0 2px #000)" />
+        `;
       }
 
-      // マーカーのアイコンも昼夜モードに合わせて切り替え
       const icon = getMarkerIcon(isDay);
       markersList.forEach(m => m.setIcon(icon));
     }
@@ -1437,11 +1441,24 @@
     });
 
     // ===================================================
-    // 1. Web Audio API 音源
+    // 1. Web Audio API 音源（マナーモード突破対応）
     // ===================================================
     let audioCtx = null;
+    let silentAudioElement = null; // iOSマナーモード突破用ダミーストリーム
 
     function initAudio() {
+      // 1. iOSの消音スイッチをバイパスするHTML5 Audioハック
+      if (!silentAudioElement) {
+        silentAudioElement = new Audio();
+        // わずか0.1秒の極小無音wavデータ
+        silentAudioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        silentAudioElement.loop = true;
+      }
+      try {
+        silentAudioElement.play().catch(() => {});
+      } catch (e) {}
+
+      // 2. Web Audio APIの復帰
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -1473,7 +1490,7 @@
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
 
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
         osc.connect(gain);
@@ -1511,7 +1528,7 @@
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
           const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
-          gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
 
           osc.connect(gain);
@@ -2399,7 +2416,6 @@
       }
     });
 
-    // 到達履歴画面
     function renderHistoryList() {
       const db = loadSavedData();
       const container = document.getElementById('history-list-container');
@@ -2533,7 +2549,6 @@
       evaluateSensorCycle();
     }
 
-    // 第4画面：スポット詳細（ミニマップ＆写真カルーセル＆Googleマップ直接投稿連携）
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
