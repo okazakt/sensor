@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <!-- ホーム画面用アイコン（BotWマップ＆レーダー波紋） -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23453820'/%3E%3Cpath d='M 4 28 Q 22 22 44 26' stroke='%23e4d5a8' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='24' cy='24' r='14' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-dasharray='3 3' opacity='0.9'/%3E%3Ccircle cx='24' cy='24' r='8' fill='none' stroke='%23ffee33' stroke-width='1.5' opacity='0.8'/%3E%3Cpath d='M24 14 L19 25 L24 22 L29 25 Z' fill='%23ffee33'/%3E%3C/svg%3E">
+  <!-- ホーム画面用アイコン（確実なSVG表示対応） -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23453820'/%3E%3Cpath d='M 4 28 Q 22 22 44 26' stroke='%23e4d5a8' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='24' cy='24' r='14' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-dasharray='3 3' opacity='0.9'/%3E%3Ccircle cx='24' cy='24' r='8' fill='none' stroke='%23ffee33' stroke-width='1.5' opacity='0.8'/%3E%3Cpath d='M24 14 L19 25 L24 22 L29 25 Z' fill='%23ffee33'/%3E%3C/svg%3E">
 
   <style>
     :root {
@@ -838,7 +838,7 @@
       padding: 6px 16px 10px 16px;
       background: rgba(0,0,0,0.4);
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
     }
     .btn-clean-zero {
@@ -853,6 +853,21 @@
     .btn-clean-zero:active {
       background: var(--sheikah-danger);
       color: #fff;
+    }
+
+    .btn-data-transfer {
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-data-transfer:active {
+      background: var(--sheikah-cyan);
+      color: #000;
     }
 
     .list-scroll {
@@ -1096,7 +1111,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内（通常ブラウザ起動時のみ表示、言語切替対応） -->
+    <!-- PWA推奨案内オーバーレイ -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
@@ -1104,7 +1119,6 @@
           <span id="pwa-lang-label">→EN</span>
         </button>
 
-        <!-- ホーム画面用アイコンSVG -->
         <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
           <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
           <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
@@ -1240,7 +1254,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262335</span></span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262345</span></span>
       </div>
     </div>
 
@@ -1264,8 +1278,10 @@
           <option value="count_desc" id="opt-sort-count">到達件数降順</option>
         </select>
       </div>
+      <!-- サブバー：一括削除 ＆ データ引き継ぎボタン -->
       <div class="action-sub-bar">
         <button class="btn-clean-zero" id="btn-delete-zero-keywords">到達0件の履歴を一括削除</button>
+        <button class="btn-data-transfer" id="btn-data-transfer">データ引き継ぎ</button>
       </div>
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
@@ -1371,6 +1387,7 @@
         sortCount: "到達件数降順",
         cleanZeroBtn: "到達0件の履歴を一括削除",
         deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
+        dataTransferBtn: "データ引き継ぎ",
         backToKeywords: "◀ 履歴一覧",
         backToHistory: "◀ 到達リスト",
         spotDetailTitle: "スポット詳細",
@@ -1438,6 +1455,7 @@
         sortCount: "By Discovery Count",
         cleanZeroBtn: "Delete Zero-Hit Records",
         deleteCurrentKeyBtn: "Delete This Keyword's History",
+        dataTransferBtn: "Data Transfer",
         backToKeywords: "◀ Keywords",
         backToHistory: "◀ Places",
         spotDetailTitle: "Place Details",
@@ -1560,6 +1578,7 @@
       document.getElementById('opt-sort-count').textContent = t.sortCount;
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
       document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
+      document.getElementById('btn-data-transfer').textContent = t.dataTransferBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
       document.getElementById('back-to-history-list').textContent = t.backToHistory;
       document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
@@ -1634,7 +1653,6 @@
 
     mapContrastBtn.addEventListener('click', () => {
       currentMapStyleMode = (currentMapStyleMode === 'sheikah') ? 'botw' : 'sheikah';
-      localStorage.setItem('sheikah_last_radius_idx', currentMapStyleMode); // safe
       localStorage.setItem('sheikah_map_style', currentMapStyleMode);
       if (map) {
         map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
@@ -2625,6 +2643,50 @@
         });
         saveAppData(db);
         renderKeywordsList();
+      }
+    });
+
+    // データ引き継ぎボタン（PWA移行対応）
+    document.getElementById('btn-data-transfer').addEventListener('click', () => {
+      const db = loadSavedData();
+      const jsonStr = JSON.stringify(db);
+      const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
+
+      const choice = prompt(
+        "【データ引き継ぎ】\n" +
+        "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
+        "2: 引き継ぎコードを読み込む（データを復元する）\n" +
+        "半角数字「1」または「2」を入力してください:",
+        "1"
+      );
+
+      if (choice === "1") {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(base64Code).then(() => {
+            alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、「データ引き継ぎ ➔ 2」で貼り付けてください。");
+          }).catch(() => {
+            prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+          });
+        } else {
+          prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+        }
+      } else if (choice === "2") {
+        const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
+        if (inputCode && inputCode.trim()) {
+          try {
+            const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
+            const restoredDb = JSON.parse(restoredJson);
+            if (restoredDb && restoredDb.arrivals) {
+              saveAppData(restoredDb);
+              renderKeywordsList();
+              alert("データの引き継ぎが完了しました！");
+            } else {
+              alert("無効な引き継ぎコードです。");
+            }
+          } catch (e) {
+            alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
+          }
+        }
       }
     });
 
