@@ -10,7 +10,33 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/your-username/your-repo/main/icon.png">
+  <!-- 【標準設定】GitHub上の実体PNGアイコンを指定 -->
+  <link rel="apple-touch-icon" sizes="180x180" href="https://okazakt.github.io/sensor/icon.png">
+  <link rel="shortcut icon" href="https://okazakt.github.io/sensor/icon.png">
+
+  <!-- Android / 標準PWAマニフェストのインライン定義 -->
+  <script>
+    const manifestData = {
+      "name": "Sensor Challenge",
+      "short_name": "SensorChallenge",
+      "start_url": "/sensor/",
+      "display": "standalone",
+      "background_color": "#080a0d",
+      "theme_color": "#111417",
+      "icons": [{
+        "src": "https://okazakt.github.io/sensor/icon.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }]
+    };
+    const stringManifest = JSON.stringify(manifestData);
+    const blob = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    const manifestTag = document.createElement('link');
+    manifestTag.rel = 'manifest';
+    manifestTag.href = manifestURL;
+    document.head.appendChild(manifestTag);
+  </script>
 
   <style>
     :root {
@@ -400,36 +426,26 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- 1. ポケモンGO風 安全警告モーダル -->
     <div id="safety-warning-overlay">
       <div class="warning-box">
         <button class="pwa-lang-btn" id="safety-lang-btn" style="top:12px; right:12px;">
           <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
           <span id="safety-lang-label">→EN</span>
         </button>
-
-        <svg class="warning-icon" viewBox="0 0 24 24">
-          <path d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"/>
-        </svg>
-
+        <svg class="warning-icon" viewBox="0 0 24 24"><path d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"/></svg>
         <div class="warning-title" id="warning-title">安全にお楽しみいただくために</div>
-        <div class="warning-text" id="warning-text">
-          「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。
-        </div>
-
+        <div class="warning-text" id="warning-text">「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。</div>
         <button class="btn-warning-ok" id="btn-warning-ok">OK / 同意して始める</button>
-        <div class="warning-version">v0.26.092.0912</div>
+        <div class="warning-version">v0.26.092.1105</div>
       </div>
     </div>
 
-    <!-- 2. PWA推奨案内オーバーレイ（ブラウザ起動時） -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
           <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
           <span id="pwa-lang-label">→EN</span>
         </button>
-
         <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
           <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
           <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
@@ -437,39 +453,23 @@
           <circle cx="24" cy="24" r="8" fill="none" stroke="#ffee33" stroke-width="1.5" opacity="0.8"/>
           <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ffee33"/>
         </svg>
-
         <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>
-        <div class="pwa-desc" id="pwa-prompt-desc">
-          「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。
-        </div>
-
+        <div class="pwa-desc" id="pwa-prompt-desc">「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。</div>
         <div class="pwa-step-card">
-          <div class="pwa-step-item">
-            <div class="pwa-step-num">1</div>
-            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>
-          </div>
-          <div class="pwa-step-item">
-            <div class="pwa-step-num">2</div>
-            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>
-          </div>
-          <div class="pwa-step-item">
-            <div class="pwa-step-num">3</div>
-            <span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span>
-          </div>
+          <div class="pwa-step-item"><div class="pwa-step-num">1</div><span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span></div>
+          <div class="pwa-step-item"><div class="pwa-step-num">2</div><span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span></div>
+          <div class="pwa-step-item"><div class="pwa-step-num">3</div><span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span></div>
         </div>
-
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
       </div>
     </div>
 
-    <!-- 左上：昼夜切り替え -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
       </button>
     </div>
 
-    <!-- 右上：言語切り替えトグル -->
     <div class="top-right-ctrl">
       <button class="lang-toggle-btn" id="lang-toggle-btn">
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
@@ -482,7 +482,6 @@
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 5px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 上部：正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
@@ -498,17 +497,14 @@
       </div>
     </div>
 
-    <!-- 立体ゴールドモールドライン -->
     <div class="sheikah-divider-bar"></div>
 
-    <!-- 下部：操作パネル -->
     <div class="bottom-section" id="main-bottom-panel">
       <div class="input-row">
         <div class="keyword-input-wrap">
           <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
-
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
           <div class="dial-value" id="radius-val">3km</div>
@@ -521,7 +517,6 @@
             <option value="5">100km</option>
           </select>
         </div>
-
         <button class="btn-set" id="set-btn">SET</button>
       </div>
 
@@ -536,9 +531,7 @@
         </div>
         <div class="search-status-badge">
           <div class="status-indicator paused" id="status-indicator">STANDBY</div>
-          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">
-            --
-          </div>
+          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">--</div>
         </div>
       </div>
 
@@ -565,18 +558,15 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>v0.26.092.0912</span>
+        <span>v0.26.092.1105</span>
       </div>
     </div>
 
-    <!-- 第2画面：図鑑キーワード -->
     <div class="slide-page" id="page-keywords">
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
         <div class="page-title-text" id="title-page-keywords">図鑑キーワード</div>
-        <button class="btn-home-shortcut" id="home-from-keywords" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-home-shortcut" id="home-from-keywords" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -596,14 +586,11 @@
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
 
-    <!-- 第3画面：到達場所履歴 -->
     <div class="slide-page" id="page-history">
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
         <div class="page-title-text" id="history-header-title">到達履歴</div>
-        <button class="btn-home-shortcut" id="home-from-history" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-home-shortcut" id="home-from-history" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -623,27 +610,22 @@
       <div class="list-scroll" id="history-list-container"></div>
     </div>
 
-    <!-- 第4画面：スポット詳細 -->
     <div class="slide-page" id="page-spot-detail">
       <div class="page-header">
         <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
         <div class="page-title-text" id="detail-header-title">スポット詳細</div>
-        <button class="btn-home-shortcut" id="home-from-detail" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-home-shortcut" id="home-from-detail" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
       </div>
       <div class="spot-detail-content">
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
-          
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
             <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
             <button class="btn-sheikah-sm" id="detail-btn-toggle-radar">レーダーON</button>
             <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">コピー</button>
             <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
           </div>
-
           <div class="action-button-row" style="margin-top: 8px;">
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review">★ クチコミ投稿</button>
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-photo">
@@ -652,13 +634,8 @@
             </button>
           </div>
         </div>
-
-        <div id="detail-gallery-header" style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">
-          現地ギャラリー (Google Places)
-        </div>
-        <div id="detail-photos-container">
-          <div class="no-photos-box" id="detail-loading-box">写真を取得中...</div>
-        </div>
+        <div id="detail-gallery-header" style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">現地ギャラリー (Google Places)</div>
+        <div id="detail-photos-container"><div class="no-photos-box" id="detail-loading-box">写真を取得中...</div></div>
       </div>
     </div>
   </div>
@@ -666,49 +643,19 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
-    // ===================================================
-    // 0. 国際化 ＆ 初期言語の自動判定
-    // ===================================================
     const I18N = {
       ja: {
-        inputPlaceholder: "探す対象を入力...",
-        btnSet: "SET",
-        unvisited: "未踏:",
-        detecting: "件探知中",
-        standby: "STANDBY",
-        searching: "SEARCHING...",
-        paused: "PAUSED",
-        sensorActive: "SENSOR: ACTIVE",
-        sensorPaused: "SENSOR: PAUSED",
-        sensorStandby: "SENSOR: STANDBY",
-        soundOn: "SOUND: ON",
-        soundOff: "SOUND: MUTED",
-        wakeLockOn: "WAKE LOCK: ON",
-        wakeLockOff: "WAKE LOCK: OFF",
-        langSwitchLabel: "→EN",
-        compendiumBtn: "到達済みリスト (図鑑)",
-        footerTip: "※消音時も円周の光とフラッシュで反応",
-        backToMain: "◀ メイン",
-        keywordsTitle: "図鑑キーワード",
-        filterKeywordsPlaceholder: "キーワード絞り込み...",
-        filterHistoryPlaceholder: "到達スポット絞り込み...",
-        sortSearch: "検索日時順",
-        sortArrival: "到達日時順",
-        sortCount: "到達件数降順",
-        cleanZeroBtn: "到達0件の履歴を一括削除",
-        deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-        dataTransferBtn: "データ引き継ぎ",
-        backToKeywords: "◀ 履歴一覧",
-        backToHistory: "◀ 到達リスト",
-        spotDetailTitle: "スポット詳細",
-        deleteBtn: "削除",
-        sortHNear: "現在地から近い順",
-        sortHDesc: "到達日時が新しい順",
-        sortHAsc: "到達日時が古い順",
-        sortHName: "名称あいうえお順",
-        noSpotsInRange: "範囲内に対象なし",
-        spotDetected: "探知反応あり",
-        emptyHistory: "このキーワードでの到達実績はまだありません。",
+        inputPlaceholder: "探す対象を入力...", btnSet: "SET", unvisited: "未踏:", detecting: "件探知中",
+        standby: "STANDBY", searching: "SEARCHING...", paused: "PAUSED",
+        sensorActive: "SENSOR: ACTIVE", sensorPaused: "SENSOR: PAUSED", sensorStandby: "SENSOR: STANDBY",
+        soundOn: "SOUND: ON", soundOff: "SOUND: MUTED", wakeLockOn: "WAKE LOCK: ON", wakeLockOff: "WAKE LOCK: OFF",
+        langSwitchLabel: "→EN", compendiumBtn: "到達済みリスト (図鑑)", footerTip: "※消音時も円周の光とフラッシュで反応",
+        backToMain: "◀ メイン", keywordsTitle: "図鑑キーワード", filterKeywordsPlaceholder: "キーワード絞り込み...",
+        filterHistoryPlaceholder: "到達スポット絞り込み...", sortSearch: "検索日時順", sortArrival: "到達日時順",
+        sortCount: "到達件数降順", cleanZeroBtn: "到達0件の履歴を一括削除", deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
+        dataTransferBtn: "データ引き継ぎ", backToKeywords: "◀ 履歴一覧", backToHistory: "◀ 到達リスト", spotDetailTitle: "スポット詳細",
+        deleteBtn: "削除", sortHNear: "現在地から近い順", sortHDesc: "到達日時が新しい順", sortHAsc: "到達日時が古い順", sortHName: "名称あいうえお順",
+        noSpotsInRange: "範囲内に対象なし", spotDetected: "探知反応あり", emptyHistory: "このキーワードでの到達実績はまだありません。",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `マップに「${name}」が記録されました`,
         toastCopied: (name) => `「${name}」をコピーしました`,
@@ -716,17 +663,10 @@
         targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
         arrivalCount: (c) => `到達数: ${c} 箇所`,
         arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
-        radarOn: "レーダーON",
-        radarOff: "レーダーOFF",
-        copyBtn: "コピー",
-        mapsReviewBtn: "★ クチコミ投稿",
-        mapsPhotoBtn: "写真を追加",
-        galleryHeader: "現地ギャラリー (Google Places)",
-        loadingPhotos: "写真を取得中...",
-        loadingAddress: "住所情報を照会中...",
-        noAddress: "住所情報なし",
-        noPhotosText: "Googleマップに登録された写真がありません。",
-        minimapBadge: "位置マップ",
+        radarOn: "レーダーON", radarOff: "レーダーOFF", copyBtn: "コピー",
+        mapsReviewBtn: "★ クチコミ投稿", mapsPhotoBtn: "写真を追加",
+        galleryHeader: "現地ギャラリー (Google Places)", loadingPhotos: "写真を取得中...", loadingAddress: "住所情報を照会中...",
+        noAddress: "住所情報なし", noPhotosText: "Googleマップに登録された写真がありません。", minimapBadge: "位置マップ",
         warningTitle: "安全にお楽しみいただくために",
         warningText: "「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
         warningOk: "OK / 同意して始める",
@@ -742,44 +682,17 @@
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
       },
       en: {
-        inputPlaceholder: "Enter search keyword...",
-        btnSet: "SET",
-        unvisited: "Left:",
-        detecting: " detected",
-        standby: "STANDBY",
-        searching: "SEARCHING...",
-        paused: "PAUSED",
-        sensorActive: "SENSOR: ACTIVE",
-        sensorPaused: "SENSOR: PAUSED",
-        sensorStandby: "SENSOR: STANDBY",
-        soundOn: "SOUND: ON",
-        soundOff: "SOUND: MUTED",
-        wakeLockOn: "WAKE LOCK: ON",
-        wakeLockOff: "WAKE LOCK: OFF",
-        langSwitchLabel: "→JP",
-        compendiumBtn: "Discovered List (Atlas)",
-        footerTip: "Visual ring pulses even in mute mode",
-        backToMain: "◀ Main",
-        keywordsTitle: "Atlas Keywords",
-        filterKeywordsPlaceholder: "Filter keywords...",
-        filterHistoryPlaceholder: "Filter places...",
-        sortSearch: "By Search Date",
-        sortArrival: "By Discovery Date",
-        sortCount: "By Discovery Count",
-        cleanZeroBtn: "Delete Zero-Hit Records",
-        deleteCurrentKeyBtn: "Delete This Keyword's History",
-        dataTransferBtn: "Data Transfer",
-        backToKeywords: "◀ Keywords",
-        backToHistory: "◀ Places",
-        spotDetailTitle: "Place Details",
-        deleteBtn: "Delete",
-        sortHNear: "By Distance (Nearest)",
-        sortHDesc: "Newest First",
-        sortHAsc: "Oldest First",
-        sortHName: "Alphabetical",
-        noSpotsInRange: "No targets in range",
-        spotDetected: "Target detected",
-        emptyHistory: "No places discovered for this keyword yet.",
+        inputPlaceholder: "Enter search keyword...", btnSet: "SET", unvisited: "Left:", detecting: " detected",
+        standby: "STANDBY", searching: "SEARCHING...", paused: "PAUSED",
+        sensorActive: "SENSOR: ACTIVE", sensorPaused: "SENSOR: PAUSED", sensorStandby: "SENSOR: STANDBY",
+        soundOn: "SOUND: ON", soundOff: "SOUND: MUTED", wakeLockOn: "WAKE LOCK: ON", wakeLockOff: "WAKE LOCK: OFF",
+        langSwitchLabel: "→JP", compendiumBtn: "Discovered List (Atlas)", footerTip: "Visual ring pulses even in mute mode",
+        backToMain: "◀ Main", keywordsTitle: "Atlas Keywords", filterKeywordsPlaceholder: "Filter keywords...",
+        filterHistoryPlaceholder: "Filter places...", sortSearch: "By Search Date", sortArrival: "By Discovery Date",
+        sortCount: "By Discovery Count", cleanZeroBtn: "Delete Zero-Hit Records", deleteCurrentKeyBtn: "Delete This Keyword's History",
+        dataTransferBtn: "Data Transfer", backToKeywords: "◀ Keywords", backToHistory: "◀ Places", spotDetailTitle: "Place Details",
+        deleteBtn: "Delete", sortHNear: "By Distance (Nearest)", sortHDesc: "Newest First", sortHAsc: "Oldest First", sortHName: "Alphabetical",
+        noSpotsInRange: "No targets in range", spotDetected: "Target detected", emptyHistory: "No places discovered for this keyword yet.",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `Recorded "${name}" to slate map`,
         toastCopied: (name) => `Copied "${name}"`,
@@ -787,17 +700,10 @@
         targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
         arrivalCount: (c) => `Discovered: ${c} spots`,
         arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
-        radarOn: "RADAR ON",
-        radarOff: "RADAR OFF",
-        copyBtn: "COPY",
-        mapsReviewBtn: "★ Post Review",
-        mapsPhotoBtn: "Add Photo",
-        galleryHeader: "Place Gallery (Google Places)",
-        loadingPhotos: "Loading photos...",
-        loadingAddress: "Querying address...",
-        noAddress: "No address available",
-        noPhotosText: "No photos found on Google Maps.",
-        minimapBadge: "Location Map",
+        radarOn: "RADAR ON", radarOff: "RADAR OFF", copyBtn: "COPY",
+        mapsReviewBtn: "★ Post Review", mapsPhotoBtn: "Add Photo",
+        galleryHeader: "Place Gallery (Google Places)", loadingPhotos: "Loading photos...", loadingAddress: "Querying address...",
+        noAddress: "No address available", noPhotosText: "No photos found on Google Maps.", minimapBadge: "Location Map",
         warningTitle: "Safety Warning",
         warningText: "When playing 'Sensor Challenge', please obey traffic rules and pay close attention to your surroundings.",
         warningOk: "OK / Agree & Start",
@@ -865,12 +771,8 @@
         };
       } else {
         return {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: "#00f3ff",
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: "#ffffff"
+          path: google.maps.SymbolPath.CIRCLE, scale: 8,
+          fillColor: "#00f3ff", fillOpacity: 1, strokeWeight: 2, strokeColor: "#ffffff"
         };
       }
     }
@@ -927,15 +829,9 @@
       if (appState.selectedKeywordForHistory) renderHistoryList();
     }
 
-    document.getElementById('safety-lang-btn').addEventListener('click', () => {
-      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
-    });
-    document.getElementById('pwa-lang-btn').addEventListener('click', () => {
-      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
-    });
-    document.getElementById('lang-toggle-btn').addEventListener('click', () => {
-      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
-    });
+    document.getElementById('safety-lang-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
+    document.getElementById('pwa-lang-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
+    document.getElementById('lang-toggle-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
 
     const mapContrastBtn = document.getElementById('map-style-toggle-btn');
     const svgMapContrast = document.getElementById('svg-map-contrast');
@@ -944,29 +840,16 @@
       const isDay = (currentMapStyleMode === 'botw');
       const container = document.getElementById('app-container');
       const pointerPath = document.getElementById('pointer-path');
-
       const roadPathD = "M 0 26 Q 16 23 20 18 T 36 10";
 
       if (isDay) {
         container.classList.add('day-mode');
         pointerPath.setAttribute('fill', '#ffee33');
-
-        svgMapContrast.innerHTML = `
-          <circle cx="18" cy="18" r="18" fill="#081018" />
-          <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d" />
-          <path d="${roadPathD}" stroke="#142433" stroke-width="4.5" stroke-linecap="round" fill="none" />
-          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#00f3ff" />
-        `;
+        svgMapContrast.innerHTML = `<circle cx="18" cy="18" r="18" fill="#081018"/><path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d"/><path d="${roadPathD}" stroke="#142433" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#00f3ff"/>`;
       } else {
         container.classList.remove('day-mode');
         pointerPath.setAttribute('fill', '#00f3ff');
-
-        svgMapContrast.innerHTML = `
-          <circle cx="18" cy="18" r="18" fill="#453820" />
-          <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c" />
-          <path d="${roadPathD}" stroke="#e4d5a8" stroke-width="4.5" stroke-linecap="round" fill="none" />
-          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#ffee33" />
-        `;
+        svgMapContrast.innerHTML = `<circle cx="18" cy="18" r="18" fill="#453820"/><path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c"/><path d="${roadPathD}" stroke="#e4d5a8" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#ffee33"/>`;
       }
 
       const icon = getMarkerIcon(isDay);
@@ -976,9 +859,7 @@
     mapContrastBtn.addEventListener('click', () => {
       currentMapStyleMode = (currentMapStyleMode === 'sheikah') ? 'botw' : 'sheikah';
       localStorage.setItem('sheikah_map_style', currentMapStyleMode);
-      if (map) {
-        map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
-      }
+      if (map) map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
       updateMapStyleUI();
     });
 
@@ -993,16 +874,12 @@
       }
       try { silentAudioElement.play().catch(() => {}); } catch (e) {}
 
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       try {
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.start(0);
+        source.buffer = buffer; source.connect(audioCtx.destination); source.start(0);
       } catch (e) {}
     }
 
@@ -1010,21 +887,16 @@
       if (compassActive) return;
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', onDeviceOrientation, true);
-            compassActive = true;
+          if (await DeviceOrientationEvent.requestPermission() === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation, true); compassActive = true;
           }
         } catch (e) {}
-      } else {
-        window.addEventListener('deviceorientation', onDeviceOrientation, true);
-        compassActive = true;
-      }
+      } else { window.addEventListener('deviceorientation', onDeviceOrientation, true); compassActive = true; }
     }
 
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
-    let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
+    let radiusIndex = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
+    if (isNaN(radiusIndex)) radiusIndex = 2;
 
     let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
     try {
@@ -1040,12 +912,7 @@
       places: [], pinpointTarget: null
     };
 
-    let wakeLockSentinel = null;
-    let watchId = null;
-    let compassActive = false;
-    let placesService = null;
-    let isSearchInProgress = false;
-    let detailMinimapInstance = null;
+    let wakeLockSentinel = null, watchId = null, compassActive = false, placesService = null, isSearchInProgress = false, detailMinimapInstance = null;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -1053,15 +920,12 @@
       return { keywordHistory: {}, arrivals: [] };
     }
 
-    function saveAppData(db) {
-      localStorage.setItem('sheikah_db_v1', JSON.stringify(db));
-    }
+    function saveAppData(db) { localStorage.setItem('sheikah_db_v1', JSON.stringify(db)); }
 
     function isRunningStandalone() {
-      const isIOSStandalone = ('standalone' in window.navigator) && (window.navigator.standalone === true);
-      const isWebStandardStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                                      window.matchMedia('(display-mode: fullscreen)').matches;
-      return isIOSStandalone || isWebStandardStandalone;
+      return ('standalone' in window.navigator && window.navigator.standalone === true) ||
+             window.matchMedia('(display-mode: standalone)').matches ||
+             window.matchMedia('(display-mode: fullscreen)').matches;
     }
 
     function checkReloadAndPWA() {
@@ -1075,30 +939,24 @@
         return;
       }
 
-      const isStandalone = isRunningStandalone();
-      const pwaOverlay = document.getElementById('pwa-prompt-overlay');
-
-      if (!isStandalone) {
-        pwaOverlay.classList.add('show');
+      if (!isRunningStandalone()) {
+        document.getElementById('pwa-prompt-overlay').classList.add('show');
       } else {
-        pwaOverlay.classList.remove('show');
+        document.getElementById('pwa-prompt-overlay').classList.remove('show');
       }
     }
 
     let map = null;
     function initMap(lat, lng) {
       if (typeof google === 'undefined' || !google.maps) return;
-      const centerPos = { lat, lng };
-
       if (!map) {
         map = new google.maps.Map(document.getElementById('map'), {
-          center: centerPos, zoom: 17, disableDefaultUI: true,
-          styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark,
-          gestureHandling: 'none'
+          center: { lat, lng }, zoom: 17, disableDefaultUI: true,
+          styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark, gestureHandling: 'none'
         });
         placesService = new google.maps.places.PlacesService(map);
       } else {
-        map.setCenter(centerPos);
+        map.setCenter({ lat, lng });
         google.maps.event.trigger(map, 'resize');
       }
     }
@@ -1111,8 +969,7 @@
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            appState.currentPos = p;
-            lastKnownPos = p;
+            appState.currentPos = p; lastKnownPos = p;
             localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
             if (map) { map.setCenter(p); google.maps.event.trigger(map, 'resize'); }
           },
@@ -1124,8 +981,7 @@
 
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
@@ -1137,96 +993,71 @@
       return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     }
 
-    let radarTimer = null;
-    let scheduledInterval = null;
-
+    let radarTimer = null, scheduledInterval = null;
     function updateVisualRing(level) {
       const ring = document.getElementById('circle-map-wrapper');
-      if (!ring) return;
-      ring.className = `circle-map-wrapper signal-${level}`;
+      if (ring) ring.className = `circle-map-wrapper signal-${level}`;
     }
 
     function evaluateSensorCycle() {
-      const countEl = document.getElementById('unknown-count');
-      const distInfoEl = document.getElementById('distance-info');
+      const countEl = document.getElementById('unknown-count'), distInfoEl = document.getElementById('distance-info');
       const t = I18N[currentLang];
 
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null; updateVisualRing('idle');
-        countEl.textContent = "--";
+        scheduledInterval = null; updateVisualRing('idle'); countEl.textContent = "--";
         if (appState.isPaused) distInfoEl.textContent = "--";
         return;
       }
 
-      let activeTargets = [];
-      if (appState.pinpointTarget) {
-        activeTargets = [appState.pinpointTarget];
-      } else {
-        const db = loadSavedData();
-        activeTargets = appState.places.filter(p => {
-          const item = db.arrivals.find(a => a.id === p.id);
-          return !item || !item.muted;
-        });
-      }
-
+      let activeTargets = appState.pinpointTarget ? [appState.pinpointTarget] : appState.places.filter(p => !loadSavedData().arrivals.find(a => a.id === p.id && a.muted));
       countEl.textContent = activeTargets.length;
+
       if (activeTargets.length === 0) {
         if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = t.noSpotsInRange;
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null; updateVisualRing('idle');
-        return;
+        scheduledInterval = null; updateVisualRing('idle'); return;
       }
 
-      let closestTarget = null;
-      let minDistance = Infinity;
-      let targetBearingDiff = 0;
-
+      let closest = null, minDist = Infinity, targetBearingDiff = 0;
       activeTargets.forEach(tItem => {
         const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
-        if (d < minDistance) {
-          minDistance = d; closestTarget = tItem;
-          const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
-          let diff = Math.abs(appState.currentHeading - bearing);
+        if (d < minDist) {
+          minDist = d; closest = tItem;
+          let diff = Math.abs(appState.currentHeading - getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng));
           if (diff > 180) diff = 360 - diff;
           targetBearingDiff = diff;
         }
       });
 
-      if (minDistance <= 20) { handleArrival(closestTarget); return; }
+      if (minDist <= 20) { handleArrival(closest); return; }
 
-      let interval = null;
-      let level = 'idle';
-
-      if (targetBearingDiff >= 90) { level = 'idle'; interval = null; }
-      else if (minDistance <= 50 && targetBearingDiff <= 20) { level = 'level4'; interval = 450; }
-      else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) { level = 'level3'; interval = 800; }
-      else if (minDistance <= 300 && targetBearingDiff <= 55) { level = 'level2'; interval = 1500; }
+      let level = 'idle', interval = null;
+      if (targetBearingDiff >= 90) level = 'idle';
+      else if (minDist <= 50 && targetBearingDiff <= 20) { level = 'level4'; interval = 450; }
+      else if ((minDist <= 120 && targetBearingDiff <= 35) || (minDist <= 50 && targetBearingDiff <= 55)) { level = 'level3'; interval = 800; }
+      else if (minDist <= 300 && targetBearingDiff <= 55) { level = 'level2'; interval = 1500; }
       else if (targetBearingDiff < 85) { level = 'level1'; interval = 2600; }
 
       updateVisualRing(level);
       if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
 
-      if (interval !== null) scheduleRadarSound(interval, level === 'level4');
-      else { if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; } scheduledInterval = null; }
-    }
-
-    function scheduleRadarSound(interval, isDoubleBeep = false) {
-      if (radarTimer && scheduledInterval === interval) return;
-      if (radarTimer) clearTimeout(radarTimer);
-      scheduledInterval = interval;
-
-      function pulse() {
-        if (!appState.isTracking || appState.isPaused) { radarTimer = null; scheduledInterval = null; return; }
-        if (isDoubleBeep) playDoubleBeep(); else playBeep(interval <= 900 ? 2100 : 1750);
-        const wave = document.getElementById('radar-pulse');
-        if (wave) {
-          wave.className = 'radar-pulse-ring'; void wave.offsetWidth;
-          wave.classList.add(isDoubleBeep ? 'pulse-double-anim' : 'pulse-anim');
+      if (interval !== null) {
+        if (radarTimer && scheduledInterval === interval) return;
+        if (radarTimer) clearTimeout(radarTimer);
+        scheduledInterval = interval;
+        function pulse() {
+          if (!appState.isTracking || appState.isPaused) { radarTimer = null; scheduledInterval = null; return; }
+          if (level === 'level4') playDoubleBeep(); else playBeep(interval <= 900 ? 2100 : 1750);
+          const wave = document.getElementById('radar-pulse');
+          if (wave) { wave.className = 'radar-pulse-ring'; void wave.offsetWidth; wave.classList.add(level === 'level4' ? 'pulse-double-anim' : 'pulse-anim'); }
+          radarTimer = setTimeout(pulse, interval);
         }
-        radarTimer = setTimeout(pulse, interval);
+        pulse();
+      } else {
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
       }
-      pulse();
     }
 
     function handleArrival(target) {
@@ -1236,21 +1067,16 @@
 
       const db = loadSavedData();
       const now = new Date().toISOString();
-      const existing = db.arrivals.find(a => a.id === target.id);
-      if (!existing) {
+      if (!db.arrivals.find(a => a.id === target.id)) {
         db.arrivals.push({ id: target.id, name: target.name, keyword: appState.activeKeyword, lat: target.lat, lng: target.lng, date: now, muted: true });
       }
-      if (!db.keywordHistory[appState.activeKeyword]) {
-        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
-      } else {
-        db.keywordHistory[appState.activeKeyword].lastArrival = now;
-      }
+      if (!db.keywordHistory[appState.activeKeyword]) db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
+      else db.keywordHistory[appState.activeKeyword].lastArrival = now;
       saveAppData(db);
 
       if (map) {
         const isDay = (currentMapStyleMode === 'botw');
-        const marker = new google.maps.Marker({ position: { lat: target.lat, lng: target.lng }, map: map, title: target.name, icon: getMarkerIcon(isDay) });
-        markersList.push(marker);
+        markersList.push(new google.maps.Marker({ position: { lat: target.lat, lng: target.lng }, map, title: target.name, icon: getMarkerIcon(isDay) }));
       }
 
       const t = I18N[currentLang];
@@ -1259,16 +1085,14 @@
       toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 5000);
 
       if (appState.pinpointTarget) { appState.pinpointTarget = null; executeSearch(); }
-      setTimeout(() => { evaluateSensorCycle(); }, 1500);
+      setTimeout(() => evaluateSensorCycle(), 1500);
     }
 
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
       if (!mapDiv) return;
-      const desiredAngle = -targetBearing;
-      let diff = (desiredAngle - appState.visualMapRotation) % 360;
-      if (diff > 180) diff -= 360;
-      if (diff < -180) diff += 360;
+      let diff = (-targetBearing - appState.visualMapRotation) % 360;
+      if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
       appState.visualMapRotation += diff;
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
@@ -1277,16 +1101,14 @@
       appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
       if (appState.locationHistory.length > 5) appState.locationHistory.shift();
       if (appState.locationHistory.length < 2) return null;
-      const oldest = appState.locationHistory[0];
-      if (getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng) < 2.5) return null;
+      if (getDistance(appState.locationHistory[0].lat, appState.locationHistory[0].lng, newPos.lat, newPos.lng) < 2.5) return null;
 
       let sinSum = 0, cosSum = 0;
       for (let i = 1; i < appState.locationHistory.length; i++) {
         const p1 = appState.locationHistory[i - 1], p2 = appState.locationHistory[i];
         if (getDistance(p1.lat, p1.lng, p2.lat, p2.lng) > 0.5) {
           const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
-          sinSum += Math.sin(b * Math.PI / 180) * i;
-          cosSum += Math.cos(b * Math.PI / 180) * i;
+          sinSum += Math.sin(b * Math.PI / 180) * i; cosSum += Math.cos(b * Math.PI / 180) * i;
         }
       }
       if (sinSum === 0 && cosSum === 0) return null;
@@ -1300,10 +1122,8 @@
 
       if (!appState.isWalking && (Date.now() - appState.lastWalkTimestamp > 5000)) {
         if (appState.lastCompassHeading !== null && Math.abs(heading - appState.lastCompassHeading) < 6.0) return;
-        appState.lastCompassHeading = heading;
-        appState.currentHeading = heading;
-        rotateMapSmoothly(heading);
-        evaluateSensorCycle();
+        appState.lastCompassHeading = heading; appState.currentHeading = heading;
+        rotateMapSmoothly(heading); evaluateSensorCycle();
       }
     }
 
@@ -1326,12 +1146,8 @@
       if (heading !== null) {
         let diff = Math.abs(heading - appState.currentHeading);
         if (diff > 180) diff = 360 - diff;
-        if (diff >= 7.0 || appState.currentHeading === 0) {
-          appState.currentHeading = heading; rotateMapSmoothly(heading);
-        }
-      } else if (Date.now() - appState.lastWalkTimestamp > 5000) {
-        appState.isWalking = false;
-      }
+        if (diff >= 7.0 || appState.currentHeading === 0) { appState.currentHeading = heading; rotateMapSmoothly(heading); }
+      } else if (Date.now() - appState.lastWalkTimestamp > 5000) { appState.isWalking = false; }
 
       if (map) map.setCenter(newPos);
 
@@ -1358,9 +1174,7 @@
           if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
             appState.places = results.filter(p => getDistance(appState.currentPos.lat, appState.currentPos.lng, p.geometry.location.lat(), p.geometry.location.lng()) <= r)
               .map(p => ({ id: p.place_id, name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() }));
-          } else {
-            appState.places = [];
-          }
+          } else { appState.places = []; }
           evaluateSensorCycle();
         });
       } else { isSearchInProgress = false; }
@@ -1471,8 +1285,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else { db.keywordHistory[appState.activeKeyword].lastSearch = now; }
-      saveAppData(db);
-      updateButtonStateUI();
+      saveAppData(db); updateButtonStateUI();
 
       if (!watchId && 'geolocation' in navigator) {
         watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
@@ -1726,27 +1539,23 @@
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
     // ===================================================
-    // 8. 起動時処理 ＆ Service Worker 自動強制アップデート機構
+    // 8. 起動時処理 ＆ セーフティトリガー
     // ===================================================
     applyLanguage(currentLang);
 
-    // ポケモンGO風警告の「OK」ボタンをタップした瞬間をトリガーにする
     document.getElementById('btn-warning-ok').addEventListener('click', () => {
       document.getElementById('safety-warning-overlay').style.display = 'none';
-
       initAudio();
       requestCompassPermissionIfNeeded();
       bootstrapMapAndLocation();
       checkReloadAndPWA();
     });
 
-    // 「ブラウザのままテスト起動」ボタン
     document.getElementById('btn-pwa-skip').addEventListener('click', () => {
       const warningOverlay = document.getElementById('safety-warning-overlay');
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
       if (warningOverlay) warningOverlay.style.display = 'none';
       if (pwaOverlay) pwaOverlay.classList.remove('show');
-
       initAudio();
       requestCompassPermissionIfNeeded();
       bootstrapMapAndLocation();
@@ -1761,8 +1570,7 @@
           self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
         `;
         const blob = new Blob([swCode], { type: 'text/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).then(reg => {
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).then(reg => {
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
