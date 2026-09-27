@@ -3,11 +3,11 @@
  * [CSS Version Management Specification]
  * - 採番範囲: 01 〜 99 (99の次は 01 にループ)
  * - 変更手順: style.css を修正した際、下記の --css-rev の値をインクリメントする
- * - 現在のCSS個別番号: 01
+ * - 現在のCSS個別番号: 02
  * ============================================================
  */
 :root {
-  --css-rev: "01";
+  --css-rev: "02";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -745,31 +745,57 @@ body {
   visibility: visible;
 }
 
-.page-header {
-  padding-top: calc(max(env(safe-area-inset-top), 48px) + 12px);
-  padding-bottom: 14px;
-  padding-left: 16px;
-  padding-right: 16px;
-  background: #151a20;
-  border-bottom: 2px solid var(--sheikah-gold);
+/* 新上部メニューレイアウト調整用 */
+.header-flex {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+.header-left-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.page-title-text {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--sheikah-gold);
+  letter-spacing: 0.5px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.btn-all-history {
+  background: rgba(255, 170, 0, 0.12);
+  border: 1.5px solid #ffaa00;
+  color: #ffbb33;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  border-radius: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-all-history:active {
+  background: #ffaa00;
+  color: #000;
 }
 
 .back-btn {
   color: var(--sheikah-cyan);
   background: rgba(0, 243, 255, 0.1);
   border: 1.5px solid var(--sheikah-cyan);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: bold;
   cursor: pointer;
-  padding: 7px 12px;
-  border-radius: 20px;
+  padding: 6px 10px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 .back-btn:active {
@@ -782,33 +808,23 @@ body {
   background: rgba(197, 160, 89, 0.12);
   border: 1.5px solid var(--sheikah-gold);
   cursor: pointer;
-  padding: 7px 18px;
-  border-radius: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.2s;
+  padding: 0;
 }
 .btn-home-shortcut:active {
   background: var(--sheikah-gold);
   color: #000;
 }
 .btn-home-shortcut .svg-icon {
-  width: 17px;
-  height: 17px;
-}
-
-.page-title-text {
-  font-size: 1.05rem;
-  font-weight: bold;
-  color: var(--sheikah-gold);
-  letter-spacing: 0.5px;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
+  width: 16px;
+  height: 16px;
 }
 
 .filter-bar {
@@ -999,6 +1015,9 @@ body {
 
 #page-spot-detail {
   z-index: 150;
+}
+#page-all-history {
+  z-index: 140;
 }
 .spot-detail-content {
   flex: 1;
