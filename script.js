@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272330";
+const BASE_JS_VERSION = "v0.26.091.272331";
 
 // HTMLとCSSのバージョン番号を動的に取得して結合
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,14 +25,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// グローバルエラーキャッチ（iPhone実機デバッグ用）
+// グローバルエラーキャッチ（自作スクリプトのバグのみアラート＆コピーするよう修正）
 window.addEventListener('error', function(event) {
+  // 外部ドメイン（Google Maps等）のエラーは無視する
+  if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
+    return;
+  }
+
   const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(errorMsg).catch(() => {});
   }
   alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
 });
+
 
 // ===================================================
 // PWA起動時 強制キャッシュクリア ＆ リロード制御
