@@ -1385,9 +1385,9 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.272100 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 00)
+     * Current Version: v0.26.091.272145 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 45)
      */
-    const APP_VERSION = "v0.26.091.272100";
+    const APP_VERSION = "v0.26.091.272145";
 
     // グローバルエラーキャッチ（iPhone実機デバッグ用：エラー内容をアラート＆クリップボードコピー）
     window.addEventListener('error', function(event) {
@@ -1637,14 +1637,12 @@
       const db = loadSavedData();
       if (!db.arrivals || db.arrivals.length === 0) return;
 
-      // 到達日時が新しい順にソート
       const sortedArrivals = [...db.arrivals].sort((a, b) => new Date(b.date) - new Date(a.date));
       const isDay = (currentMapStyleMode === 'botw');
 
       sortedArrivals.forEach((item, index) => {
-        if (index >= 10) return; // 過去10件以上前の古いものは表示させない
+        if (index >= 10) return; // 過去10件以上前は非表示
 
-        // 0番目（最新）が1.0、9番目（10件目）が約0.15まで段階的に薄れていく不透明度を計算
         const opacity = Math.max(0.15, 1.0 - (index * 0.09));
 
         let iconObj;
@@ -1683,7 +1681,6 @@
     }
 
     function getMarkerIcon(isDayMode) {
-      // 互換性のため残す（redrawMarkersWithFadeで動的生成するためここではデフォルトを返す）
       return getMarkerIconDynamic(isDayMode, 1.0);
     }
 
@@ -1711,6 +1708,36 @@
           strokeOpacity: opacity
         };
       }
+    }
+
+    // グローバルに配置した安全で確実な星評価フォーマット関数
+    function formatStarRating(rating) {
+      if (rating === undefined || rating === null || isNaN(rating)) return "";
+      const r = Math.max(0, Math.min(5, rating));
+      
+      let html = '<span style="display:inline-flex; align-items:center; gap:1px; vertical-align:middle;">';
+      for (let i = 1; i <= 5; i++) {
+        let fill = '#445566';
+        if (r >= i) {
+          fill = '#ffaa00';
+        } else if (r > i - 1 && r < i) {
+          fill = 'url(#half-star)';
+        }
+        
+        html += `
+          <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block;">
+            <defs>
+              <linearGradient id="half-star">
+                <stop offset="50%" stop-color="#ffaa00"/>
+                <stop offset="50%" stop-color="#445566"/>
+              </linearGradient>
+            </defs>
+            <path fill="${fill}" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        `;
+      }
+      html += `</span> <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
+      return html;
     }
 
     function applyLanguage(lang) {
