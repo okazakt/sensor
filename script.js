@@ -7,9 +7,22 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272351";
+const BASE_JS_VERSION = "v0.26.091.272358";
 
-// HTMLとCSSのバージョン番号を動的に取得して結合
+// 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
+(function() {
+  const scriptTag = document.getElementById('main-script');
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "03";
+  const cssRev = "02"; // デフォルトCSS Rev
+  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+  
+  // 即時反映
+  document.querySelectorAll('.app-build-ver-span').forEach(el => {
+    el.textContent = fullVersion;
+  });
+})();
+
+// DOM構築完了時にも再度確実に反映 ＆ イベント設定
 document.addEventListener("DOMContentLoaded", () => {
   const scriptTag = document.getElementById('main-script');
   const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "03";
@@ -20,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
-  // 全てのバージョン表示箇所に即時反映
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
@@ -2060,12 +2072,12 @@ function checkAndShowStartupModals() {
 }
 
 document.getElementById('btn-pwa-skip').addEventListener('click', () => {
-  document.getElementById('pwa-prompt-overlay').classList.remove('show');
+  document.getElementById('pwa-prompt-overlay').classList.remove('open');
   document.getElementById('safety-prompt-overlay').classList.add('show');
 });
 
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
-  document.getElementById('safety-prompt-overlay').classList.remove('show');
+  document.getElementById('safety-prompt-overlay').classList.remove('open');
   initAudio();
 
   if ('geolocation' in navigator) {
