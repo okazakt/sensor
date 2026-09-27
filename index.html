@@ -1641,15 +1641,33 @@
       }
     }
 
-    // 文字化けしない安全な星評価フォーマット（CSSおよび標準文字構成）
+    // SVGを用いた確実な星評価描画関数（崩れ防止）
     function formatStarRating(rating) {
       if (rating === undefined || rating === null || isNaN(rating)) return "";
       const r = Math.max(0, Math.min(5, rating));
-      const full = Math.floor(r);
-      const hasHalf = (r - full >= 0.5) ? 1 : 0;
-      const empty = 5 - full - hasHalf;
-      const stars = "★".repeat(full) + (hasHalf ? "⯨" : "") + "☆".repeat(empty);
-      return `<span style="color: #ffaa00; font-size: 0.8rem; letter-spacing: 2px; font-weight: bold;">${stars} <span style="color: #99aabb; font-size: 0.75rem; font-weight: normal;">(${r.toFixed(1)})</span></span>`;
+      
+      let svgs = '';
+      for (let i = 1; i <= 5; i++) {
+        let fillPercentage = 0;
+        if (r >= i) {
+          fillPercentage = 100;
+        } else if (r > i - 1 && r < i) {
+          fillPercentage = (r - (i - 1)) * 100;
+        }
+
+        svgs += `
+          <svg width="14" height="14" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle; margin-right:1px;">
+            <defs>
+              <linearGradient id="star-grad-${i}-${r.toFixed(1)}">
+                <stop offset="${fillPercentage}%" stop-color="#ffaa00"/>
+                <stop offset="${fillPercentage}%" stop-color="#445566"/>
+              </linearGradient>
+            </defs>
+            <path fill="url(#star-grad-${i}-${r.toFixed(1)})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        `;
+      }
+      return `${svgs} <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
     }
 
     function applyLanguage(lang) {
@@ -2142,9 +2160,8 @@
       const db = loadSavedData();
       const now = new Date().toISOString();
 
-      // 到達時にratingをGoogle Places APIから取得（24時間キャッシュ対応）
       const existing = db.arrivals.find(a => a.id === target.id);
-      const cacheValid = existing && existing.rating !== undefined && existing.ratingCachedAt && (Date.now() - existing.ratingCachedAt < TWENTY_FOUR_HOURS);
+      const cacheValid = existing && existing.rating !== undefined && existing.rating !== null && existing.ratingCachedAt && (Date.now() - existing.ratingCachedAt < TWENTY_FOUR_HOURS);
 
       if (cacheValid) {
         updateArrivalRecord(db, target, now, existing.rating, existing.ratingCachedAt);
@@ -2814,7 +2831,7 @@
             distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
           }
 
-          // 第三画面リスト用：キャッシュが古いか未取得ならバックグラウンドで補完
+          // 24時間キャッシュチェック：未取得または24時間超過の場合にバックグラウンドで更新
           if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt > TWENTY_FOUR_HOURS)) {
             if (placesService && item.id) {
               placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
@@ -2836,7 +2853,7 @@
           div.innerHTML = `
             <div class="list-item-left">
               <span class="list-item-title">${item.name}</span>
-              <div id="list-star-${item.id}" style="margin: 2px 0 4px 0;">${starHtml}</div>
+              <div id="list-star-${item.id}" style="margin: 3px 0 4px 0;">${starHtml}</div>
               <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
             </div>
             <div class="action-button-row">
@@ -2981,7 +2998,6 @@
         initMap(item.lat, item.lng);
       }
 
-      // 24時間以内のキャッシュがあればAPIを呼ばずキャッシュを利用、なければ取得
       const detailCacheValid = item.rating !== undefined && item.rating !== null && item.ratingCachedAt && (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS);
 
       if (detailCacheValid) {
