@@ -1153,7 +1153,7 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version">VER: <span class="app-build-ver-span">v0.26.091.262350</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271530</span></div>
       </div>
     </div>
 
@@ -1173,7 +1173,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version">VER: <span class="app-build-ver-span">v0.26.091.262350</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271530</span></div>
       </div>
     </div>
 
@@ -1205,7 +1205,7 @@
           <div id="map"></div>
           <div class="player-pointer" id="player-pointer">
             <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#00f3ff" />
+              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#ffee33" />
             </svg>
           </div>
           <div class="radar-pulse-ring" id="radar-pulse"></div>
@@ -1280,7 +1280,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span class="app-build-ver-span">v0.26.091.262350</span></span>
+        <span><span class="app-build-ver-span">v0.26.091.271530</span></span>
       </div>
     </div>
 
@@ -1381,6 +1381,12 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
+    /**
+     * Versioning Rule Specification:
+     * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
+     * Example: v0.26.091.271530 (Year 2026, Month 09, fixed '1', Day 27, Hour 15, Minute 30)
+     */
+
     // ===================================================
     // PWA起動時のキャッシュクリア＆最新版取得
     // ===================================================
@@ -1574,7 +1580,8 @@
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#38485c" }] }
     ];
 
-    let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'sheikah';
+    // 初期モードを昼モード (botw) に設定
+    let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'botw';
     let markersList = [];
 
     function getMarkerIcon(isDayMode) {
