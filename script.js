@@ -7,12 +7,12 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272359";
+const BASE_JS_VERSION = "v0.26.091.280015";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
   const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "03";
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "04";
   const cssRev = "02";
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
   
@@ -24,7 +24,7 @@ const BASE_JS_VERSION = "v0.26.091.272359";
 // DOM構築完了時にも再度確実に反映 ＆ イベント設定
 document.addEventListener("DOMContentLoaded", () => {
   const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "03";
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "04";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -464,8 +464,8 @@ function applyLanguage(lang) {
 
   document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
   document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
-  document.getElementById('btn-export-data').textContent = currentLang === 'ja' ? 'データ書出 (Export)' : 'Export Data';
-  document.getElementById('btn-import-data').textContent = currentLang === 'ja' ? 'データ読込 (Import)' : 'Import Data';
+  document.getElementById('btn-export-copy').textContent = currentLang === 'ja' ? 'データ書出 (Copy)' : 'Export (Copy)';
+  document.getElementById('btn-import-paste').textContent = currentLang === 'ja' ? 'データ読込 (Paste)' : 'Import (Paste)';
 
   updateButtonStateUI();
   renderKeywordsList();
@@ -704,55 +704,89 @@ function saveAppData(db) {
 }
 
 // ===================================================
-// データ移行（エクスポート・インポート）機能
+// コピペ式データ移行（エクスポート・インポート）機能
 // ===================================================
 function setupDataMigrationHandlers() {
-  const exportBtn = document.getElementById('btn-export-data');
-  const importBtn = document.getElementById('btn-import-data');
-  const fileInput = document.getElementById('import-file-input');
+  const exportCopyBtn = document.getElementById('btn-export-copy');
+  const importPasteBtn = document.getElementById('btn-import-paste');
+  const modalOverlay = document.getElementById('migration-modal-overlay');
+  const textarea = document.getElementById('migration-textarea');
+  const actionBtn = document.getElementById('btn-migration-action');
+  const closeBtn = document.getElementById('btn-migration-close');
 
-  if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
+  let currentMode = ''; // 'export' or 'import'
+
+  if (exportCopyBtn && modalOverlay && textarea) {
+    exportCopyBtn.addEventListener('click', () => {
+      currentMode = 'export';
       const db = loadSavedData();
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `sensor_challenge_backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+      textarea.value = JSON.stringify(db, null, 2);
+      textarea.readOnly = true;
+      actionBtn.textContent = "コピー (Copy to Clipboard)";
+      document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
+      document.getElementById('migration-modal-desc').textContent = "以下のJSONテキストをコピーしてください。";
+      modalOverlay.classList.add('show');
     });
   }
 
-  if (importBtn && fileInput) {
-    importBtn.addEventListener('click', () => {
-      fileInput.click();
+  if (importPasteBtn && modalOverlay && textarea) {
+    importPasteBtn.addEventListener('click', () => {
+      currentMode = 'import';
+      textarea.value = '';
+      textarea.readOnly = false;
+      actionBtn.textContent = "インポート実行 (Import)";
+      document.getElementById('migration-modal-title').textContent = "データ読込 (Import)";
+      document.getElementById('migration-modal-desc').textContent = "移行先のJSONテキストをここに貼り付けてください。";
+      modalOverlay.classList.add('show');
+      textarea.focus();
     });
+  }
 
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
+  if (actionBtn && textarea) {
+    actionBtn.onclick = () => {
+      if (currentMode === 'export') {
+        textarea.select();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textarea.value).then(() => {
+            alert("データをクリップボードにコピーしました！");
+            modalOverlay.classList.remove('show');
+          }).catch(() => {
+            alert("コピーしました（テキストを手動でコピーしてください）。");
+          });
+        } else {
+          document.execCommand('copy');
+          alert("コピーしました！");
+          modalOverlay.classList.remove('show');
+        }
+      } else if (currentMode === 'import') {
+        const textVal = textarea.value.trim();
+        if (!textVal) {
+          alert("JSONテキストが入力されていません。");
+          return;
+        }
         try {
-          const importedData = JSON.parse(event.target.result);
+          const importedData = JSON.parse(textVal);
           if (importedData && importedData.arrivals && importedData.keywordHistory) {
-            if (confirm("既存のデータを上書き（または統合）してインポートしますか？")) {
+            if (confirm("既存のデータに上書きしてインポートしますか？")) {
               saveAppData(importedData);
-              alert("データのインポートが完了しました。ページを再読み込みします。");
+              alert("データのインポートが完了しました。アプリを再読み込みします。");
+              modalOverlay.classList.remove('show');
               window.location.reload();
             }
           } else {
-            alert("無効なバックアップファイル形式です。");
+            alert("無効なバックアップデータ形式です。");
           }
         } catch (err) {
-          alert("JSONファイルの解析に失敗しました: " + err.message);
+          alert("JSONの解析に失敗しました。正しいフォーマットかご確認ください。\n" + err.message);
         }
-      };
-      reader.readAsText(file);
-      fileInput.value = ''; // リセット
-    });
+      }
+    };
+  }
+
+  if (closeBtn && modalOverlay) {
+    closeBtn.onclick = () => {
+      modalOverlay.classList.remove('show');
+    };
   }
 }
 
