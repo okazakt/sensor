@@ -1,11 +1,29 @@
 /**
- * Versioning Rule Specification:
- * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
- * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
- * maintaining this exact rule and format for future modifications.
- * Current Version: v0.26.091.272140 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 40)
+ * ============================================================
+ * [JavaScript Version Management Specification]
+ * - 採番形式: v0.[Year].[Month]1.[DateHourMinute].[HTML Rev].[CSS Rev]
+ * - HTML Rev (index.html): scriptタグの data-html-rev 属性から自動取得 (01〜99)
+ * - CSS Rev (style.css): :root の --css-rev 変数から自動取得 (01〜99)
+ * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
+ * ============================================================
  */
-const APP_VERSION = "v0.26.091.272140";
+const BASE_JS_VERSION = "v0.26.091.272215";
+
+// HTMLとCSSのバージョン番号を動的に取得して結合
+document.addEventListener("DOMContentLoaded", () => {
+  const scriptTag = document.getElementById('main-script');
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "01";
+
+  const computedStyle = getComputedStyle(document.documentElement);
+  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
+  if (!cssRev) cssRev = "01";
+
+  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+
+  document.querySelectorAll('.app-build-ver-span').forEach(el => {
+    el.textContent = fullVersion;
+  });
+});
 
 // グローバルエラーキャッチ（iPhone実機デバッグ用）
 window.addEventListener('error', function(event) {
@@ -14,12 +32,6 @@ window.addEventListener('error', function(event) {
     navigator.clipboard.writeText(errorMsg).catch(() => {});
   }
   alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll('.app-build-ver-span').forEach(el => {
-    el.textContent = APP_VERSION;
-  });
 });
 
 // ===================================================
@@ -328,7 +340,6 @@ function getMarkerIconDynamic(isDayMode, opacity) {
   }
 }
 
-// 共通星評価フォーマット関数
 function formatStarRating(rating) {
   if (rating === undefined || rating === null || isNaN(rating)) return "";
   const r = Math.max(0, Math.min(5, rating));
@@ -1630,7 +1641,6 @@ function openSpotDetailModal(item) {
   document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
   document.getElementById('detail-spot-address').textContent = t.loadingAddress;
 
-  // 到達日時と現在からの距離を計算・設定
   const d = new Date(item.date);
   const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
   let distStr = "";
