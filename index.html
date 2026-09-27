@@ -19,7 +19,7 @@
     [HTML Version Management Specification]
     - 採番範囲: 01 〜 99 (99の次は 01 にループ)
     - 変更手順: index.html を修正した際、下記の data-html-rev をインクリメントする
-    - 現在のHTML個別番号: 01
+    - 現在のHTML個別番号: 02
     ============================================================
   -->
 
@@ -190,12 +190,15 @@
 
     <!-- 第2画面：図鑑キーワード -->
     <div class="slide-page" id="page-keywords">
-      <div class="page-header">
-        <button class="back-btn" id="back-to-main">◀ メイン</button>
+      <div class="page-header header-flex">
+        <div class="header-left-group">
+          <button class="btn-home-shortcut" id="home-from-keywords" title="Home">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+          <button class="back-btn" id="back-to-main">◀メイン</button>
+        </div>
         <div class="page-title-text" id="title-page-keywords">図鑑キーワード</div>
-        <button class="btn-home-shortcut" id="home-from-keywords" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-sheikah-sm btn-all-history" id="open-all-from-keywords">全て ▶</button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -216,12 +219,15 @@
 
     <!-- 第3画面：到達場所履歴 -->
     <div class="slide-page" id="page-history">
-      <div class="page-header">
-        <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
+      <div class="page-header header-flex">
+        <div class="header-left-group">
+          <button class="btn-home-shortcut" id="home-from-history" title="Home">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+          <button class="back-btn" id="back-to-keywords">◀履歴一覧</button>
+        </div>
         <div class="page-title-text" id="history-header-title">到達履歴</div>
-        <button class="btn-home-shortcut" id="home-from-history" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-sheikah-sm btn-all-history" id="open-all-from-history">全て ▶</button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -243,12 +249,15 @@
 
     <!-- 第4画面：スポット詳細 -->
     <div class="slide-page" id="page-spot-detail">
-      <div class="page-header">
-        <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
+      <div class="page-header header-flex">
+        <div class="header-left-group">
+          <button class="btn-home-shortcut" id="home-from-detail" title="Home">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+          <button class="back-btn" id="back-to-history-list">◀到達リスト</button>
+        </div>
         <div class="page-title-text" id="detail-header-title">スポット詳細</div>
-        <button class="btn-home-shortcut" id="home-from-detail" title="Home">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </button>
+        <button class="btn-sheikah-sm btn-all-history" id="open-all-from-detail">全て ▶</button>
       </div>
       <div class="spot-detail-content">
         <div class="detail-card-panel">
@@ -256,6 +265,7 @@
           <div id="detail-spot-rating" style="margin-bottom: 4px;"></div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
           <div class="spot-address-text" id="detail-spot-meta" style="margin-top: 6px; color: #99aabb;">--</div>
+          <div class="spot-address-text" id="detail-spot-keyword" style="margin-top: 4px; color: #99aabb;">--</div>
           
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
             <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
@@ -280,10 +290,36 @@
         </div>
       </div>
     </div>
+
+    <!-- 第5画面：全スポット一覧 -->
+    <div class="slide-page" id="page-all-history">
+      <div class="page-header header-flex">
+        <div class="header-left-group">
+          <button class="btn-home-shortcut" id="home-from-all" title="Home">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+          <button class="back-btn" id="back-from-all">◀メイン</button>
+        </div>
+        <div class="page-title-text" id="all-header-title">全スポット一覧</div>
+        <div style="width: 50px;"></div>
+      </div>
+      <div class="filter-bar">
+        <div class="sheikah-input-wrap">
+          <input type="text" id="all-history-filter" placeholder="全スポット絞り込み...">
+          <button class="btn-input-clear" id="btn-all-history-filter-clear">✕</button>
+        </div>
+        <select class="sheikah-select-box" id="sort-all-history">
+          <option value="near_asc" id="opt-asort-near">現在地から近い順</option>
+          <option value="date_desc" id="opt-asort-desc">到達日時が新しい順</option>
+          <option value="date_asc" id="opt-asort-asc">到達日時が古い順</option>
+          <option value="name_asc" id="opt-asort-name">名称あいうえお順</option>
+        </select>
+      </div>
+      <div class="list-scroll" id="all-history-list-container"></div>
+    </div>
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
-  <!-- scriptタグに data-html-rev を付与してJSからバージョンを取得できるようにしています -->
-  <script src="script.js" id="main-script" data-html-rev="01"></script>
+  <script src="script.js" id="main-script" data-html-rev="02"></script>
 </body>
 </html>
