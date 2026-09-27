@@ -236,7 +236,6 @@
       100% { opacity: 0; }
     }
 
-    /* 左右のコントロールボタン：ステータスバーや時刻表示と重ならないよう十分に下方に配置 */
     .top-left-ctrl {
       position: absolute;
       top: calc(max(env(safe-area-inset-top), 24px) + 12px);
@@ -297,7 +296,6 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      /* ボタンとレーダーマップが重ならないよう上部余白をしっかりと確保 */
       padding-top: calc(max(env(safe-area-inset-top), 24px) + 36px);
     }
 
@@ -1155,7 +1153,7 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271913</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271933</span></div>
       </div>
     </div>
 
@@ -1175,7 +1173,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271913</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271933</span></div>
       </div>
     </div>
 
@@ -1351,6 +1349,8 @@
       <div class="spot-detail-content">
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
+          <!-- 星評価表示領域 -->
+          <div id="detail-spot-rating" style="margin-bottom: 4px;"></div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
           
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
@@ -1361,10 +1361,9 @@
           </div>
 
           <div class="action-button-row" style="margin-top: 8px;">
-            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review">★ クチコミ投稿</button>
-            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-photo">
+            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review-photo" style="width: 100%; justify-content: center;">
               <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path d="M12 12c1.65 0 3-1.35 3-3s-1.35-3-3-3-3 1.35-3 3 1.35 3 3 3zm0-4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm6.5 1h-1.8l-1.12-1.5c-.38-.5-.98-.8-1.61-.8H10.03c-.63 0-1.23.3-1.61.8L7.3 9H5.5C4.67 9 4 9.67 4 10.5v8c0 .83.67 1.5 1.5 1.5h13c.83 0 1.5-.67 1.5-1.5v-8c0-.83-.67-1.5-1.5-1.5zm-.5 9.5H6v-7h2.2l1.35-1.8c.19-.25.49-.4.81-.4h3.28c.32 0 .62.15.81.4L15.8 11.5H18v7z"/></svg>
-              <span>写真を追加</span>
+              <span>★ クチコミ・写真投稿</span>
             </button>
           </div>
         </div>
@@ -1387,7 +1386,7 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Update the version number using the exact modification date/time upon every update,
      * by acquiring the current time when starting the modification work.
-     * Current Version: v0.26.091.271913 (Year 2026, Month 09, fixed '1', Day 27, Hour 19, Minute 13)
+     * Current Version: v0.26.091.271933 (Year 2026, Month 09, fixed '1', Day 27, Hour 19, Minute 33)
      */
 
     // ===================================================
@@ -1483,8 +1482,7 @@
         radarOn: "レーダーON",
         radarOff: "レーダーOFF",
         copyBtn: "コピー",
-        mapsReviewBtn: "★ クチコミ投稿",
-        mapsPhotoBtn: "写真を追加",
+        mapsReviewPhotoBtn: "★ クチコミ・写真投稿",
         galleryHeader: "現地ギャラリー (Google Places)",
         loadingPhotos: "写真を取得中...",
         loadingAddress: "住所情報を照会中...",
@@ -1553,8 +1551,7 @@
         radarOn: "RADAR ON",
         radarOff: "RADAR OFF",
         copyBtn: "COPY",
-        mapsReviewBtn: "★ Post Review",
-        mapsPhotoBtn: "Add Photo",
+        mapsReviewPhotoBtn: "★ Post Review & Photo",
         galleryHeader: "Place Gallery (Google Places)",
         loadingPhotos: "Loading photos...",
         loadingAddress: "Querying address...",
@@ -1638,6 +1635,16 @@
       }
     }
 
+    function formatStarRating(rating) {
+      if (rating === undefined || rating === null || isNaN(rating)) return "";
+      const r = Math.max(0, Math.min(5, rating));
+      const full = Math.floor(r);
+      const half = (r - full >= 0.5) ? 1 : 0;
+      const empty = 5 - full - half;
+      const stars = "★".repeat(full) + (half ? "⯨" : "") + "☆".repeat(empty);
+      return `<span style="color: #ffaa00; font-size: 0.8rem; letter-spacing: 1px;">${stars} <span style="color: #99aabb; font-size: 0.75rem;">(${r.toFixed(1)})</span></span>`;
+    }
+
     function applyLanguage(lang) {
       currentLang = lang;
       localStorage.setItem('sheikah_lang', lang);
@@ -1663,8 +1670,7 @@
       document.getElementById('detail-btn-copy').textContent = t.copyBtn;
       document.getElementById('detail-btn-delete-single').textContent = t.deleteBtn;
       document.getElementById('detail-gallery-header').textContent = t.galleryHeader;
-      document.getElementById('detail-btn-maps-review').textContent = t.mapsReviewBtn;
-      document.querySelector('#detail-btn-maps-photo span').textContent = t.mapsPhotoBtn;
+      document.querySelector('#detail-btn-maps-review-photo span').textContent = t.mapsReviewPhotoBtn;
       document.getElementById('opt-hsort-near').textContent = t.sortHNear;
       document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
       document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
@@ -2128,6 +2134,18 @@
 
       const db = loadSavedData();
       const now = new Date().toISOString();
+
+      if (placesService && target.id) {
+        placesService.getDetails({ placeId: target.id, fields: ['rating'] }, (place, status) => {
+          const ratingVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating) ? place.rating : null;
+          updateArrivalRecord(db, target, now, ratingVal);
+        });
+      } else {
+        updateArrivalRecord(db, target, now, null);
+      }
+    }
+
+    function updateArrivalRecord(db, target, now, ratingVal) {
       const existing = db.arrivals.find(a => a.id === target.id);
       if (!existing) {
         db.arrivals.push({
@@ -2137,9 +2155,13 @@
           lat: target.lat,
           lng: target.lng,
           date: now,
-          muted: true
+          muted: true,
+          rating: ratingVal
         });
+      } else if (ratingVal !== null) {
+        existing.rating = ratingVal;
       }
+
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
       } else {
@@ -2534,7 +2556,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else {
-        db.keywordHistory[appState.activeKeyword].lastArrival = now;
+        db.keywordHistory[appState.activeKeyword].lastSearch = now;
       }
       saveAppData(db);
 
@@ -2777,11 +2799,14 @@
             distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
           }
 
+          const starHtml = formatStarRating(item.rating);
+
           const div = document.createElement('div');
           div.className = 'list-item';
           div.innerHTML = `
             <div class="list-item-left">
               <span class="list-item-title">${item.name}</span>
+              ${starHtml ? `<div style="margin: 2px 0 4px 0;">${starHtml}</div>` : ''}
               <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
             </div>
             <div class="action-button-row">
@@ -2867,6 +2892,7 @@
       const db = loadSavedData();
 
       document.getElementById('detail-spot-name').textContent = item.name;
+      document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
       document.getElementById('detail-spot-address').textContent = t.loadingAddress;
       const photosBox = document.getElementById('detail-photos-container');
       photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
@@ -2901,18 +2927,11 @@
         }
       };
 
-      document.getElementById('detail-btn-maps-review').onclick = () => {
+      document.getElementById('detail-btn-maps-review-photo').onclick = () => {
         const reviewUrl = item.id 
           ? `https://search.google.com/local/writereview?placeid=${item.id}`
           : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
         window.open(reviewUrl, '_blank');
-      };
-
-      document.getElementById('detail-btn-maps-photo').onclick = () => {
-        const photoUploadUrl = item.id 
-          ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-        window.open(photoUploadUrl, '_blank');
       };
 
       pageSpotDetail.classList.add('open');
@@ -2935,10 +2954,15 @@
       if (placesService && item.id) {
         placesService.getDetails({
           placeId: item.id,
-          fields: ['name', 'formatted_address', 'photos']
+          fields: ['name', 'formatted_address', 'photos', 'rating']
         }, (place, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             document.getElementById('detail-spot-address').textContent = place.formatted_address || t.noAddress;
+            if (place.rating !== undefined) {
+              item.rating = place.rating;
+              document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
+              saveAppData(db);
+            }
             if (place.photos && place.photos.length > 0) {
               place.photos.forEach(photo => {
                 const url = photo.getUrl({ maxWidth: 800, maxHeight: 600 });
