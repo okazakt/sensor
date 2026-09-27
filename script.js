@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272230";
+const BASE_JS_VERSION = "v0.26.091.272330";
 
 // HTMLとCSSのバージョン番号を動的に取得して結合
 document.addEventListener("DOMContentLoaded", () => {
@@ -35,14 +35,32 @@ window.addEventListener('error', function(event) {
 });
 
 // ===================================================
+// PWA起動時 強制キャッシュクリア ＆ リロード制御
+// ===================================================
+const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if (isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed')) {
+  sessionStorage.setItem('sheikah_pwa_refreshed', 'true');
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      Promise.all(names.map(name => caches.delete(name))).then(() => {
+        window.location.reload(true);
+      });
+    }).catch(() => {
+      window.location.reload(true);
+    });
+  } else {
+    window.location.reload(true);
+  }
+}
+
+// ===================================================
 // 起動・キャッシュ・再ロード制御ロジック
 // ===================================================
 const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
 const nowTime = Date.now();
 const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-
-const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
 if (!lastCacheTime) {
   localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
@@ -426,7 +444,6 @@ function applyLanguage(lang) {
   document.getElementById('btn-safety-ok').textContent = t.safetyOk;
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
 
-  // 各画面の「全て ▶」ボタンや戻るボタンのテキスト更新
   document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
   document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
 
@@ -644,7 +661,7 @@ let appState = {
   activeKeyword: "",
   selectedKeywordForHistory: null,
   selectedSpotForDetail: null,
-  fromAllHistory: false, // 第5画面から詳細を開いたかどうかのフラグ
+  fromAllHistory: false,
   places: [],
   pinpointTarget: null
 };
@@ -1586,7 +1603,7 @@ function renderHistoryList() {
         distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
       }
 
-      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt > TWENTY_FOUR_HOURS)) {
+      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS)) {
         if (placesService && item.id) {
           placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) {
@@ -1807,7 +1824,6 @@ function openSpotDetailModal(item) {
   const t = I18N[currentLang];
   const db = loadSavedData();
 
-  // 第5画面から開いた場合の戻るボタン表示切替
   const backBtn = document.getElementById('back-to-history-list');
   if (appState.fromAllHistory) {
     backBtn.textContent = currentLang === 'ja' ? '◀全て' : '◀All';
