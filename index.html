@@ -15,8 +15,12 @@
 </head>
 <body>
   <!-- 
-    [File Version Meta]
-    HTML Revision: 01 (Increment this when modifying index.html)
+    ============================================================
+    [HTML Version Management Specification]
+    - 採番範囲: 01 〜 99 (99の次は 01 にループ)
+    - 変更手順: index.html を修正した際、下記の data-html-rev をインクリメントする
+    - 現在のHTML個別番号: 01
+    ============================================================
   -->
 
   <div id="app-container">
@@ -279,6 +283,7 @@
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
-  <script src="script.js"></script>
+  <!-- scriptタグに data-html-rev を付与してJSからバージョンを取得できるようにしています -->
+  <script src="script.js" id="main-script" data-html-rev="01"></script>
 </body>
 </html>
