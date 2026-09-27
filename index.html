@@ -10,254 +10,1086 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
+  <!-- 【GitHub配置対応】ご提示いただいた画像をホーム画面アイコンとして指定 -->
+  <!-- ※ "your-username" と "your-repo" をご自身のGitHubアカウント名・リポジトリ名に書き換えてください -->
   <link rel="apple-touch-icon" href="https://okazakt.github.io/sensor/icon.png">
-  <link rel="shortcut icon" href="https://okazakt.github.io/sensor/icon.png">
 
   <style>
     :root {
       --sheikah-cyan: #00f3ff;
       --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
       --sheikah-orange: #ff9d00;
+      --sheikah-orange-glow: rgba(255, 157, 0, 0.85);
       --sheikah-gold: #c5a059;
       --sheikah-gold-dark: #6e5426;
-      --sheikah-bg: #080a0d;
+      --sheikah-bg: #111417;
       --sheikah-panel: #1b2228;
       --sheikah-border: #3b3226;
       --sheikah-danger: #ff4d4d;
+      
       --botw-yellow: #ffee33;
       --botw-yellow-glow: rgba(255, 238, 51, 0.8);
       --botw-amber: #ffaa00;
     }
 
     * {
-      box-sizing: border-box; margin: 0; padding: 0;
-      user-select: none; -webkit-user-select: none;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
     }
 
     body {
-      background-color: #080a0d; color: #e0f8ff; height: 100vh; overflow: hidden;
-      display: flex; justify-content: center;
+      background-color: #080a0d;
+      color: #e0f8ff;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
     }
 
     #app-container {
-      width: 100%; max-width: 480px; height: 100vh; position: relative; overflow: hidden;
-      background: var(--sheikah-bg); border-left: 2px solid var(--sheikah-border); border-right: 2px solid var(--sheikah-border);
-      display: flex; flex-direction: column;
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      background: var(--sheikah-bg);
+      border-left: 2px solid var(--sheikah-border);
+      border-right: 2px solid var(--sheikah-border);
+      display: flex;
+      flex-direction: column;
     }
 
-    /* 安全警告モーダル */
-    #safety-warning-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(8, 10, 13, 0.98); z-index: 1200;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center;
-    }
-    .warning-box {
-      width: 100%; max-width: 360px; background: var(--sheikah-panel);
-      border: 2px solid var(--sheikah-gold); border-radius: 12px; padding: 24px 20px 18px 20px;
-      box-shadow: 0 0 35px rgba(255, 157, 0, 0.2), inset 0 0 15px rgba(0,0,0,0.8);
-      display: flex; flex-direction: column; align-items: center; gap: 14px; position: relative;
-    }
-    .pwa-lang-btn {
-      position: absolute; top: 14px; right: 14px; background: rgba(3, 8, 14, 0.85);
-      border: 1.5px solid var(--sheikah-gold); color: var(--sheikah-gold); font-size: 0.75rem; font-weight: bold;
-      padding: 5px 10px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; gap: 4px;
-    }
-    .warning-icon { width: 48px; height: 48px; fill: var(--sheikah-orange); filter: drop-shadow(0 0 8px var(--sheikah-orange)); }
-    .warning-title { font-size: 1.1rem; font-weight: bold; color: var(--sheikah-orange); letter-spacing: 1px; }
-    .warning-text { font-size: 0.85rem; color: #e0f8ff; line-height: 1.6; text-align: center; }
-    .btn-warning-ok {
-      width: 100%; padding: 12px; background: rgba(0, 243, 255, 0.2); border: 1.5px solid var(--sheikah-cyan);
-      color: var(--sheikah-cyan); font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer;
-    }
-    .warning-version { font-size: 0.62rem; color: #556270; letter-spacing: 0.5px; margin-top: 4px; }
-
-    /* PWA案内オーバーレイ */
     #pwa-prompt-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(8, 10, 13, 0.96); z-index: 1100; display: none;
-      flex-direction: column; align-items: center; justify-content: center; padding: 30px 24px; text-align: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 10, 13, 0.96);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 24px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    #pwa-prompt-overlay.show { display: flex; }
-    .pwa-relic-box {
-      width: 100%; max-width: 380px; background: var(--sheikah-panel); border: 2px solid var(--sheikah-gold);
-      border-radius: 12px; padding: 24px 20px; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); position: relative;
+    #pwa-prompt-overlay.show {
+      display: flex;
     }
-    .pwa-sheikah-eye { width: 52px; height: 52px; margin: 10px auto 16px auto; }
-    .pwa-title { font-size: 1.15rem; font-weight: bold; color: var(--sheikah-gold); margin-bottom: 8px; }
-    .pwa-desc { font-size: 0.82rem; color: #b0c4de; line-height: 1.55; margin-bottom: 20px; text-align: left; }
-    .pwa-step-card { background: rgba(3, 8, 14, 0.85); border: 1px solid var(--sheikah-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
-    .pwa-step-item { font-size: 0.8rem; color: #e0f8ff; display: flex; align-items: center; gap: 10px; }
-    .pwa-step-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 243, 255, 0.15); border: 1.5px solid var(--sheikah-cyan); color: var(--sheikah-cyan); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.72rem; flex-shrink: 0; }
-    .btn-dev-skip { background: transparent; border: none; color: #667788; font-size: 0.72rem; text-decoration: underline; cursor: pointer; margin-top: 4px; }
 
-    .top-left-ctrl { position: absolute; top: 18px; left: 18px; z-index: 25; }
-    .top-right-ctrl { position: absolute; top: 18px; right: 18px; z-index: 25; }
+    .pwa-relic-box {
+      width: 100%;
+      max-width: 380px;
+      background: var(--sheikah-panel);
+      border: 2px solid var(--sheikah-gold);
+      border-radius: 12px;
+      padding: 24px 20px;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 15px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .pwa-lang-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(3, 8, 14, 0.85);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pwa-lang-btn:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
+
+    .pwa-sheikah-eye {
+      width: 60px;
+      height: 60px;
+      margin: 10px auto 16px auto;
+      fill: var(--sheikah-cyan);
+      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+    }
+
+    .pwa-title {
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: var(--sheikah-gold);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .pwa-desc {
+      font-size: 0.82rem;
+      color: #b0c4de;
+      line-height: 1.55;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .pwa-step-card {
+      background: rgba(3, 8, 14, 0.85);
+      border: 1px solid var(--sheikah-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .pwa-step-item {
+      font-size: 0.8rem;
+      color: #e0f8ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pwa-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+    }
+
+    .btn-dev-skip {
+      background: transparent;
+      border: none;
+      color: #667788;
+      font-size: 0.72rem;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    #arrival-flash-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 300;
+    }
+    .flash-anim {
+      animation: arrival-screen-flash 0.8s ease-out forwards;
+    }
+    @keyframes arrival-screen-flash {
+      0% { opacity: 0.85; background: var(--sheikah-cyan); }
+      30% { opacity: 0.5; background: #fff; }
+      100% { opacity: 0; }
+    }
+
+    .top-left-ctrl {
+      position: absolute;
+      top: calc(max(env(safe-area-inset-top), 36px) + 6px);
+      left: 18px;
+      z-index: 25;
+    }
+    .top-right-ctrl {
+      position: absolute;
+      top: calc(max(env(safe-area-inset-top), 36px) + 6px);
+      right: 18px;
+      z-index: 25;
+    }
 
     .top-icon-btn {
-      width: 40px; height: 40px; background: rgba(3, 8, 14, 0.85); border: 2px solid var(--sheikah-gold);
-      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0;
+      width: 40px;
+      height: 40px;
+      background: rgba(3, 8, 14, 0.85);
+      border: 2px solid var(--sheikah-gold);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.9);
+      transition: transform 0.2s ease;
+      overflow: hidden;
+      padding: 0;
     }
+    .top-icon-btn:active {
+      transform: scale(0.92);
+    }
+
     .lang-toggle-btn {
-      background: rgba(3, 8, 14, 0.85); border: 1.5px solid var(--sheikah-gold); color: var(--sheikah-gold);
-      font-size: 0.78rem; font-weight: bold; padding: 6px 12px; border-radius: 18px; cursor: pointer; display: flex; align-items: center; gap: 5px;
+      background: rgba(3, 8, 14, 0.85);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      font-size: 0.78rem;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 18px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .lang-toggle-btn:active {
+      background: var(--sheikah-gold);
+      color: #000;
     }
 
     .top-section {
-      width: 100%; height: 52vh; position: relative; background: #080a0d;
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      width: 100%;
+      height: 52vh;
+      position: relative;
+      background: radial-gradient(circle at center, #262c33 0%, #111417 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding-top: max(env(safe-area-inset-top), 32px);
     }
+
     .sheikah-divider-bar {
-      width: 100%; height: 6px; background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 6px #000; z-index: 10; flex-shrink: 0;
-    }
-    .relic-circuit {
-      position: absolute; width: 100%; height: 100%; pointer-events: none; opacity: 0.35;
-      background: radial-gradient(circle at 10% 15%, var(--sheikah-orange) 2px, transparent 3px), radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
-    }
-    .circle-map-wrapper {
-      position: relative; width: min(86vw, 330px); height: min(86vw, 330px); border-radius: 50%; padding: 6px;
+      width: 100%;
+      height: 6px;
       background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000; margin-top: 8px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 6px #000;
+      z-index: 10;
+      flex-shrink: 0;
     }
-    .circle-map-wrapper.signal-idle { box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000; }
-    .circle-map-wrapper.signal-level1 { box-shadow: 0 0 20px rgba(0, 243, 255, 0.7), inset 0 0 10px var(--sheikah-cyan); }
-    .circle-map-wrapper.signal-level2 { box-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff; }
-    .circle-map-wrapper.signal-level3 { box-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff; }
-    .circle-map-wrapper.signal-level4 { box-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff; border: 2px solid #fff; }
 
-    .day-mode .circle-map-wrapper.signal-level1 { box-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow); }
-    .day-mode .circle-map-wrapper.signal-level2 { box-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff; }
-    .day-mode .circle-map-wrapper.signal-level3 { box-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff; }
-    .day-mode .circle-map-wrapper.signal-level4 { box-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff; border: 2px solid var(--botw-yellow); }
+    .relic-circuit {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.35;
+      background: 
+        radial-gradient(circle at 10% 15%, var(--sheikah-orange) 2px, transparent 3px),
+        radial-gradient(circle at 90% 85%, var(--sheikah-cyan) 2px, transparent 3px);
+    }
 
-    #map-container { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: relative; background: #03080e; }
-    #map { width: 100%; height: 100%; transform-origin: center center; }
+    .circle-map-wrapper {
+      position: relative;
+      width: min(86vw, 330px);
+      height: min(86vw, 330px);
+      border-radius: 50%;
+      padding: 6px;
+      background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
+      margin-top: 8px;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
 
-    .gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] { display: none !important; }
+    .circle-map-wrapper.signal-idle {
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
+      animation: none;
+    }
+    .circle-map-wrapper.signal-level1 {
+      box-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
+      animation: ring-pulse-1 2.5s infinite ease-in-out;
+    }
+    .circle-map-wrapper.signal-level2 {
+      box-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
+      animation: ring-pulse-2 1.5s infinite ease-in-out;
+    }
+    .circle-map-wrapper.signal-level3 {
+      box-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
+      animation: ring-pulse-3 0.8s infinite ease-in-out;
+    }
+    .circle-map-wrapper.signal-level4 {
+      box-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
+      animation: ring-pulse-4 0.45s infinite ease-in-out;
+      border: 2px solid #fff;
+    }
 
-    .player-pointer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 28px; pointer-events: none; z-index: 5; }
-    .player-pointer svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 10px var(--sheikah-cyan)); }
-    .day-mode .player-pointer svg { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75)); }
+    .day-mode .circle-map-wrapper.signal-level1 {
+      box-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
+    }
+    .day-mode .circle-map-wrapper.signal-level2 {
+      box-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff;
+    }
+    .day-mode .circle-map-wrapper.signal-level3 {
+      box-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff;
+    }
+    .day-mode .circle-map-wrapper.signal-level4 {
+      box-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff;
+      border: 2px solid var(--botw-yellow);
+    }
+
+    @keyframes ring-pulse-1 {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.01); filter: brightness(1.2); }
+    }
+    @keyframes ring-pulse-2 {
+      0%, 100% { transform: scale(1); filter: brightness(1.1); }
+      50% { transform: scale(1.02); filter: brightness(1.35); }
+    }
+    @keyframes ring-pulse-3 {
+      0%, 100% { transform: scale(1); filter: brightness(1.2); }
+      50% { transform: scale(1.03); filter: brightness(1.55); }
+    }
+    @keyframes ring-pulse-4 {
+      0%, 100% { transform: scale(1.01); filter: brightness(1.4) contrast(1.2); }
+      50% { transform: scale(1.05); filter: brightness(1.9) contrast(1.5); }
+    }
+
+    #map-container {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      background: #03080e;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: center center;
+    }
+
+    .gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] {
+      display: none !important;
+    }
+
+    .player-pointer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 28px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .player-pointer svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+      transition: filter 0.3s ease;
+    }
+    .day-mode .player-pointer svg {
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
+    }
 
     .radar-pulse-ring {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      border-radius: 50%; border: 2px solid var(--sheikah-cyan); opacity: 0; pointer-events: none; z-index: 4;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid var(--sheikah-cyan);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 4;
     }
-    .day-mode .radar-pulse-ring { border-color: var(--botw-yellow); }
+    .day-mode .radar-pulse-ring {
+      border-color: var(--botw-yellow);
+    }
+
+    .pulse-anim {
+      animation: pulse-out-anim 0.65s ease-out forwards;
+    }
+    .pulse-double-anim {
+      animation: pulse-out-double 0.4s ease-out forwards;
+    }
+
+    @keyframes pulse-out-anim {
+      0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
+    }
+    .day-mode .pulse-anim {
+      animation-name: pulse-out-anim-day;
+    }
+    @keyframes pulse-out-anim-day {
+      0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: var(--botw-yellow); }
+    }
+
+    @keyframes pulse-out-double {
+      0% { width: 30px; height: 30px; opacity: 1; border-color: var(--sheikah-orange); }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: #fff; }
+    }
+    .day-mode .pulse-double-anim {
+      animation-name: pulse-out-double-day;
+    }
+    @keyframes pulse-out-double-day {
+      0% { width: 30px; height: 30px; opacity: 1; border-color: var(--botw-amber); }
+      100% { width: 340px; height: 340px; opacity: 0; border-color: var(--botw-yellow); }
+    }
 
     .bottom-section {
-      width: 100%; height: 48vh; background: var(--sheikah-panel); padding: 10px 16px 8px 16px;
-      display: flex; flex-direction: column; justify-content: space-between; position: relative;
+      width: 100%;
+      height: 48vh;
+      background: var(--sheikah-panel);
+      padding: 10px 16px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
     }
-    .input-row { display: flex; gap: 8px; align-items: center; height: 46px; }
-    .keyword-input-wrap { flex: 1; height: 100%; position: relative; display: flex; align-items: center; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      height: 46px;
+    }
+
+    .keyword-input-wrap {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
     .keyword-input-wrap input {
-      width: 100%; height: 100%; background: rgba(3, 8, 14, 0.9); border: 1.5px solid var(--sheikah-gold);
-      color: var(--sheikah-cyan); padding: 0 38px 0 12px; font-size: 0.98rem; border-radius: 6px; outline: none;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 8, 14, 0.9);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-cyan);
+      padding: 0 38px 0 12px;
+      font-size: 0.98rem;
+      border-radius: 6px;
+      outline: none;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
     }
+    .keyword-input-wrap input:focus {
+      border-color: var(--sheikah-cyan);
+      box-shadow: 0 0 10px var(--sheikah-cyan-glow);
+    }
+
     .btn-input-clear {
-      position: absolute; right: 8px; width: 24px; height: 24px; border-radius: 50%;
-      background: rgba(0, 243, 255, 0.15); border: 1px solid var(--sheikah-cyan); color: var(--sheikah-cyan);
-      font-size: 0.75rem; display: none; align-items: center; justify-content: center; cursor: pointer;
+      position: absolute;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.75rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
     }
-    .btn-input-clear.show { display: flex; }
+    .btn-input-clear.show {
+      display: flex;
+    }
 
     .dial-lock {
-      width: 72px; height: 46px; background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
-      border: 1.5px solid var(--sheikah-gold); border-radius: 6px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; flex-shrink: 0; position: relative;
+      width: 72px;
+      height: 46px;
+      background: linear-gradient(180deg, #111 0%, #2f271a 50%, #111 100%);
+      border: 1.5px solid var(--sheikah-gold);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      flex-shrink: 0;
+      position: relative;
     }
-    .dial-label { font-size: 0.58rem; color: var(--sheikah-orange); letter-spacing: 1px; }
-    .dial-value { font-size: 0.88rem; font-weight: bold; color: var(--sheikah-cyan); }
-    .dial-select-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .dial-label {
+      font-size: 0.58rem;
+      color: var(--sheikah-orange);
+      letter-spacing: 1px;
+    }
+    .dial-value {
+      font-size: 0.88rem;
+      font-weight: bold;
+      color: var(--sheikah-cyan);
+    }
+
+    .dial-select-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
 
     .btn-set {
-      height: 46px; padding: 0 16px; background: rgba(0, 243, 255, 0.15); border: 1.5px solid var(--sheikah-cyan);
-      color: var(--sheikah-cyan); font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+      height: 46px;
+      padding: 0 16px;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+      flex-shrink: 0;
+    }
+    .btn-set:active {
+      background: var(--sheikah-cyan);
+      color: #000;
     }
 
     .status-panel {
-      background: rgba(3, 8, 14, 0.65); border: 1px solid #334; border-radius: 6px; padding: 8px 12px;
-      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(3, 8, 14, 0.65);
+      border: 1px solid #334;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .target-meta-info { font-size: 0.78rem; color: var(--sheikah-cyan); margin-bottom: 2px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .unknown-badge { display: flex; align-items: baseline; gap: 6px; }
-    .unknown-count { font-size: 1.45rem; font-weight: bold; color: var(--sheikah-orange); text-shadow: 0 0 8px var(--sheikah-orange); }
-    .search-status-badge { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; max-width: 55%; }
-    .status-indicator { font-size: 0.8rem; font-weight: bold; letter-spacing: 1px; }
-    .status-indicator.active { color: var(--sheikah-cyan); animation: blink-anim 1.5s infinite; }
-    .status-indicator.paused { color: #889; }
-    @keyframes blink-anim { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    .btn-group { display: flex; flex-direction: column; gap: 6px; }
-    .dual-btn-row { display: flex; gap: 8px; }
+    .target-meta-info {
+      font-size: 0.78rem;
+      color: var(--sheikah-cyan);
+      margin-bottom: 2px;
+      opacity: 0.95;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .unknown-badge {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .unknown-count {
+      font-size: 1.45rem;
+      font-weight: bold;
+      color: var(--sheikah-orange);
+      text-shadow: 0 0 8px var(--sheikah-orange);
+    }
+
+    .search-status-badge {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      max-width: 55%;
+    }
+
+    .status-indicator {
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .status-indicator.active {
+      color: var(--sheikah-cyan);
+      animation: blink-anim 1.5s infinite;
+    }
+    .status-indicator.paused {
+      color: #889;
+    }
+
+    @keyframes blink-anim {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dual-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
     .btn-sheikah {
-      background: rgba(197, 160, 89, 0.1); border: 1.5px solid var(--sheikah-gold); color: var(--sheikah-gold);
-      padding: 10px; font-size: 0.88rem; font-weight: bold; border-radius: 6px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 7px;
+      background: rgba(197, 160, 89, 0.1);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      padding: 10px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
     }
-    .svg-icon { width: 16px; height: 16px; fill: currentColor; display: inline-block; vertical-align: middle; flex-shrink: 0; }
-    .btn-pause-toggle { background: rgba(0, 243, 255, 0.12); border-color: var(--sheikah-cyan); color: var(--sheikah-cyan); }
-    .btn-pause-toggle.paused { background: rgba(197, 160, 89, 0.08); border-color: #667788; color: #8899aa; }
-    .btn-sub-control { flex: 1; border-color: #556677; color: #778899; background: rgba(20, 25, 30, 0.6); font-size: 0.78rem; }
-    .btn-sub-control.active { border-color: var(--sheikah-cyan); color: var(--sheikah-cyan); background: rgba(0, 243, 255, 0.15); }
-    .app-version-footer { display: flex; justify-content: space-between; font-size: 0.62rem; color: #556270; margin-top: 2px; }
+    .btn-sheikah:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
 
+    .svg-icon {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .btn-pause-toggle {
+      background: rgba(0, 243, 255, 0.12);
+      border-color: var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.25);
+    }
+    .btn-pause-toggle.paused {
+      background: rgba(197, 160, 89, 0.08);
+      border-color: #667788;
+      color: #8899aa;
+      box-shadow: none;
+    }
+
+    .btn-sub-control {
+      flex: 1;
+      border-color: #556677;
+      color: #778899;
+      background: rgba(20, 25, 30, 0.6);
+      font-size: 0.78rem;
+    }
+    .btn-sub-control.active {
+      border-color: var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.15);
+      box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
+    }
+
+    .app-version-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: #556270;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* ===================================================
+       スライド画面共通
+    =================================================== */
     .slide-page {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--sheikah-bg);
-      z-index: 100; display: flex; flex-direction: column; transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s; pointer-events: none; visibility: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--sheikah-bg);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+      pointer-events: none;
+      visibility: hidden;
+      box-shadow: -6px 0 25px rgba(0,0,0,0.85);
     }
-    .slide-page.open { transform: translateX(0); pointer-events: auto; visibility: visible; }
-    .page-header {
-      padding-top: calc(max(env(safe-area-inset-top), 48px) + 12px); padding-bottom: 14px; padding-left: 16px; padding-right: 16px;
-      background: #151a20; border-bottom: 2px solid var(--sheikah-gold); display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    .slide-page.open {
+      transform: translateX(0);
+      pointer-events: auto;
+      visibility: visible;
     }
-    .back-btn { color: var(--sheikah-cyan); background: rgba(0, 243, 255, 0.1); border: 1.5px solid var(--sheikah-cyan); font-size: 0.88rem; font-weight: bold; cursor: pointer; padding: 7px 12px; border-radius: 20px; }
-    .btn-home-shortcut { color: var(--sheikah-gold); background: rgba(197, 160, 89, 0.12); border: 1.5px solid var(--sheikah-gold); cursor: pointer; padding: 7px 18px; border-radius: 20px; }
-    .page-title-text { font-size: 1.05rem; font-weight: bold; color: var(--sheikah-gold); text-align: center; flex: 1; }
-    .filter-bar { padding: 10px 14px; background: rgba(0,0,0,0.4); display: flex; gap: 8px; align-items: center; height: 58px; }
-    .sheikah-input-wrap { flex: 1; height: 42px; position: relative; display: flex; align-items: center; }
-    .sheikah-input-wrap input { width: 100%; height: 100%; background: rgba(3, 8, 14, 0.9); border: 1.5px solid var(--sheikah-gold); color: var(--sheikah-cyan); padding: 0 32px 0 10px; border-radius: 6px; }
-    .sheikah-select-box { flex: 1; height: 42px; background: linear-gradient(180deg, #111 0%, #2b2214 50%, #111 100%); border: 1.5px solid var(--sheikah-gold); color: var(--sheikah-cyan); padding: 0 8px; border-radius: 6px; font-weight: bold; }
-    .action-sub-bar { padding: 6px 16px 10px 16px; background: rgba(0,0,0,0.4); display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-    .btn-clean-zero { background: rgba(255, 77, 77, 0.12); border: 1.5px solid var(--sheikah-danger); color: var(--sheikah-danger); font-size: 0.78rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-    .btn-data-transfer { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--sheikah-cyan); color: var(--sheikah-cyan); font-size: 0.78rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .list-scroll { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
-    .list-item { background: rgba(27, 34, 40, 0.95); border: 1px solid var(--sheikah-border); border-left: 5px solid var(--sheikah-gold); padding: 12px 14px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
-    .list-item-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .list-item-left { flex: 1; min-width: 0; }
-    .list-item-title { font-weight: bold; font-size: 1.05rem; color: #fff; }
-    .list-item-sub { font-size: 0.78rem; color: #99a; margin-top: 4px; }
-    .item-right-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .btn-sheikah-sm { padding: 6px 12px; font-size: 0.76rem; font-weight: bold; background: rgba(0, 243, 255, 0.12); border: 1.5px solid var(--sheikah-cyan); color: var(--sheikah-cyan); border-radius: 4px; cursor: pointer; }
-    .btn-sheikah-sm.off { border-color: #666; color: #888; background: transparent; }
-    .btn-copy-sm { border-color: var(--sheikah-gold); color: var(--sheikah-gold); background: rgba(197, 160, 89, 0.1); }
-    .btn-maps-intent { border-color: #ffaa00; color: #ffbb33; background: rgba(255, 170, 0, 0.12); }
-    .btn-danger-sm { border-color: var(--sheikah-danger); color: var(--sheikah-danger); background: rgba(255, 77, 77, 0.12); }
-    .action-button-row { display: flex; gap: 8px; justify-content: flex-end; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.08); flex-wrap: wrap; }
 
-    #page-spot-detail { z-index: 150; }
-    .spot-detail-content { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-    .detail-card-panel { background: rgba(27, 34, 40, 0.95); border: 1.5px solid var(--sheikah-gold); border-radius: 8px; padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
-    .spot-name-header { font-size: 1.25rem; font-weight: bold; color: #fff; margin-bottom: 6px; }
-    .spot-address-text { font-size: 0.82rem; color: #99aabb; }
-    .photo-gallery-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
-    .gallery-minimap-wrap { flex: 0 0 85%; height: 220px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--sheikah-gold); scroll-snap-align: center; background: #03080e; position: relative; }
-    #detail-minimap { width: 100%; height: 100%; }
-    .minimap-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(3, 8, 14, 0.85); border: 1px solid var(--sheikah-cyan); color: var(--sheikah-cyan); font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold; }
-    .gallery-img-wrap { flex: 0 0 85%; height: 220px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--sheikah-cyan); scroll-snap-align: center; background: #000; }
-    .gallery-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .no-photos-box { padding: 30px 10px; text-align: center; color: #889; font-size: 0.85rem; border: 1px dashed #445; border-radius: 6px; }
+    .page-header {
+      padding-top: calc(max(env(safe-area-inset-top), 48px) + 12px);
+      padding-bottom: 14px;
+      padding-left: 16px;
+      padding-right: 16px;
+      background: #151a20;
+      border-bottom: 2px solid var(--sheikah-gold);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .back-btn {
+      color: var(--sheikah-cyan);
+      background: rgba(0, 243, 255, 0.1);
+      border: 1.5px solid var(--sheikah-cyan);
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 7px 12px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .back-btn:active {
+      background: var(--sheikah-cyan);
+      color: #000;
+    }
+
+    .btn-home-shortcut {
+      color: var(--sheikah-gold);
+      background: rgba(197, 160, 89, 0.12);
+      border: 1.5px solid var(--sheikah-gold);
+      cursor: pointer;
+      padding: 7px 18px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .btn-home-shortcut:active {
+      background: var(--sheikah-gold);
+      color: #000;
+    }
+    .btn-home-shortcut .svg-icon {
+      width: 17px;
+      height: 17px;
+    }
+
+    .page-title-text {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--sheikah-gold);
+      letter-spacing: 0.5px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .filter-bar {
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      height: 58px;
+    }
+
+    .sheikah-input-wrap {
+      flex: 1;
+      height: 42px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .sheikah-input-wrap input {
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 8, 14, 0.9);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-cyan);
+      padding: 0 32px 0 10px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      outline: none;
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+    }
+    .sheikah-input-wrap input:focus {
+      border-color: var(--sheikah-cyan);
+      box-shadow: 0 0 8px var(--sheikah-cyan-glow);
+    }
+
+    .sheikah-select-box {
+      flex: 1;
+      height: 42px;
+      background: linear-gradient(180deg, #111 0%, #2b2214 50%, #111 100%);
+      border: 1.5px solid var(--sheikah-gold);
+      color: var(--sheikah-cyan);
+      padding: 0 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      outline: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    .action-sub-bar {
+      padding: 6px 16px 10px 16px;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .btn-clean-zero {
+      background: rgba(255, 77, 77, 0.12);
+      border: 1.5px solid var(--sheikah-danger);
+      color: var(--sheikah-danger);
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-clean-zero:active {
+      background: var(--sheikah-danger);
+      color: #fff;
+    }
+
+    .list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .list-item {
+      background: rgba(27, 34, 40, 0.95);
+      border: 1px solid var(--sheikah-border);
+      border-left: 5px solid var(--sheikah-gold);
+      padding: 12px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .list-item:active {
+      background: rgba(45, 55, 65, 0.95);
+    }
+
+    .list-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .list-item-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-title {
+      font-weight: bold;
+      font-size: 1.05rem;
+      color: #fff;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.35;
+      display: block;
+    }
+
+    .list-item-sub {
+      font-size: 0.78rem;
+      color: #99a;
+      margin-top: 4px;
+    }
+
+    .item-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-sheikah-sm {
+      padding: 6px 12px;
+      font-size: 0.76rem;
+      font-weight: bold;
+      background: rgba(0, 243, 255, 0.12);
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-sheikah-sm:active {
+      background: var(--sheikah-cyan);
+      color: #000;
+    }
+    .btn-sheikah-sm.off {
+      border-color: #666;
+      color: #888;
+      background: transparent;
+    }
+
+    .btn-copy-sm {
+      border-color: var(--sheikah-gold);
+      color: var(--sheikah-gold);
+      background: rgba(197, 160, 89, 0.1);
+    }
+
+    .btn-maps-intent {
+      border-color: #ffaa00;
+      color: #ffbb33;
+      background: rgba(255, 170, 0, 0.12);
+    }
+    .btn-maps-intent:active {
+      background: #ffaa00;
+      color: #000;
+    }
+
+    .btn-danger-sm {
+      border-color: var(--sheikah-danger);
+      color: var(--sheikah-danger);
+      background: rgba(255, 77, 77, 0.12);
+    }
+    .btn-danger-sm:active {
+      background: var(--sheikah-danger);
+      color: #fff;
+    }
+
+    .action-button-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255,255,255,0.08);
+      flex-wrap: wrap;
+    }
+
+    /* ===================================================
+       第4画面：スポット詳細（ミニマップ＆現地写真カルーセル）
+    =================================================== */
+    #page-spot-detail {
+      z-index: 150;
+    }
+    .spot-detail-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .detail-card-panel {
+      background: rgba(27, 34, 40, 0.95);
+      border: 1.5px solid var(--sheikah-gold);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+    .spot-name-header {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #fff;
+      line-height: 1.35;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .spot-address-text {
+      font-size: 0.82rem;
+      color: #99aabb;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .photo-gallery-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+    }
+    
+    .gallery-minimap-wrap {
+      flex: 0 0 85%;
+      height: 220px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid var(--sheikah-gold);
+      box-shadow: 0 0 12px rgba(197, 160, 89, 0.3);
+      scroll-snap-align: center;
+      background: #03080e;
+      position: relative;
+    }
+    #detail-minimap {
+      width: 100%;
+      height: 100%;
+    }
+    .minimap-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(3, 8, 14, 0.85);
+      border: 1px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      border-radius: 10px;
+      pointer-events: none;
+      font-weight: bold;
+    }
+
+    .gallery-img-wrap {
+      flex: 0 0 85%;
+      height: 220px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--sheikah-cyan);
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
+      scroll-snap-align: center;
+      background: #000;
+    }
+    .gallery-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .no-photos-box {
+      padding: 30px 10px;
+      text-align: center;
+      color: #889;
+      font-size: 0.85rem;
+      border: 1px dashed #445;
+      border-radius: 6px;
+    }
 
     #toast-banner {
-      position: absolute; top: calc(max(env(safe-area-inset-top), 32px) + 10px); left: 5%; width: 90%;
-      background: rgba(3, 8, 14, 0.95); border: 2px solid var(--sheikah-cyan); box-shadow: 0 0 25px var(--sheikah-cyan-glow);
-      color: #fff; padding: 14px; border-radius: 8px; text-align: center; z-index: 400; transform: translateY(-200%);
+      position: absolute;
+      top: calc(max(env(safe-area-inset-top), 32px) + 10px);
+      left: 5%;
+      width: 90%;
+      background: rgba(3, 8, 14, 0.95);
+      border: 2px solid var(--sheikah-cyan);
+      box-shadow: 0 0 25px var(--sheikah-cyan-glow);
+      color: #fff;
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 400;
+      transform: translateY(-200%);
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
-    #toast-banner.show { transform: translateY(0); }
+    #toast-banner.show {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -265,26 +1097,14 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <div id="safety-warning-overlay">
-      <div class="warning-box">
-        <button class="pwa-lang-btn" id="safety-lang-btn" style="top:12px; right:12px;">
-          <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
-          <span id="safety-lang-label">→EN</span>
-        </button>
-        <svg class="warning-icon" viewBox="0 0 24 24"><path d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"/></svg>
-        <div class="warning-title" id="warning-title">安全にお楽しみいただくために</div>
-        <div class="warning-text" id="warning-text">「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。</div>
-        <button class="btn-warning-ok" id="btn-warning-ok">OK / 同意して始める</button>
-        <div class="warning-version">v0.26.092.1010</div>
-      </div>
-    </div>
-
+    <!-- PWA推奨案内オーバーレイ -->
     <div id="pwa-prompt-overlay">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
           <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
           <span id="pwa-lang-label">→EN</span>
         </button>
+
         <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
           <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
           <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
@@ -292,23 +1112,39 @@
           <circle cx="24" cy="24" r="8" fill="none" stroke="#ffee33" stroke-width="1.5" opacity="0.8"/>
           <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ffee33"/>
         </svg>
+
         <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>
-        <div class="pwa-desc" id="pwa-prompt-desc">「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。</div>
-        <div class="pwa-step-card">
-          <div class="pwa-step-item"><div class="pwa-step-num">1</div><span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span></div>
-          <div class="pwa-step-item"><div class="pwa-step-num">2</div><span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span></div>
-          <div class="pwa-step-item"><div class="pwa-step-num">3</div><span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span></div>
+        <div class="pwa-desc" id="pwa-prompt-desc">
+          「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。
         </div>
+
+        <div class="pwa-step-card">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span>
+          </div>
+        </div>
+
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
       </div>
     </div>
 
+    <!-- 左上：昼夜切り替え -->
     <div class="top-left-ctrl">
       <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
         <svg id="svg-map-contrast" viewBox="0 0 36 36" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></svg>
       </button>
     </div>
 
+    <!-- 右上：言語切り替えトグル -->
     <div class="top-right-ctrl">
       <button class="lang-toggle-btn" id="lang-toggle-btn">
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
@@ -321,6 +1157,7 @@
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 5px; color: var(--sheikah-cyan);"></div>
     </div>
 
+    <!-- 上部：正円マップ -->
     <div class="top-section">
       <div class="relic-circuit"></div>
       <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
@@ -336,14 +1173,17 @@
       </div>
     </div>
 
+    <!-- 立体ゴールドモールドライン -->
     <div class="sheikah-divider-bar"></div>
 
+    <!-- 下部：操作パネル -->
     <div class="bottom-section" id="main-bottom-panel">
       <div class="input-row">
         <div class="keyword-input-wrap">
           <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
           <button class="btn-input-clear" id="btn-input-clear">✕</button>
         </div>
+
         <div class="dial-lock" id="dial-btn">
           <div class="dial-label">RADIUS</div>
           <div class="dial-value" id="radius-val">3km</div>
@@ -356,6 +1196,7 @@
             <option value="5">100km</option>
           </select>
         </div>
+
         <button class="btn-set" id="set-btn">SET</button>
       </div>
 
@@ -370,7 +1211,9 @@
         </div>
         <div class="search-status-badge">
           <div class="status-indicator paused" id="status-indicator">STANDBY</div>
-          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">--</div>
+          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">
+            --
+          </div>
         </div>
       </div>
 
@@ -397,7 +1240,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>v0.26.092.1010</span>
+        <span>VER: <span id="app-build-ver">v0.26.091.262350</span></span>
       </div>
     </div>
 
@@ -406,7 +1249,9 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-main">◀ メイン</button>
         <div class="page-title-text" id="title-page-keywords">図鑑キーワード</div>
-        <button class="btn-home-shortcut" id="home-from-keywords" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+        <button class="btn-home-shortcut" id="home-from-keywords" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -431,7 +1276,9 @@
       <div class="page-header">
         <button class="back-btn" id="back-to-keywords">◀ 履歴一覧</button>
         <div class="page-title-text" id="history-header-title">到達履歴</div>
-        <button class="btn-home-shortcut" id="home-from-history" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+        <button class="btn-home-shortcut" id="home-from-history" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -451,23 +1298,27 @@
       <div class="list-scroll" id="history-list-container"></div>
     </div>
 
-    <!-- 第4画面：スポット詳細 -->
+    <!-- 第4画面：スポット詳細（ミニマップ＆現地写真カルーセル） -->
     <div class="slide-page" id="page-spot-detail">
       <div class="page-header">
         <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
         <div class="page-title-text" id="detail-header-title">スポット詳細</div>
-        <button class="btn-home-shortcut" id="home-from-detail" title="Home"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+        <button class="btn-home-shortcut" id="home-from-detail" title="Home">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
       </div>
       <div class="spot-detail-content">
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
+          
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
             <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
             <button class="btn-sheikah-sm" id="detail-btn-toggle-radar">レーダーON</button>
             <button class="btn-sheikah-sm btn-copy-sm" id="detail-btn-copy">コピー</button>
             <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
           </div>
+
           <div class="action-button-row" style="margin-top: 8px;">
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review">★ クチコミ投稿</button>
             <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-photo">
@@ -476,8 +1327,13 @@
             </button>
           </div>
         </div>
-        <div id="detail-gallery-header" style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">現地ギャラリー (Google Places)</div>
-        <div id="detail-photos-container"><div class="no-photos-box" id="detail-loading-box">写真を取得中...</div></div>
+
+        <div id="detail-gallery-header" style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">
+          現地ギャラリー (Google Places)
+        </div>
+        <div id="detail-photos-container">
+          <div class="no-photos-box" id="detail-loading-box">写真を取得中...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -485,19 +1341,49 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
+    // ===================================================
+    // 0. 国際化 ＆ 初期言語の自動判定
+    // ===================================================
     const I18N = {
       ja: {
-        inputPlaceholder: "探す対象を入力...", btnSet: "SET", unvisited: "未踏:", detecting: "件探知中",
-        standby: "STANDBY", searching: "SEARCHING...", paused: "PAUSED",
-        sensorActive: "SENSOR: ACTIVE", sensorPaused: "SENSOR: PAUSED", sensorStandby: "SENSOR: STANDBY",
-        soundOn: "SOUND: ON", soundOff: "SOUND: MUTED", wakeLockOn: "WAKE LOCK: ON", wakeLockOff: "WAKE LOCK: OFF",
-        langSwitchLabel: "→EN", compendiumBtn: "到達済みリスト (図鑑)", footerTip: "※消音時も円周の光とフラッシュで反応",
-        backToMain: "◀ メイン", keywordsTitle: "図鑑キーワード", filterKeywordsPlaceholder: "キーワード絞り込み...",
-        filterHistoryPlaceholder: "到達スポット絞り込み...", sortSearch: "検索日時順", sortArrival: "到達日時順",
-        sortCount: "到達件数降順", cleanZeroBtn: "到達0件の履歴を一括削除", deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-        dataTransferBtn: "データ引き継ぎ", backToKeywords: "◀ 履歴一覧", backToHistory: "◀ 到達リスト", spotDetailTitle: "スポット詳細",
-        deleteBtn: "削除", sortHNear: "現在地から近い順", sortHDesc: "到達日時が新しい順", sortHAsc: "到達日時が古い順", sortHName: "名称あいうえお順",
-        noSpotsInRange: "範囲内に対象なし", spotDetected: "探知反応あり", emptyHistory: "このキーワードでの到達実績はまだありません。",
+        inputPlaceholder: "探す対象を入力...",
+        btnSet: "SET",
+        unvisited: "未踏:",
+        detecting: "件探知中",
+        standby: "STANDBY",
+        searching: "SEARCHING...",
+        paused: "PAUSED",
+        sensorActive: "SENSOR: ACTIVE",
+        sensorPaused: "SENSOR: PAUSED",
+        sensorStandby: "SENSOR: STANDBY",
+        soundOn: "SOUND: ON",
+        soundOff: "SOUND: MUTED",
+        wakeLockOn: "WAKE LOCK: ON",
+        wakeLockOff: "WAKE LOCK: OFF",
+        langSwitchLabel: "→EN",
+        compendiumBtn: "到達済みリスト (図鑑)",
+        footerTip: "※消音時も円周の光とフラッシュで反応",
+        backToMain: "◀ メイン",
+        keywordsTitle: "図鑑キーワード",
+        filterKeywordsPlaceholder: "キーワード絞り込み...",
+        filterHistoryPlaceholder: "到達スポット絞り込み...",
+        sortSearch: "検索日時順",
+        sortArrival: "到達日時順",
+        sortCount: "到達件数降順",
+        cleanZeroBtn: "到達0件の履歴を一括削除",
+        deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
+        dataTransferBtn: "データ引き継ぎ",
+        backToKeywords: "◀ 履歴一覧",
+        backToHistory: "◀ 到達リスト",
+        spotDetailTitle: "スポット詳細",
+        deleteBtn: "削除",
+        sortHNear: "現在地から近い順",
+        sortHDesc: "到達日時が新しい順",
+        sortHAsc: "到達日時が古い順",
+        sortHName: "名称あいうえお順",
+        noSpotsInRange: "範囲内に対象なし",
+        spotDetected: "探知反応あり",
+        emptyHistory: "このキーワードでの到達実績はまだありません。",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `マップに「${name}」が記録されました`,
         toastCopied: (name) => `「${name}」をコピーしました`,
@@ -505,13 +1391,17 @@
         targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
         arrivalCount: (c) => `到達数: ${c} 箇所`,
         arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
-        radarOn: "レーダーON", radarOff: "レーダーOFF", copyBtn: "コピー",
-        mapsReviewBtn: "★ クチコミ投稿", mapsPhotoBtn: "写真を追加",
-        galleryHeader: "現地ギャラリー (Google Places)", loadingPhotos: "写真を取得中...", loadingAddress: "住所情報を照会中...",
-        noAddress: "住所情報なし", noPhotosText: "Googleマップに登録された写真がありません。", minimapBadge: "位置マップ",
-        warningTitle: "安全にお楽しみいただくために",
-        warningText: "「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
-        warningOk: "OK / 同意して始める",
+        radarOn: "レーダーON",
+        radarOff: "レーダーOFF",
+        copyBtn: "コピー",
+        mapsReviewBtn: "★ クチコミ投稿",
+        mapsPhotoBtn: "写真を追加",
+        galleryHeader: "現地ギャラリー (Google Places)",
+        loadingPhotos: "写真を取得中...",
+        loadingAddress: "住所情報を照会中...",
+        noAddress: "住所情報なし",
+        noPhotosText: "Googleマップに登録された写真がありません。",
+        minimapBadge: "位置マップ",
         pwaTitle: "Sensor Challenge",
         pwaDesc: "「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。",
         pwaStep1: "ブラウザ下部の「共有（四角と矢印）」をタップ",
@@ -524,17 +1414,44 @@
         noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
       },
       en: {
-        inputPlaceholder: "Enter search keyword...", btnSet: "SET", unvisited: "Left:", detecting: " detected",
-        standby: "STANDBY", searching: "SEARCHING...", paused: "PAUSED",
-        sensorActive: "SENSOR: ACTIVE", sensorPaused: "SENSOR: PAUSED", sensorStandby: "SENSOR: STANDBY",
-        soundOn: "SOUND: ON", soundOff: "SOUND: MUTED", wakeLockOn: "WAKE LOCK: ON", wakeLockOff: "WAKE LOCK: OFF",
-        langSwitchLabel: "→JP", compendiumBtn: "Discovered List (Atlas)", footerTip: "Visual ring pulses even in mute mode",
-        backToMain: "◀ Main", keywordsTitle: "Atlas Keywords", filterKeywordsPlaceholder: "Filter keywords...",
-        filterHistoryPlaceholder: "Filter places...", sortSearch: "By Search Date", sortArrival: "By Discovery Date",
-        sortCount: "By Discovery Count", cleanZeroBtn: "Delete Zero-Hit Records", deleteCurrentKeyBtn: "Delete This Keyword's History",
-        dataTransferBtn: "Data Transfer", backToKeywords: "◀ Keywords", backToHistory: "◀ Places", spotDetailTitle: "Place Details",
-        deleteBtn: "Delete", sortHNear: "By Distance (Nearest)", sortHDesc: "Newest First", sortHAsc: "Oldest First", sortHName: "Alphabetical",
-        noSpotsInRange: "No targets in range", spotDetected: "Target detected", emptyHistory: "No places discovered for this keyword yet.",
+        inputPlaceholder: "Enter search keyword...",
+        btnSet: "SET",
+        unvisited: "Left:",
+        detecting: " detected",
+        standby: "STANDBY",
+        searching: "SEARCHING...",
+        paused: "PAUSED",
+        sensorActive: "SENSOR: ACTIVE",
+        sensorPaused: "SENSOR: PAUSED",
+        sensorStandby: "SENSOR: STANDBY",
+        soundOn: "SOUND: ON",
+        soundOff: "SOUND: MUTED",
+        wakeLockOn: "WAKE LOCK: ON",
+        wakeLockOff: "WAKE LOCK: OFF",
+        langSwitchLabel: "→JP",
+        compendiumBtn: "Discovered List (Atlas)",
+        footerTip: "Visual ring pulses even in mute mode",
+        backToMain: "◀ Main",
+        keywordsTitle: "Atlas Keywords",
+        filterKeywordsPlaceholder: "Filter keywords...",
+        filterHistoryPlaceholder: "Filter places...",
+        sortSearch: "By Search Date",
+        sortArrival: "By Discovery Date",
+        sortCount: "By Discovery Count",
+        cleanZeroBtn: "Delete Zero-Hit Records",
+        deleteCurrentKeyBtn: "Delete This Keyword's History",
+        dataTransferBtn: "Data Transfer",
+        backToKeywords: "◀ Keywords",
+        backToHistory: "◀ Places",
+        spotDetailTitle: "Place Details",
+        deleteBtn: "Delete",
+        sortHNear: "By Distance (Nearest)",
+        sortHDesc: "Newest First",
+        sortHAsc: "Oldest First",
+        sortHName: "Alphabetical",
+        noSpotsInRange: "No targets in range",
+        spotDetected: "Target detected",
+        emptyHistory: "No places discovered for this keyword yet.",
         discoveryCompleted: "DISCOVERY COMPLETED",
         toastRecorded: (name) => `Recorded "${name}" to slate map`,
         toastCopied: (name) => `Copied "${name}"`,
@@ -542,13 +1459,17 @@
         targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
         arrivalCount: (c) => `Discovered: ${c} spots`,
         arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
-        radarOn: "RADAR ON", radarOff: "RADAR OFF", copyBtn: "COPY",
-        mapsReviewBtn: "★ Post Review", mapsPhotoBtn: "Add Photo",
-        galleryHeader: "Place Gallery (Google Places)", loadingPhotos: "Loading photos...", loadingAddress: "Querying address...",
-        noAddress: "No address available", noPhotosText: "No photos found on Google Maps.", minimapBadge: "Location Map",
-        warningTitle: "Safety Warning",
-        warningText: "When playing 'Sensor Challenge', please obey traffic rules and pay close attention to your surroundings.",
-        warningOk: "OK / Agree & Start",
+        radarOn: "RADAR ON",
+        radarOff: "RADAR OFF",
+        copyBtn: "COPY",
+        mapsReviewBtn: "★ Post Review",
+        mapsPhotoBtn: "Add Photo",
+        galleryHeader: "Place Gallery (Google Places)",
+        loadingPhotos: "Loading photos...",
+        loadingAddress: "Querying address...",
+        noAddress: "No address available",
+        noPhotosText: "No photos found on Google Maps.",
+        minimapBadge: "Location Map",
         pwaTitle: "Sensor Challenge",
         pwaDesc: "To fully enjoy 'Sensor Challenge', please add this app to your Home Screen for full-screen startup.",
         pwaStep1: "Tap 'Share' icon in the browser toolbar",
@@ -608,12 +1529,17 @@
               <circle cx="14" cy="14" r="4.5" fill="#ffee33" />
             </svg>
           `),
-          scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14)
+          scaledSize: new google.maps.Size(28, 28),
+          anchor: new google.maps.Point(14, 14)
         };
       } else {
         return {
-          path: google.maps.SymbolPath.CIRCLE, scale: 8,
-          fillColor: "#00f3ff", fillOpacity: 1, strokeWeight: 2, strokeColor: "#ffffff"
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#00f3ff",
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: "#ffffff"
         };
       }
     }
@@ -637,6 +1563,7 @@
       document.getElementById('opt-sort-count').textContent = t.sortCount;
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
       document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
+      document.getElementById('btn-data-transfer').textContent = t.dataTransferBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
       document.getElementById('back-to-history-list').textContent = t.backToHistory;
       document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
@@ -652,11 +1579,6 @@
       document.getElementById('toast-title').textContent = t.discoveryCompleted;
       document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
 
-      document.getElementById('warning-title').textContent = t.warningTitle;
-      document.getElementById('warning-text').textContent = t.warningText;
-      document.getElementById('btn-warning-ok').textContent = t.warningOk;
-      document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
-
       document.getElementById('pwa-prompt-title').textContent = t.pwaTitle;
       document.getElementById('pwa-prompt-desc').textContent = t.pwaDesc;
       document.getElementById('pwa-step-1').textContent = t.pwaStep1;
@@ -670,9 +1592,13 @@
       if (appState.selectedKeywordForHistory) renderHistoryList();
     }
 
-    document.getElementById('safety-lang-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
-    document.getElementById('pwa-lang-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
-    document.getElementById('lang-toggle-btn').addEventListener('click', () => applyLanguage(currentLang === 'ja' ? 'en' : 'ja'));
+    document.getElementById('pwa-lang-btn').addEventListener('click', () => {
+      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
+
+    document.getElementById('lang-toggle-btn').addEventListener('click', () => {
+      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
 
     const mapContrastBtn = document.getElementById('map-style-toggle-btn');
     const svgMapContrast = document.getElementById('svg-map-contrast');
@@ -681,16 +1607,29 @@
       const isDay = (currentMapStyleMode === 'botw');
       const container = document.getElementById('app-container');
       const pointerPath = document.getElementById('pointer-path');
+
       const roadPathD = "M 0 26 Q 16 23 20 18 T 36 10";
 
       if (isDay) {
         container.classList.add('day-mode');
         pointerPath.setAttribute('fill', '#ffee33');
-        svgMapContrast.innerHTML = `<circle cx="18" cy="18" r="18" fill="#081018"/><path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d"/><path d="${roadPathD}" stroke="#142433" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#00f3ff"/>`;
+
+        svgMapContrast.innerHTML = `
+          <circle cx="18" cy="18" r="18" fill="#081018" />
+          <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#02070d" />
+          <path d="${roadPathD}" stroke="#142433" stroke-width="4.5" stroke-linecap="round" fill="none" />
+          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#00f3ff" />
+        `;
       } else {
         container.classList.remove('day-mode');
         pointerPath.setAttribute('fill', '#00f3ff');
-        svgMapContrast.innerHTML = `<circle cx="18" cy="18" r="18" fill="#453820"/><path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c"/><path d="${roadPathD}" stroke="#e4d5a8" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#ffee33"/>`;
+
+        svgMapContrast.innerHTML = `
+          <circle cx="18" cy="18" r="18" fill="#453820" />
+          <path d="M 0 0 L 22 0 Q 14 12 0 16 Z" fill="#38485c" />
+          <path d="${roadPathD}" stroke="#e4d5a8" stroke-width="4.5" stroke-linecap="round" fill="none" />
+          <path d="M18 13 L14 23 L18 20.8 L22 23 Z" fill="#ffee33" />
+        `;
       }
 
       const icon = getMarkerIcon(isDay);
@@ -700,10 +1639,15 @@
     mapContrastBtn.addEventListener('click', () => {
       currentMapStyleMode = (currentMapStyleMode === 'sheikah') ? 'botw' : 'sheikah';
       localStorage.setItem('sheikah_map_style', currentMapStyleMode);
-      if (map) map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
+      if (map) {
+        map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
+      }
       updateMapStyleUI();
     });
 
+    // ===================================================
+    // 1. Web Audio API 音源
+    // ===================================================
     let audioCtx = null;
     let silentAudioElement = null;
 
@@ -713,14 +1657,22 @@
         silentAudioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
         silentAudioElement.loop = true;
       }
-      try { silentAudioElement.play().catch(() => {}); } catch (e) {}
+      try {
+        silentAudioElement.play().catch(() => {});
+      } catch (e) {}
 
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       try {
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
-        source.buffer = buffer; source.connect(audioCtx.destination); source.start(0);
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start(0);
       } catch (e) {}
     }
 
@@ -728,16 +1680,99 @@
       if (compassActive) return;
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
-          if (await DeviceOrientationEvent.requestPermission() === 'granted') {
-            window.addEventListener('deviceorientation', onDeviceOrientation, true); compassActive = true;
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation, true);
+            compassActive = true;
           }
-        } catch (e) {}
-      } else { window.addEventListener('deviceorientation', onDeviceOrientation, true); compassActive = true; }
+        } catch (e) {
+          console.warn("コンパス権限エラー:", e);
+        }
+      } else {
+        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        compassActive = true;
+      }
     }
 
+    window.addEventListener('touchstart', () => { 
+      initAudio(); 
+      requestCompassPermissionIfNeeded();
+    }, { once: true });
+
+    window.addEventListener('click', () => { 
+      initAudio(); 
+      requestCompassPermissionIfNeeded();
+    }, { once: true });
+
+    function playBeep(freq = 1800, duration = 0.12) {
+      if (appState.isMuted) return;
+      if (!audioCtx) initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
+
+        gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playDoubleBeep() {
+      if (appState.isMuted) return;
+      playBeep(2300, 0.07);
+      setTimeout(() => {
+        playBeep(2450, 0.07);
+      }, 85);
+    }
+
+    function playTreasureFanfare() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 300, 100, 600]);
+      }
+
+      if (appState.isMuted) return;
+      if (!audioCtx) initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
+      notes.forEach((freq, idx) => {
+        setTimeout(() => {
+          if (!audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+          const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
+          gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + dur);
+        }, idx * 115);
+      });
+    }
+
+    // ===================================================
+    // 2. 状態管理
+    // ===================================================
     const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-    let radiusIndex = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
-    if (isNaN(radiusIndex)) radiusIndex = 2;
+    
+    let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
+    let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
 
     let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
     try {
@@ -746,14 +1781,34 @@
     } catch(e) {}
 
     let appState = {
-      isTracking: false, isPaused: false, isMuted: false, wakeLockActive: true,
-      currentPos: null, lastSearchedPos: null, currentHeading: 0, visualMapRotation: 0,
-      lastCompassHeading: null, locationHistory: [], isWalking: false, lastWalkTimestamp: 0,
-      activeKeyword: "", selectedKeywordForHistory: null, selectedSpotForDetail: null,
-      places: [], pinpointTarget: null
+      isTracking: false,
+      isPaused: false,
+      isMuted: false,
+      wakeLockActive: true,
+      currentPos: null,
+      lastSearchedPos: null,
+
+      currentHeading: 0,
+      visualMapRotation: 0,
+      lastCompassHeading: null,
+
+      locationHistory: [],
+      isWalking: false,
+      lastWalkTimestamp: 0,
+
+      activeKeyword: "",
+      selectedKeywordForHistory: null,
+      selectedSpotForDetail: null,
+      places: [],
+      pinpointTarget: null
     };
 
-    let wakeLockSentinel = null, watchId = null, compassActive = false, placesService = null, isSearchInProgress = false, detailMinimapInstance = null;
+    let wakeLockSentinel = null;
+    let watchId = null;
+    let compassActive = false;
+    let placesService = null;
+    let isSearchInProgress = false;
+    let detailMinimapInstance = null;
 
     function loadSavedData() {
       const data = localStorage.getItem('sheikah_db_v1');
@@ -761,54 +1816,30 @@
       return { keywordHistory: {}, arrivals: [] };
     }
 
-    function saveAppData(db) { localStorage.setItem('sheikah_db_v1', JSON.stringify(db)); }
-
-    function isRunningStandalone() {
-      return ('standalone' in window.navigator && window.navigator.standalone === true) ||
-             window.matchMedia('(display-mode: standalone)').matches ||
-             window.matchMedia('(display-mode: fullscreen)').matches;
+    function saveAppData(db) {
+      localStorage.setItem('sheikah_db_v1', JSON.stringify(db));
     }
 
-    // 24時間経過自動リロード ＆ キャッシュクリア付き
-    function checkReloadAndPWA() {
-      const now = Date.now();
-      const lastReload = localStorage.getItem('sheikah_last_reload_time');
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-
-      if (!lastReload || (now - parseInt(lastReload, 10) > TWENTY_FOUR_HOURS)) {
-        localStorage.setItem('sheikah_last_reload_time', now.toString());
-        // Service Workerのキャッシュをクリアしてからリロード
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs => {
-            for (let reg of regs) reg.unregister();
-          });
-        }
-        location.reload(true);
-        return;
-      }
-
-      if (!isRunningStandalone()) {
-        document.getElementById('pwa-prompt-overlay').classList.add('show');
-      } else {
-        document.getElementById('pwa-prompt-overlay').classList.remove('show');
-      }
-    }
-
+    // ===================================================
+    // 3. Google Maps
+    // ===================================================
     let map = null;
+
     function initMap(lat, lng) {
-      if (typeof google === 'undefined' || !google.maps) {
-        alert("Google Maps APIの読み込みに失敗しました。接続を確認してください。");
-        return;
-      }
+      if (typeof google === 'undefined' || !google.maps) return;
+      const centerPos = { lat, lng };
+
       if (!map) {
         map = new google.maps.Map(document.getElementById('map'), {
-          center: { lat, lng }, zoom: 17, disableDefaultUI: true,
-          styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark, gestureHandling: 'none'
+          center: centerPos,
+          zoom: 17,
+          disableDefaultUI: true,
+          styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark,
+          gestureHandling: 'none'
         });
         placesService = new google.maps.places.PlacesService(map);
       } else {
-        map.setCenter({ lat, lng });
-        google.maps.event.trigger(map, 'resize');
+        map.setCenter(centerPos);
       }
     }
 
@@ -820,19 +1851,26 @@
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            appState.currentPos = p; lastKnownPos = p;
+            appState.currentPos = p;
+            lastKnownPos = p;
             localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
-            if (map) { map.setCenter(p); google.maps.event.trigger(map, 'resize'); }
+            if (map) map.setCenter(p);
           },
-          (err) => { console.warn("GPS取得エラー:", err.message); },
+          (err) => {
+            console.warn("初期位置測位:", err.message);
+          },
           { enableHighAccuracy: true, timeout: 8000 }
         );
       }
     }
 
+    // ===================================================
+    // 4. 幾何計算 ＆ センサーロジック
+    // ===================================================
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
-      const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
@@ -844,264 +1882,444 @@
       return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     }
 
-    let radarTimer = null, scheduledInterval = null;
+    let radarTimer = null;
+    let scheduledInterval = null;
+
     function updateVisualRing(level) {
       const ring = document.getElementById('circle-map-wrapper');
-      if (ring) ring.className = `circle-map-wrapper signal-${level}`;
+      if (!ring) return;
+      ring.className = `circle-map-wrapper signal-${level}`;
     }
 
     function evaluateSensorCycle() {
-      const countEl = document.getElementById('unknown-count'), distInfoEl = document.getElementById('distance-info');
+      const countEl = document.getElementById('unknown-count');
+      const distInfoEl = document.getElementById('distance-info');
       const t = I18N[currentLang];
 
       if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null; updateVisualRing('idle'); countEl.textContent = "--";
+        scheduledInterval = null;
+        updateVisualRing('idle');
+        countEl.textContent = "--";
         if (appState.isPaused) distInfoEl.textContent = "--";
         return;
       }
 
-      let activeTargets = appState.pinpointTarget ? [appState.pinpointTarget] : appState.places.filter(p => !loadSavedData().arrivals.find(a => a.id === p.id && a.muted));
+      let activeTargets = [];
+      if (appState.pinpointTarget) {
+        activeTargets = [appState.pinpointTarget];
+      } else {
+        const db = loadSavedData();
+        activeTargets = appState.places.filter(p => {
+          const item = db.arrivals.find(a => a.id === p.id);
+          return !item || !item.muted;
+        });
+      }
+
       countEl.textContent = activeTargets.length;
 
       if (activeTargets.length === 0) {
-        if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = t.noSpotsInRange;
+        if (!distInfoEl.textContent.includes("API")) {
+          distInfoEl.textContent = t.noSpotsInRange;
+        }
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-        scheduledInterval = null; updateVisualRing('idle'); return;
+        scheduledInterval = null;
+        updateVisualRing('idle');
+        return;
       }
 
-      let closest = null, minDist = Infinity, targetBearingDiff = 0;
+      let closestTarget = null;
+      let minDistance = Infinity;
+      let targetBearingDiff = 0;
+
       activeTargets.forEach(tItem => {
         const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
-        if (d < minDist) {
-          minDist = d; closest = tItem;
-          let diff = Math.abs(appState.currentHeading - getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng));
+        if (d < minDistance) {
+          minDistance = d;
+          closestTarget = tItem;
+          const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
+          let diff = Math.abs(appState.currentHeading - bearing);
           if (diff > 180) diff = 360 - diff;
           targetBearingDiff = diff;
         }
       });
 
-      if (minDist <= 20) { handleArrival(closest); return; }
+      if (minDistance <= 20) {
+        handleArrival(closestTarget);
+        return;
+      }
 
-      let level = 'idle', interval = null;
-      if (targetBearingDiff >= 90) level = 'idle';
-      else if (minDist <= 50 && targetBearingDiff <= 20) { level = 'level4'; interval = 450; }
-      else if ((minDist <= 120 && targetBearingDiff <= 35) || (minDist <= 50 && targetBearingDiff <= 55)) { level = 'level3'; interval = 800; }
-      else if (minDist <= 300 && targetBearingDiff <= 55) { level = 'level2'; interval = 1500; }
-      else if (targetBearingDiff < 85) { level = 'level1'; interval = 2600; }
+      let interval = null;
+      let level = 'idle';
+
+      if (targetBearingDiff >= 90) {
+        level = 'idle';
+        interval = null;
+      } else if (minDistance <= 50 && targetBearingDiff <= 20) {
+        level = 'level4';
+        interval = 450;
+      } else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
+        level = 'level3';
+        interval = 800;
+      } else if (minDistance <= 300 && targetBearingDiff <= 55) {
+        level = 'level2';
+        interval = 1500;
+      } else if (targetBearingDiff < 85) {
+        level = 'level1';
+        interval = 2600;
+      }
 
       updateVisualRing(level);
-      if (!distInfoEl.textContent.includes("API")) distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
+
+      if (!distInfoEl.textContent.includes("API")) {
+        distInfoEl.textContent = (level === 'idle') ? t.noSpotsInRange : t.spotDetected;
+      }
 
       if (interval !== null) {
-        if (radarTimer && scheduledInterval === interval) return;
-        if (radarTimer) clearTimeout(radarTimer);
-        scheduledInterval = interval;
-        function pulse() {
-          if (!appState.isTracking || appState.isPaused) { radarTimer = null; scheduledInterval = null; return; }
-          if (level === 'level4') playDoubleBeep(); else playBeep(interval <= 900 ? 2100 : 1750);
-          const wave = document.getElementById('radar-pulse');
-          if (wave) { wave.className = 'radar-pulse-ring'; void wave.offsetWidth; wave.classList.add(level === 'level4' ? 'pulse-double-anim' : 'pulse-anim'); }
-          radarTimer = setTimeout(pulse, interval);
-        }
-        pulse();
+        scheduleRadarSound(interval, level === 'level4');
       } else {
         if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
         scheduledInterval = null;
       }
     }
 
+    function scheduleRadarSound(interval, isDoubleBeep = false) {
+      if (radarTimer && scheduledInterval === interval) {
+        return;
+      }
+
+      if (radarTimer) clearTimeout(radarTimer);
+      scheduledInterval = interval;
+
+      function pulse() {
+        if (!appState.isTracking || appState.isPaused) {
+          radarTimer = null;
+          scheduledInterval = null;
+          return;
+        }
+
+        if (isDoubleBeep) {
+          playDoubleBeep();
+        } else {
+          playBeep(interval <= 900 ? 2100 : 1750);
+        }
+
+        const wave = document.getElementById('radar-pulse');
+        if (wave) {
+          wave.className = 'radar-pulse-ring';
+          void wave.offsetWidth;
+          wave.classList.add(isDoubleBeep ? 'pulse-double-anim' : 'pulse-anim');
+        }
+
+        radarTimer = setTimeout(pulse, interval);
+      }
+      pulse();
+    }
+
     function handleArrival(target) {
       const flash = document.getElementById('arrival-flash-overlay');
-      if (flash) { flash.classList.remove('flash-anim'); void flash.offsetWidth; flash.classList.add('flash-anim'); }
+      if (flash) {
+        flash.classList.remove('flash-anim');
+        void flash.offsetWidth;
+        flash.classList.add('flash-anim');
+      }
+
       playTreasureFanfare();
 
       const db = loadSavedData();
       const now = new Date().toISOString();
-      if (!db.arrivals.find(a => a.id === target.id)) {
-        db.arrivals.push({ id: target.id, name: target.name, keyword: appState.activeKeyword, lat: target.lat, lng: target.lng, date: now, muted: true });
+      const existing = db.arrivals.find(a => a.id === target.id);
+      if (!existing) {
+        db.arrivals.push({
+          id: target.id,
+          name: target.name,
+          keyword: appState.activeKeyword,
+          lat: target.lat,
+          lng: target.lng,
+          date: now,
+          muted: true
+        });
       }
-      if (!db.keywordHistory[appState.activeKeyword]) db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
-      else db.keywordHistory[appState.activeKeyword].lastArrival = now;
+      if (!db.keywordHistory[appState.activeKeyword]) {
+        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
+      } else {
+        db.keywordHistory[appState.activeKeyword].lastArrival = now;
+      }
       saveAppData(db);
 
       if (map) {
         const isDay = (currentMapStyleMode === 'botw');
-        markersList.push(new google.maps.Marker({ position: { lat: target.lat, lng: target.lng }, map, title: target.name, icon: getMarkerIcon(isDay) }));
+        const marker = new google.maps.Marker({
+          position: { lat: target.lat, lng: target.lng },
+          map: map,
+          title: target.name,
+          icon: getMarkerIcon(isDay)
+        });
+        markersList.push(marker);
       }
 
       const t = I18N[currentLang];
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
-      toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 5000);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 5000);
 
-      if (appState.pinpointTarget) { appState.pinpointTarget = null; executeSearch(); }
-      setTimeout(() => evaluateSensorCycle(), 1500);
+      if (appState.pinpointTarget) {
+        appState.pinpointTarget = null;
+        executeSearch();
+      }
+
+      setTimeout(() => {
+        evaluateSensorCycle();
+      }, 1500);
     }
 
+    // ===================================================
+    // 5. 直進安定化（移動ベクトルの平滑化）
+    // ===================================================
     function rotateMapSmoothly(targetBearing) {
       const mapDiv = document.getElementById('map');
       if (!mapDiv) return;
-      let diff = (-targetBearing - appState.visualMapRotation) % 360;
-      if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
+
+      const desiredAngle = -targetBearing;
+      let diff = (desiredAngle - appState.visualMapRotation) % 360;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+
       appState.visualMapRotation += diff;
       mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
     }
 
     function calculateSmoothedHeading(newPos) {
       appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
-      if (appState.locationHistory.length > 5) appState.locationHistory.shift();
-      if (appState.locationHistory.length < 2) return null;
-      if (getDistance(appState.locationHistory[0].lat, appState.locationHistory[0].lng, newPos.lat, newPos.lng) < 2.5) return null;
+      if (appState.locationHistory.length > 5) {
+        appState.locationHistory.shift();
+      }
 
-      let sinSum = 0, cosSum = 0;
+      if (appState.locationHistory.length < 2) return null;
+
+      const oldest = appState.locationHistory[0];
+      const totalMoved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
+      if (totalMoved < 2.5) {
+        return null;
+      }
+
+      let sinSum = 0;
+      let cosSum = 0;
       for (let i = 1; i < appState.locationHistory.length; i++) {
-        const p1 = appState.locationHistory[i - 1], p2 = appState.locationHistory[i];
-        if (getDistance(p1.lat, p1.lng, p2.lat, p2.lng) > 0.5) {
+        const p1 = appState.locationHistory[i - 1];
+        const p2 = appState.locationHistory[i];
+        const d = getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+        if (d > 0.5) {
           const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
-          sinSum += Math.sin(b * Math.PI / 180) * i; cosSum += Math.cos(b * Math.PI / 180) * i;
+          const rad = b * Math.PI / 180;
+          const weight = i;
+          sinSum += Math.sin(rad) * weight;
+          cosSum += Math.cos(rad) * weight;
         }
       }
+
       if (sinSum === 0 && cosSum === 0) return null;
       return (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
     }
 
     function onDeviceOrientation(e) {
       if (!appState.isTracking || appState.isPaused) return;
-      let heading = e.webkitCompassHeading !== undefined ? e.webkitCompassHeading : (e.alpha !== null ? (360 - e.alpha) % 360 : null);
-      if (heading === null || isNaN(heading)) return;
 
-      if (!appState.isWalking && (Date.now() - appState.lastWalkTimestamp > 5000)) {
-        if (appState.lastCompassHeading !== null && Math.abs(heading - appState.lastCompassHeading) < 6.0) return;
-        appState.lastCompassHeading = heading; appState.currentHeading = heading;
-        rotateMapSmoothly(heading); evaluateSensorCycle();
+      let compassHeading = null;
+      if (e.webkitCompassHeading !== undefined) {
+        compassHeading = e.webkitCompassHeading;
+      } else if (e.alpha !== null) {
+        compassHeading = (360 - e.alpha) % 360;
+      }
+
+      if (compassHeading === null || isNaN(compassHeading)) return;
+
+      const now = Date.now();
+      const isCompletelyStopped = (!appState.isWalking && (now - appState.lastWalkTimestamp > 5000));
+
+      if (isCompletelyStopped) {
+        if (appState.lastCompassHeading !== null) {
+          let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
+          if (cDiff > 180) cDiff = 360 - cDiff;
+          if (cDiff < 6.0) return;
+        }
+
+        appState.lastCompassHeading = compassHeading;
+        appState.currentHeading = compassHeading;
+        rotateMapSmoothly(compassHeading);
+        evaluateSensorCycle();
       }
     }
 
     function onPositionUpdate(pos) {
       const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      appState.currentPos = newPos; lastKnownPos = newPos;
+      appState.currentPos = newPos;
+      lastKnownPos = newPos;
       localStorage.setItem('sheikah_last_pos', JSON.stringify(newPos));
 
       if (!map) initMap(newPos.lat, newPos.lng);
 
-      const speed = pos.coords.speed, gpsHeading = pos.coords.heading;
-      let heading = null;
+      const now = Date.now();
+      const speed = pos.coords.speed;
+      const gpsHeading = pos.coords.heading;
+
+      let determinedHeading = null;
+
       if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 1.2) {
-        heading = gpsHeading; appState.isWalking = true; appState.lastWalkTimestamp = Date.now();
+        determinedHeading = gpsHeading;
+        appState.isWalking = true;
+        appState.lastWalkTimestamp = now;
       } else {
         const smoothed = calculateSmoothedHeading(newPos);
-        if (smoothed !== null) { heading = smoothed; appState.isWalking = true; appState.lastWalkTimestamp = Date.now(); }
+        if (smoothed !== null) {
+          determinedHeading = smoothed;
+          appState.isWalking = true;
+          appState.lastWalkTimestamp = now;
+        }
       }
 
-      if (heading !== null) {
-        let diff = Math.abs(heading - appState.currentHeading);
-        if (diff > 180) diff = 360 - diff;
-        if (diff >= 7.0 || appState.currentHeading === 0) { appState.currentHeading = heading; rotateMapSmoothly(heading); }
-      } else if (Date.now() - appState.lastWalkTimestamp > 5000) { appState.isWalking = false; }
+      if (determinedHeading !== null) {
+        let diffFromCurrent = Math.abs(determinedHeading - appState.currentHeading);
+        if (diffFromCurrent > 180) diffFromCurrent = 360 - diffFromCurrent;
 
-      if (map) map.setCenter(newPos);
+        if (diffFromCurrent >= 7.0 || appState.currentHeading === 0) {
+          appState.currentHeading = determinedHeading;
+          rotateMapSmoothly(determinedHeading);
+        }
+      } else {
+        if (now - appState.lastWalkTimestamp > 5000) {
+          appState.isWalking = false;
+        }
+      }
+
+      if (map) {
+        map.setCenter(newPos);
+      }
 
       if (!appState.pinpointTarget) {
-        const r = RADIUS_OPTIONS[radiusIndex];
-        if (!appState.lastSearchedPos || getDistance(appState.lastSearchedPos.lat, appState.lastSearchedPos.lng, newPos.lat, newPos.lng) >= Math.max(30, r * 0.05)) {
+        const currentRadius = RADIUS_OPTIONS[radiusIndex];
+        const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
+
+        if (appState.lastSearchedPos) {
+          const movedSinceSearch = getDistance(
+            appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
+            newPos.lat, newPos.lng
+          );
+          if (movedSinceSearch >= refreshThreshold) {
+            executeSearch();
+          }
+        } else {
           executeSearch();
         }
       }
+
       evaluateSensorCycle();
     }
 
-    // ===================================================
-    // 【堅牢化された検索実行関数 ＆ アラートデバッグ対応】
-    // ===================================================
     function executeSearch() {
-      if (!appState.currentPos) {
-        alert("エラー: 現在地がまだ特定されていません。GPSの測位を待ってから再度SETしてください。");
-        isSearchInProgress = false;
-        return;
-      }
-      if (isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
-      
+      if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
       isSearchInProgress = true;
       appState.lastSearchedPos = { ...appState.currentPos };
-      const r = RADIUS_OPTIONS[radiusIndex];
+      const currentRadius = RADIUS_OPTIONS[radiusIndex];
+
+      const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
       const t = I18N[currentLang];
-      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, r >= 1000 ? `${r/1000}km` : `${r}m`);
+      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, rText);
 
       if (placesService) {
         const queryWord = appState.activeKeyword.trim();
+        
         const request = {
           location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
-          radius: r,
+          radius: currentRadius,
           query: queryWord
         };
 
         placesService.textSearch(request, (results, status) => {
           isSearchInProgress = false;
           if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-            appState.places = results.filter(p => getDistance(appState.currentPos.lat, appState.currentPos.lng, p.geometry.location.lat(), p.geometry.location.lng()) <= r)
-              .map(p => ({ id: p.place_id, name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() }));
+            const filtered = results.filter(place => {
+              const d = getDistance(
+                appState.currentPos.lat, appState.currentPos.lng,
+                place.geometry.location.lat(), place.geometry.location.lng()
+              );
+              return d <= currentRadius;
+            });
+
+            appState.places = filtered.map(place => ({
+              id: place.place_id,
+              name: place.name,
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng()
+            }));
           } else {
             appState.places = [];
-            if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-              alert(`「${queryWord}」は指定された範囲（${r >= 1000 ? r/1000+'km' : r+'m'}）内に見つかりませんでした。`);
-            } else {
-              alert(`Places API エラー: ${status}`);
+            if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== google.maps.places.PlacesServiceStatus.OK) {
+              console.warn("Places API Status:", status);
+              document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
             }
           }
           evaluateSensorCycle();
         });
       } else {
         isSearchInProgress = false;
-        alert("エラー: PlacesServiceが初期化されていません。ページを再読み込みしてください。");
       }
     }
 
-    async function startSearchFromSet() {
-      initAudio(); playBeep(2200); requestCompassPermissionIfNeeded();
-      if (appState.wakeLockActive) requestWakeLock();
-
-      const inputVal = document.getElementById('keyword-input').value.trim();
-      if (!inputVal) { alert("キーワードを入力してください"); return; }
-
-      appState.activeKeyword = inputVal; appState.pinpointTarget = null;
-      appState.isTracking = true; appState.isPaused = false;
-
-      const db = loadSavedData();
-      const now = new Date().toISOString();
-      if (!db.keywordHistory[appState.activeKeyword]) {
-        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
-      } else { db.keywordHistory[appState.activeKeyword].lastSearch = now; }
-      saveAppData(db); updateButtonStateUI();
-
-      if (!watchId && 'geolocation' in navigator) {
-        watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-          alert("GPS測位エラー: " + err.message);
-        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
-      } else { executeSearch(); }
+    // ===================================================
+    // 6. UI制御 ＆ ポップアップRADIUS選択
+    // ===================================================
+    function getRadiusText(r) {
+      return r >= 1000 ? `${r/1000}km` : `${r}m`;
     }
 
-    document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
-    document.getElementById('keyword-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') startSearchFromSet(); });
-
+    document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
     document.getElementById('radius-select').value = radiusIndex.toString();
-    document.getElementById('radius-val').textContent = RADIUS_OPTIONS[radiusIndex] >= 1000 ? `${RADIUS_OPTIONS[radiusIndex]/1000}km` : `${RADIUS_OPTIONS[radiusIndex]}m`;
 
     document.getElementById('radius-select').addEventListener('change', (e) => {
       radiusIndex = parseInt(e.target.value, 10);
-      document.getElementById('radius-val').textContent = RADIUS_OPTIONS[radiusIndex] >= 1000 ? `${RADIUS_OPTIONS[radiusIndex]/1000}km` : `${RADIUS_OPTIONS[radiusIndex]}m`;
+      document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
       localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
-      if (appState.isTracking) executeSearch();
+      if (appState.isTracking) {
+        executeSearch();
+      }
     });
 
-    function setupInputClear(inputEl, clearBtnEl, cb) {
-      function check() { clearBtnEl.classList.toggle('show', inputEl.value.trim().length > 0); }
-      inputEl.addEventListener('input', check); check();
-      clearBtnEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = ''; check(); inputEl.focus(); if(cb) cb(); });
+    function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
+      function check() {
+        if (inputEl.value.trim().length > 0) {
+          clearBtnEl.classList.add('show');
+        } else {
+          clearBtnEl.classList.remove('show');
+        }
+      }
+      inputEl.addEventListener('input', check);
+      check();
+
+      clearBtnEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        inputEl.value = '';
+        check();
+        inputEl.focus();
+        if (onClearCallback) onClearCallback();
+      });
     }
-    setupInputClear(document.getElementById('keyword-input'), document.getElementById('btn-input-clear'));
-    setupInputClear(document.getElementById('keyword-filter'), document.getElementById('btn-keyword-filter-clear'), () => renderKeywordsList());
-    setupInputClear(document.getElementById('history-filter'), document.getElementById('btn-history-filter-clear'), () => renderHistoryList());
+
+    setupInputClear(
+      document.getElementById('keyword-input'),
+      document.getElementById('btn-input-clear')
+    );
+    setupInputClear(
+      document.getElementById('keyword-filter'),
+      document.getElementById('btn-keyword-filter-clear'),
+      () => renderKeywordsList()
+    );
+    setupInputClear(
+      document.getElementById('history-filter'),
+      document.getElementById('btn-history-filter-clear'),
+      () => renderHistoryList()
+    );
 
     function updateButtonStateUI() {
       const t = I18N[currentLang];
@@ -1111,17 +2329,23 @@
       const labelSensor = document.getElementById('label-sensor-state');
 
       if (!appState.isTracking) {
-        indicator.textContent = t.standby; indicator.className = "status-indicator paused";
+        indicator.textContent = t.standby;
+        indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; labelSensor.textContent = t.sensorStandby;
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        labelSensor.textContent = t.sensorStandby;
       } else if (appState.isPaused) {
-        indicator.textContent = t.paused; indicator.className = "status-indicator paused";
+        indicator.textContent = t.paused;
+        indicator.className = "status-indicator paused";
         pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; labelSensor.textContent = t.sensorPaused;
+        svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        labelSensor.textContent = t.sensorPaused;
       } else {
-        indicator.textContent = t.searching; indicator.className = "status-indicator active";
+        indicator.textContent = t.searching;
+        indicator.className = "status-indicator active";
         pauseBtn.className = "btn-sheikah btn-pause-toggle";
-        svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>'; labelSensor.textContent = t.sensorActive;
+        svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        labelSensor.textContent = t.sensorActive;
       }
 
       const muteBtn = document.getElementById('mute-toggle-btn');
@@ -1153,33 +2377,104 @@
 
     async function requestWakeLock() {
       if ('wakeLock' in navigator && appState.wakeLockActive) {
-        try { wakeLockSentinel = await navigator.wakeLock.request('screen'); } catch (err) {}
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        } catch (err) {}
       }
     }
-    function releaseWakeLock() { if (wakeLockSentinel !== null) { wakeLockSentinel.release(); wakeLockSentinel = null; } }
+
+    function releaseWakeLock() {
+      if (wakeLockSentinel !== null) {
+        wakeLockSentinel.release();
+        wakeLockSentinel = null;
+      }
+    }
 
     document.addEventListener('visibilitychange', async () => {
-      if (wakeLockSentinel !== null && document.visibilityState === 'visible') await requestWakeLock();
+      if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
     });
 
     document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
       appState.wakeLockActive = !appState.wakeLockActive;
-      if (appState.wakeLockActive) await requestWakeLock(); else releaseWakeLock();
+      if (appState.wakeLockActive) {
+        await requestWakeLock();
+      } else {
+        releaseWakeLock();
+      }
       updateButtonStateUI();
     });
 
     document.getElementById('mute-toggle-btn').addEventListener('click', () => {
       appState.isMuted = !appState.isMuted;
-      if (!appState.isMuted) { initAudio(); playBeep(2000, 0.08); }
+      if (!appState.isMuted) {
+        initAudio();
+        playBeep(2000, 0.08);
+      }
       updateButtonStateUI();
+    });
+
+    async function startSearchFromSet() {
+      initAudio();
+      playBeep(2200);
+      requestCompassPermissionIfNeeded();
+      if (appState.wakeLockActive) requestWakeLock();
+
+      const inputVal = document.getElementById('keyword-input').value.trim();
+      if (!inputVal) {
+        alert("キーワードを入力してください");
+        return;
+      }
+
+      appState.activeKeyword = inputVal;
+      appState.pinpointTarget = null;
+      appState.isTracking = true;
+      appState.isPaused = false;
+
+      const db = loadSavedData();
+      const now = new Date().toISOString();
+      if (!db.keywordHistory[appState.activeKeyword]) {
+        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
+      } else {
+        db.keywordHistory[appState.activeKeyword].lastSearch = now;
+      }
+      saveAppData(db);
+
+      updateButtonStateUI();
+
+      if (!watchId && 'geolocation' in navigator) {
+        watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
+          document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
+        }, { 
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 10000
+        });
+      } else {
+        executeSearch();
+      }
+    }
+
+    document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
+    document.getElementById('keyword-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') startSearchFromSet();
     });
 
     document.getElementById('pause-toggle-btn').addEventListener('click', () => {
       initAudio();
-      if (!appState.isTracking) { startSearchFromSet(); return; }
+      if (!appState.isTracking) {
+        startSearchFromSet();
+        return;
+      }
+
       appState.isPaused = !appState.isPaused;
-      if (appState.isPaused) { if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; } scheduledInterval = null; }
-      updateButtonStateUI(); evaluateSensorCycle();
+      if (appState.isPaused) {
+        if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+        scheduledInterval = null;
+      }
+      updateButtonStateUI();
+      evaluateSensorCycle();
     });
 
     const pageKeywords = document.getElementById('page-keywords');
@@ -1187,126 +2482,285 @@
     const pageSpotDetail = document.getElementById('page-spot-detail');
 
     function navigateToMain() {
-      pageSpotDetail.classList.remove('open'); pageHistory.classList.remove('open'); pageKeywords.classList.remove('open');
+      pageSpotDetail.classList.remove('open');
+      pageHistory.classList.remove('open');
+      pageKeywords.classList.remove('open');
       evaluateSensorCycle();
     }
 
     document.getElementById('home-from-keywords').addEventListener('click', navigateToMain);
     document.getElementById('home-from-history').addEventListener('click', navigateToMain);
     document.getElementById('home-from-detail').addEventListener('click', navigateToMain);
-    document.getElementById('open-keywords-btn').addEventListener('click', () => { renderKeywordsList(); pageKeywords.classList.add('open'); });
-    document.getElementById('back-to-main').addEventListener('click', () => { pageKeywords.classList.remove('open'); evaluateSensorCycle(); });
-    document.getElementById('back-to-keywords').addEventListener('click', () => { pageHistory.classList.remove('open'); renderKeywordsList(); });
-    document.getElementById('back-to-history-list').addEventListener('click', () => { pageSpotDetail.classList.remove('open'); renderHistoryList(); });
 
+    document.getElementById('open-keywords-btn').addEventListener('click', () => {
+      renderKeywordsList();
+      pageKeywords.classList.add('open');
+    });
+
+    document.getElementById('back-to-main').addEventListener('click', () => {
+      pageKeywords.classList.remove('open');
+      evaluateSensorCycle();
+    });
+
+    document.getElementById('back-to-keywords').addEventListener('click', () => {
+      pageHistory.classList.remove('open');
+      renderKeywordsList();
+    });
+
+    document.getElementById('back-to-history-list').addEventListener('click', () => {
+      pageSpotDetail.classList.remove('open');
+      renderHistoryList();
+    });
+
+    const mainBottomPanel = document.getElementById('main-bottom-panel');
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    mainBottomPanel.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    mainBottomPanel.addEventListener('touchend', (e) => {
+      const diffX = e.changedTouches[0].clientX - touchStartX;
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+      if (diffX < -60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+        document.getElementById('open-keywords-btn').click();
+      }
+    }, { passive: true });
+
+    function setupSwipeBack(el, backCallback) {
+      let startX = 0;
+      el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+      el.addEventListener('touchend', (e) => {
+        const diffX = e.changedTouches[0].clientX - startX;
+        if (diffX > 75) backCallback();
+      }, { passive: true });
+    }
+    setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
+    setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
+    setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
+
+    // ===================================================
+    // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
+    // ===================================================
     function renderKeywordsList() {
       const db = loadSavedData();
-      const container = document.getElementById('keywords-list-container'); container.innerHTML = '';
+      const container = document.getElementById('keywords-list-container');
+      container.innerHTML = '';
       const t = I18N[currentLang];
+
       const filterText = document.getElementById('keyword-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-keywords').value;
 
       let keys = Object.keys(db.keywordHistory).filter(k => k.toLowerCase().includes(filterText));
+
       keys.sort((a, b) => {
+        const dataA = db.keywordHistory[a];
+        const dataB = db.keywordHistory[b];
         const countA = db.arrivals.filter(item => item.keyword === a).length;
         const countB = db.arrivals.filter(item => item.keyword === b).length;
-        if (sortType === 'recent_search') return new Date(db.keywordHistory[b].lastSearch || 0) - new Date(db.keywordHistory[a].lastSearch || 0);
-        if (sortType === 'recent_arrival') return new Date(db.keywordHistory[b].lastArrival || 0) - new Date(db.keywordHistory[a].lastArrival || 0);
-        return countB - countA;
+
+        if (sortType === 'recent_search') {
+          return new Date(dataB.lastSearch || 0) - new Date(dataA.lastSearch || 0);
+        } else if (sortType === 'recent_arrival') {
+          return new Date(dataB.lastArrival || 0) - new Date(dataA.lastArrival || 0);
+        } else if (sortType === 'count_desc') {
+          return countB - countA;
+        }
       });
 
       keys.forEach(k => {
         const count = db.arrivals.filter(item => item.keyword === k).length;
-        const div = document.createElement('div'); div.className = 'list-item';
+        const div = document.createElement('div');
+        div.className = 'list-item';
         div.innerHTML = `
           <div class="list-item-row">
-            <div class="list-item-left"><span class="list-item-title">${k}</span><div class="list-item-sub">${t.arrivalCount(count)}</div></div>
-            <div class="item-right-actions"><button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button><div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div></div>
+            <div class="list-item-left">
+              <span class="list-item-title">${k}</span>
+              <div class="list-item-sub">${t.arrivalCount(count)}</div>
+            </div>
+            <div class="item-right-actions">
+              <button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button>
+              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
+            </div>
           </div>
         `;
+
         div.addEventListener('click', (e) => {
           if (e.target.classList.contains('btn-reset-search')) return;
           appState.selectedKeywordForHistory = k;
-          document.getElementById('history-header-title').textContent = k;
+          document.getElementById('history-header-title').textContent = `${k}`;
           document.getElementById('history-filter').value = '';
           document.getElementById('btn-history-filter-clear').classList.remove('show');
-          renderHistoryList(); pageHistory.classList.add('open');
+          renderHistoryList();
+          pageHistory.classList.add('open');
         });
+
         div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
-          e.stopPropagation(); document.getElementById('keyword-input').value = k;
+          e.stopPropagation();
+          document.getElementById('keyword-input').value = k;
           document.getElementById('btn-input-clear').classList.add('show');
-          pageKeywords.classList.remove('open'); startSearchFromSet();
+          pageKeywords.classList.remove('open');
+          startSearchFromSet();
         });
+
         container.appendChild(div);
       });
     }
 
     document.getElementById('btn-delete-zero-keywords').addEventListener('click', () => {
-      const db = loadSavedData(); const t = I18N[currentLang];
-      const zeroKeys = Object.keys(db.keywordHistory).filter(k => db.arrivals.filter(item => item.keyword === k).length === 0);
-      if (zeroKeys.length === 0) { alert(t.noZeroKeywords); return; }
+      const db = loadSavedData();
+      const t = I18N[currentLang];
+      const zeroKeys = Object.keys(db.keywordHistory).filter(k => {
+        const count = db.arrivals.filter(item => item.keyword === k).length;
+        return count === 0;
+      });
+
+      if (zeroKeys.length === 0) {
+        alert(t.noZeroKeywords);
+        return;
+      }
+
       if (confirm(t.confirmCleanZero(zeroKeys.length))) {
-        zeroKeys.forEach(k => delete db.keywordHistory[k]);
-        saveAppData(db); renderKeywordsList();
+        zeroKeys.forEach(k => {
+          delete db.keywordHistory[k];
+        });
+        saveAppData(db);
+        renderKeywordsList();
       }
     });
 
     document.getElementById('btn-data-transfer').addEventListener('click', () => {
       const db = loadSavedData();
-      const base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(db))));
-      const choice = prompt("【データ引き継ぎ】\n1: コード発行\n2: コード読込\n半角で選択:", "1");
+      const jsonStr = JSON.stringify(db);
+      const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
+
+      const choice = prompt(
+        "【データ引き継ぎ】\n" +
+        "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
+        "2: 引き継ぎコードを読み込む（データを復元する）\n" +
+        "半角数字「1」または「2」を入力してください:",
+        "1"
+      );
+
       if (choice === "1") {
-        if (navigator.clipboard) navigator.clipboard.writeText(base64Code).then(() => alert("コピーしました！")).catch(() => prompt("コピー:", base64Code));
-        else prompt("コピー:", base64Code);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(base64Code).then(() => {
+            alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、「データ引き継ぎ ➔ 2」で貼り付けてください。");
+          }).catch(() => {
+            prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+          });
+        } else {
+          prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+        }
       } else if (choice === "2") {
-        const inputCode = prompt("コードを貼り付け:");
+        const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
         if (inputCode && inputCode.trim()) {
           try {
-            const restored = JSON.parse(decodeURIComponent(escape(atob(inputCode.trim()))));
-            if (restored && restored.arrivals) { saveAppData(restored); renderKeywordsList(); alert("完了！"); }
-          } catch (e) { alert("エラー"); }
+            const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
+            const restoredDb = JSON.parse(restoredJson);
+            if (restoredDb && restoredDb.arrivals) {
+              saveAppData(restoredDb);
+              renderKeywordsList();
+              alert("データの引き継ぎが完了しました！");
+            } else {
+              alert("無効な引き継ぎコードです。");
+            }
+          } catch (e) {
+            alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
+          }
         }
       }
     });
 
     function renderHistoryList() {
       const db = loadSavedData();
-      const container = document.getElementById('history-list-container'); container.innerHTML = '';
+      const container = document.getElementById('history-list-container');
+      container.innerHTML = '';
       const t = I18N[currentLang];
+
       const filterText = document.getElementById('history-filter').value.toLowerCase();
       const sortType = document.getElementById('sort-history').value;
 
-      let items = db.arrivals.filter(a => a.keyword === appState.selectedKeywordForHistory && a.name.toLowerCase().includes(filterText));
+      let items = db.arrivals.filter(a => 
+        a.keyword === appState.selectedKeywordForHistory &&
+        a.name.toLowerCase().includes(filterText)
+      );
+
       const basePos = appState.currentPos || lastKnownPos;
-      items.forEach(item => { item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng); });
+      if (basePos) {
+        items.forEach(item => {
+          item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng);
+        });
+      }
 
       items.sort((a, b) => {
-        if (sortType === 'near_asc') return a.calcDistance - b.calcDistance;
-        if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
-        if (sortType === 'date_asc') return new Date(a.date) - new Date(b.date);
-        return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+        if (sortType === 'near_asc') {
+          return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
+        } else if (sortType === 'date_desc') {
+          return new Date(b.date) - new Date(a.date);
+        } else if (sortType === 'date_asc') {
+          return new Date(a.date) - new Date(b.date);
+        } else if (sortType === 'name_asc') {
+          return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+        }
       });
 
       if (items.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">${t.emptyHistory}</div>`;
+        container.innerHTML = `
+          <div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">
+            ${t.emptyHistory}
+          </div>
+        `;
       } else {
         items.forEach(item => {
           const d = new Date(item.date);
           const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-          const distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
-          const div = document.createElement('div'); div.className = 'list-item';
+
+          let distStr = "";
+          if (item.calcDistance !== undefined) {
+            distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
+          }
+
+          const div = document.createElement('div');
+          div.className = 'list-item';
           div.innerHTML = `
-            <div class="list-item-left"><span class="list-item-title">${item.name}</span><div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div></div>
+            <div class="list-item-left">
+              <span class="list-item-title">${item.name}</span>
+              <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
+            </div>
             <div class="action-button-row">
               <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
-              <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">${item.muted ? t.radarOff : t.radarOn}</button>
+              <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">
+                ${item.muted ? t.radarOff : t.radarOn}
+              </button>
               <button class="btn-sheikah-sm btn-copy-sm">${t.copyBtn}</button>
             </div>
           `;
-          div.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') return; openSpotDetailModal(item); });
-          div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => { e.stopPropagation(); setPinpointTargetAndStart(item); });
-          div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => { e.stopPropagation(); item.muted = !item.muted; saveAppData(db); renderHistoryList(); });
-          div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => { e.stopPropagation(); copyPlaceNameToClipboard(item.name); });
+
+          div.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            openSpotDetailModal(item);
+          });
+
+          div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
+            e.stopPropagation();
+            setPinpointTargetAndStart(item);
+          });
+
+          div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.muted = !item.muted;
+            saveAppData(db);
+            renderHistoryList();
+          });
+
+          div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            copyPlaceNameToClipboard(item.name);
+          });
+
           container.appendChild(div);
         });
       }
@@ -1314,31 +2768,50 @@
 
     function copyPlaceNameToClipboard(text) {
       const t = I18N[currentLang];
-      if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast(t.toastCopied(text))).catch(() => prompt("Copy:", text));
-      else prompt("Copy:", text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(t.toastCopied(text));
+        }).catch(() => prompt("Copy:", text));
+      } else {
+        prompt("Copy:", text);
+      }
     }
 
     function showToast(msg) {
       const toast = document.getElementById('toast-banner');
       document.getElementById('toast-text').textContent = msg;
-      toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
     function setPinpointTargetAndStart(item) {
       const t = I18N[currentLang];
-      appState.pinpointTarget = { id: item.id, name: item.name, lat: item.lat, lng: item.lng };
+      appState.pinpointTarget = {
+        id: item.id,
+        name: item.name,
+        lat: item.lat,
+        lng: item.lng
+      };
       appState.activeKeyword = item.name;
       document.getElementById('keyword-input').value = item.name;
       document.getElementById('btn-input-clear').classList.add('show');
       document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
-      pageSpotDetail.classList.remove('open'); pageHistory.classList.remove('open'); pageKeywords.classList.remove('open');
-      appState.isTracking = true; appState.isPaused = false; updateButtonStateUI(); evaluateSensorCycle();
+
+      pageSpotDetail.classList.remove('open');
+      pageHistory.classList.remove('open');
+      pageKeywords.classList.remove('open');
+
+      appState.isTracking = true;
+      appState.isPaused = false;
+      updateButtonStateUI();
+      evaluateSensorCycle();
     }
 
     function openSpotDetailModal(item) {
       appState.selectedSpotForDetail = item;
       const t = I18N[currentLang];
       const db = loadSavedData();
+
       document.getElementById('detail-spot-name').textContent = item.name;
       document.getElementById('detail-spot-address').textContent = t.loadingAddress;
       const photosBox = document.getElementById('detail-photos-container');
@@ -1349,64 +2822,127 @@
 
       const radarBtn = document.getElementById('detail-btn-toggle-radar');
       function updateDetailRadarBtn() {
-        radarBtn.textContent = item.muted ? t.radarOff : t.radarOn;
-        radarBtn.className = `btn-sheikah-sm ${item.muted ? 'off' : 'active'}`;
+        if (item.muted) {
+          radarBtn.textContent = t.radarOff;
+          radarBtn.className = "btn-sheikah-sm off";
+        } else {
+          radarBtn.textContent = t.radarOn;
+          radarBtn.className = "btn-sheikah-sm active";
+        }
       }
       updateDetailRadarBtn();
-      radarBtn.onclick = () => { item.muted = !item.muted; saveAppData(db); updateDetailRadarBtn(); };
+
+      radarBtn.onclick = () => {
+        item.muted = !item.muted;
+        saveAppData(db);
+        updateDetailRadarBtn();
+      };
 
       document.getElementById('detail-btn-delete-single').onclick = () => {
         if (confirm(t.confirmDeleteSingle(item.name))) {
           db.arrivals = db.arrivals.filter(a => a.id !== item.id);
-          saveAppData(db); pageSpotDetail.classList.remove('open'); renderHistoryList();
+          saveAppData(db);
+          pageSpotDetail.classList.remove('open');
+          renderHistoryList();
         }
       };
 
-      document.getElementById('detail-btn-maps-review').onclick = () => window.open(item.id ? `https://search.google.com/local/writereview?placeid=${item.id}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
-      document.getElementById('detail-btn-maps-photo').onclick = () => window.open(item.id ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
+      document.getElementById('detail-btn-maps-review').onclick = () => {
+        const reviewUrl = item.id 
+          ? `https://search.google.com/local/writereview?placeid=${item.id}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
+        window.open(reviewUrl, '_blank');
+      };
+
+      document.getElementById('detail-btn-maps-photo').onclick = () => {
+        const photoUploadUrl = item.id 
+          ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
+        window.open(photoUploadUrl, '_blank');
+      };
 
       pageSpotDetail.classList.add('open');
 
-      const gallery = document.createElement('div'); gallery.className = 'photo-gallery-scroll';
-      const mapWrap = document.createElement('div'); mapWrap.className = 'gallery-minimap-wrap';
-      mapWrap.innerHTML = `<div id="detail-minimap"></div><div class="minimap-badge">${t.minimapBadge}</div>`;
+      const gallery = document.createElement('div');
+      gallery.className = 'photo-gallery-scroll';
+
+      const mapWrap = document.createElement('div');
+      mapWrap.className = 'gallery-minimap-wrap';
+      mapWrap.innerHTML = `
+        <div id="detail-minimap"></div>
+        <div class="minimap-badge">${t.minimapBadge}</div>
+      `;
       gallery.appendChild(mapWrap);
 
-      if (!placesService) initMap(item.lat, item.lng);
+      if (!placesService) {
+        initMap(item.lat, item.lng);
+      }
 
       if (placesService && item.id) {
-        placesService.getDetails({ placeId: item.id, fields: ['name', 'formatted_address', 'photos'] }, (place, status) => {
+        placesService.getDetails({
+          placeId: item.id,
+          fields: ['name', 'formatted_address', 'photos']
+        }, (place, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             document.getElementById('detail-spot-address').textContent = place.formatted_address || t.noAddress;
             if (place.photos && place.photos.length > 0) {
               place.photos.forEach(photo => {
-                const wrap = document.createElement('div'); wrap.className = 'gallery-img-wrap';
-                wrap.innerHTML = `<img src="${photo.getUrl({ maxWidth: 800, maxHeight: 600 })}" alt="${item.name}" loading="lazy">`;
+                const url = photo.getUrl({ maxWidth: 800, maxHeight: 600 });
+                const wrap = document.createElement('div');
+                wrap.className = 'gallery-img-wrap';
+                wrap.innerHTML = `<img src="${url}" alt="${item.name}" loading="lazy">`;
                 gallery.appendChild(wrap);
               });
             }
-          } else { document.getElementById('detail-spot-address').textContent = t.noAddress; }
-          photosBox.innerHTML = ''; photosBox.appendChild(gallery);
+          } else {
+            document.getElementById('detail-spot-address').textContent = t.noAddress;
+          }
+
+          photosBox.innerHTML = '';
+          photosBox.appendChild(gallery);
+
           setTimeout(() => {
             const isDay = (currentMapStyleMode === 'botw');
             detailMinimapInstance = new google.maps.Map(document.getElementById('detail-minimap'), {
-              center: { lat: item.lat, lng: item.lng }, zoom: 17, disableDefaultUI: true,
-              styles: isDay ? mapStyleBotw : mapStyleSheikahDark, gestureHandling: 'none', draggable: false, scrollwheel: false
+              center: { lat: item.lat, lng: item.lng },
+              zoom: 17,
+              disableDefaultUI: true,
+              styles: isDay ? mapStyleBotw : mapStyleSheikahDark,
+              gestureHandling: 'none',
+              draggable: false,
+              scrollwheel: false,
+              disableDoubleClickZoom: true
             });
-            new google.maps.Marker({ position: { lat: item.lat, lng: item.lng }, map: detailMinimapInstance, title: item.name, icon: getMarkerIcon(isDay) });
+
+            new google.maps.Marker({
+              position: { lat: item.lat, lng: item.lng },
+              map: detailMinimapInstance,
+              title: item.name,
+              icon: getMarkerIcon(isDay)
+            });
           }, 80);
         });
-      } else { photosBox.innerHTML = ''; photosBox.appendChild(gallery); }
+      } else {
+        photosBox.innerHTML = '';
+        photosBox.appendChild(gallery);
+      }
     }
 
     document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
-      const targetKey = appState.selectedKeywordForHistory; if (!targetKey) return;
+      const targetKey = appState.selectedKeywordForHistory;
+      if (!targetKey) return;
       const t = I18N[currentLang];
+
       if (confirm(t.confirmDeleteKeyword(targetKey))) {
         const db = loadSavedData();
-        delete db.keywordHistory[targetKey];
+        if (db.keywordHistory[targetKey]) {
+          delete db.keywordHistory[targetKey];
+        }
         db.arrivals = db.arrivals.filter(item => item.keyword !== targetKey);
-        saveAppData(db); pageHistory.classList.remove('open'); renderKeywordsList();
+        saveAppData(db);
+
+        pageHistory.classList.remove('open');
+        renderKeywordsList();
       }
     });
 
@@ -1416,39 +2952,12 @@
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
     // ===================================================
-    // 8. 起動時処理 ＆ 安全警告モーダル連動
+    // 起動時の初期化実行
     // ===================================================
     applyLanguage(currentLang);
-
-    // 24時間チェック ＆ キャッシュクリア付きリロード
-    const now = Date.now();
-    const lastReload = localStorage.getItem('sheikah_last_reload_time');
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-    if (!lastReload || (now - parseInt(lastReload, 10) > TWENTY_FOUR_HOURS)) {
-      localStorage.setItem('sheikah_last_reload_time', now.toString());
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => { for (let reg of regs) reg.unregister(); });
-      }
-      location.reload(true);
-    }
-
-    if (localStorage.getItem('sheikah_safety_agreed') === 'true') {
-      document.getElementById('safety-warning-overlay').style.display = 'none';
-      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation(); checkReloadAndPWA();
-    }
-
-    document.getElementById('btn-warning-ok').addEventListener('click', () => {
-      localStorage.setItem('sheikah_safety_agreed', 'true');
-      document.getElementById('safety-warning-overlay').style.display = 'none';
-      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation(); checkReloadAndPWA();
-    });
-
-    document.getElementById('btn-pwa-skip').addEventListener('click', () => {
-      const warningOverlay = document.getElementById('safety-warning-overlay');
-      const pwaOverlay = document.getElementById('pwa-prompt-overlay');
-      if (warningOverlay) warningOverlay.style.display = 'none';
-      if (pwaOverlay) pwaOverlay.classList.remove('show');
-      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation();
+    window.addEventListener('load', () => {
+      enforcePWAMode();
+      bootstrapMapAndLocation();
     });
   </script>
 </body>
