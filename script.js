@@ -7,12 +7,12 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272331";
+const BASE_JS_VERSION = "v0.26.091.272330";
 
 // HTMLとCSSのバージョン番号を動的に取得して結合
 document.addEventListener("DOMContentLoaded", () => {
   const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "02";
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "03";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -23,22 +23,22 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
+
+  // データ移行機能のイベント設定
+  setupDataMigrationHandlers();
 });
 
-// グローバルエラーキャッチ（自作スクリプトのバグのみアラート＆コピーするよう修正）
+// グローバルエラーキャッチ（外部ドメインのエラーをフィルタリング）
 window.addEventListener('error', function(event) {
-  // 外部ドメイン（Google Maps等）のエラーは無視する
   if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
     return;
   }
-
   const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(errorMsg).catch(() => {});
   }
   alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
 });
-
 
 // ===================================================
 // PWA起動時 強制キャッシュクリア ＆ リロード制御
@@ -452,6 +452,8 @@ function applyLanguage(lang) {
 
   document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
   document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
+  document.getElementById('btn-export-data').textContent = currentLang === 'ja' ? 'データ書出 (Export)' : 'Export Data';
+  document.getElementById('btn-import-data').textContent = currentLang === 'ja' ? 'データ読込 (Import)' : 'Import Data';
 
   updateButtonStateUI();
   renderKeywordsList();
@@ -687,6 +689,59 @@ function loadSavedData() {
 
 function saveAppData(db) {
   localStorage.setItem('sheikah_db_v1', JSON.stringify(db));
+}
+
+// ===================================================
+// データ移行（エクスポート・インポート）機能
+// ===================================================
+function setupDataMigrationHandlers() {
+  const exportBtn = document.getElementById('btn-export-data');
+  const importBtn = document.getElementById('btn-import-data');
+  const fileInput = document.getElementById('import-file-input');
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const db = loadSavedData();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `sensor_challenge_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          if (importedData && importedData.arrivals && importedData.keywordHistory) {
+            if (confirm("既存のデータを上書き（または統合）してインポートしますか？")) {
+              saveAppData(importedData);
+              alert("データのインポートが完了しました。ページを再読み込みします。");
+              window.location.reload();
+            }
+          } else {
+            alert("無効なバックアップファイル形式です。");
+          }
+        } catch (err) {
+          alert("JSONファイルの解析に失敗しました: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+      fileInput.value = ''; // リセット
+    });
+  }
 }
 
 // ===================================================
@@ -1396,7 +1451,7 @@ document.getElementById('open-keywords-btn').addEventListener('click', () => {
   pageKeywords.classList.add('open');
 });
 
-// 各画面の「全て ▶」ボタン押下時
+// 各画面のコード
 document.getElementById('open-all-from-keywords').addEventListener('click', () => {
   renderAllHistoryList();
   pageAllHistory.classList.add('open');
@@ -1464,7 +1519,6 @@ function setupSwipeNavigation(el, backCallback, forwardCallback) {
   }, { passive: true });
 }
 
-// 各画面のスワイプ挙動設定
 setupSwipeNavigation(pageKeywords, () => document.getElementById('back-to-main').click(), () => document.getElementById('open-all-from-keywords').click());
 setupSwipeNavigation(pageHistory, () => document.getElementById('back-to-keywords').click(), () => document.getElementById('open-all-from-history').click());
 setupSwipeNavigation(pageSpotDetail, () => document.getElementById('back-to-history-list').click(), () => document.getElementById('open-all-from-detail').click());
@@ -1717,7 +1771,7 @@ function renderAllHistoryList() {
         distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
       }
 
-      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt > TWENTY_FOUR_HOURS)) {
+      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS)) {
         if (placesService && item.id) {
           placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) {
