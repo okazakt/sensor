@@ -236,15 +236,16 @@
       100% { opacity: 0; }
     }
 
+    /* 左右のコントロールボタン：ステータスバーや時刻表示と重ならないよう十分に下方に配置 */
     .top-left-ctrl {
       position: absolute;
-      top: 12px;
+      top: calc(max(env(safe-area-inset-top), 24px) + 12px);
       left: 18px;
       z-index: 25;
     }
     .top-right-ctrl {
       position: absolute;
-      top: 12px;
+      top: calc(max(env(safe-area-inset-top), 24px) + 12px);
       right: 18px;
       z-index: 25;
     }
@@ -296,7 +297,8 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      padding-top: 10px;
+      /* ボタンとレーダーマップが重ならないよう上部余白をしっかりと確保 */
+      padding-top: calc(max(env(safe-area-inset-top), 24px) + 36px);
     }
 
     .sheikah-divider-bar {
@@ -1109,7 +1111,6 @@
       border-radius: 8px;
       text-align: center;
       z-index: 400;
-      /* チラ見え防止のため初期位置を完全に画面外（上方向）へ退避 */
       transform: translateY(-250%);
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
@@ -1154,7 +1155,7 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271618</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271913</span></div>
       </div>
     </div>
 
@@ -1174,7 +1175,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271618</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271913</span></div>
       </div>
     </div>
 
@@ -1281,7 +1282,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span><span class="app-build-ver-span">v0.26.091.271618</span></span>
+        <span><span class="app-build-ver-span">v0.26.091.271913</span></span>
       </div>
     </div>
 
@@ -1305,9 +1306,8 @@
           <option value="count_desc" id="opt-sort-count">到達件数降順</option>
         </select>
       </div>
-      <div class="action-sub-bar">
+      <div class="action-sub-bar" style="justify-content: flex-end;">
         <button class="btn-clean-zero" id="btn-delete-zero-keywords">到達0件の履歴を一括削除</button>
-        <button class="btn-data-transfer" id="btn-data-transfer">データ引き継ぎ</button>
       </div>
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
@@ -1385,9 +1385,9 @@
     /**
      * Versioning Rule Specification:
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
-     * Rule: Update the version number using the latest modification date/time upon every update,
-     * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.271618 (Year 2026, Month 09, fixed '1', Day 27, Hour 16, Minute 18)
+     * Rule: Update the version number using the exact modification date/time upon every update,
+     * by acquiring the current time when starting the modification work.
+     * Current Version: v0.26.091.271913 (Year 2026, Month 09, fixed '1', Day 27, Hour 19, Minute 13)
      */
 
     // ===================================================
@@ -1462,7 +1462,6 @@
         sortCount: "到達件数降順",
         cleanZeroBtn: "到達0件の履歴を一括削除",
         deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-        dataTransferBtn: "データ引き継ぎ",
         backToKeywords: "◀ 履歴一覧",
         backToHistory: "◀ 到達リスト",
         spotDetailTitle: "スポット詳細",
@@ -1533,7 +1532,6 @@
         sortCount: "By Discovery Count",
         cleanZeroBtn: "Delete Zero-Hit Records",
         deleteCurrentKeyBtn: "Delete This Keyword's History",
-        dataTransferBtn: "Data Transfer",
         backToKeywords: "◀ Keywords",
         backToHistory: "◀ Places",
         spotDetailTitle: "Place Details",
@@ -1659,7 +1657,6 @@
       document.getElementById('opt-sort-count').textContent = t.sortCount;
       document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
       document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
-      document.getElementById('btn-data-transfer').textContent = t.dataTransferBtn;
       document.getElementById('back-to-keywords').textContent = t.backToKeywords;
       document.getElementById('back-to-history-list').textContent = t.backToHistory;
       document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
@@ -2728,49 +2725,6 @@
         });
         saveAppData(db);
         renderKeywordsList();
-      }
-    });
-
-    document.getElementById('btn-data-transfer').addEventListener('click', () => {
-      const db = loadSavedData();
-      const jsonStr = JSON.stringify(db);
-      const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
-
-      const choice = prompt(
-        "【データ引き継ぎ】\n" +
-        "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
-        "2: 引き継ぎコードを読み込む（データを復元する）\n" +
-        "半角数字「1」または「2」を入力してください:",
-        "1"
-      );
-
-      if (choice === "1") {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(base64Code).then(() => {
-            alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、「データ引き継ぎ ➔ 2」で貼り付けてください。");
-          }).catch(() => {
-            prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
-          });
-        } else {
-          prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
-        }
-      } else if (choice === "2") {
-        const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
-        if (inputCode && inputCode.trim()) {
-          try {
-            const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
-            const restoredDb = JSON.parse(restoredJson);
-            if (restoredDb && restoredDb.arrivals) {
-              saveAppData(restoredDb);
-              renderKeywordsList();
-              alert("データの引き継ぎが完了しました！");
-            } else {
-              alert("無効な引き継ぎコードです。");
-            }
-          } catch (e) {
-            alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
-          }
-        }
       }
     });
 
