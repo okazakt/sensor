@@ -1385,9 +1385,9 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.271950 (Year 2026, Month 09, fixed '1', Day 27, Hour 19, Minute 50)
+     * Current Version: v0.26.091.272000 (Year 2026, Month 09, fixed '1', Day 27, Hour 20, Minute 00)
      */
-    const APP_VERSION = "v0.26.091.271950";
+    const APP_VERSION = "v0.26.091.272000";
 
     document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.app-build-ver-span').forEach(el => {
@@ -1497,7 +1497,7 @@
         minimapBadge: "位置マップ",
         pwaTitle: "Sensor Challenge",
         pwaDesc: "「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。",
-        pwaStep1: "ブラウザ下部の「共有（四角と矢印）」をタップ",
+        pwaStep1: "ブラウザ下部のG「共有（四角と矢印）」をタップ",
         pwaStep2: "メニューから「ホーム画面に追加」を選択",
         pwaStep3: "ホーム画面に生成されたアイコンから起動",
         pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
@@ -1639,35 +1639,6 @@
           strokeColor: "#ffffff"
         };
       }
-    }
-
-    // SVGを用いた確実な星評価描画関数（崩れ防止）
-    function formatStarRating(rating) {
-      if (rating === undefined || rating === null || isNaN(rating)) return "";
-      const r = Math.max(0, Math.min(5, rating));
-      
-      let svgs = '';
-      for (let i = 1; i <= 5; i++) {
-        let fillPercentage = 0;
-        if (r >= i) {
-          fillPercentage = 100;
-        } else if (r > i - 1 && r < i) {
-          fillPercentage = (r - (i - 1)) * 100;
-        }
-
-        svgs += `
-          <svg width="14" height="14" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle; margin-right:1px;">
-            <defs>
-              <linearGradient id="star-grad-${i}-${r.toFixed(1)}">
-                <stop offset="${fillPercentage}%" stop-color="#ffaa00"/>
-                <stop offset="${fillPercentage}%" stop-color="#445566"/>
-              </linearGradient>
-            </defs>
-            <path fill="url(#star-grad-${i}-${r.toFixed(1)})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-          </svg>
-        `;
-      }
-      return `${svgs} <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
     }
 
     function applyLanguage(lang) {
@@ -2831,7 +2802,6 @@
             distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
           }
 
-          // 24時間キャッシュチェック：未取得または24時間超過の場合にバックグラウンドで更新
           if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt > TWENTY_FOUR_HOURS)) {
             if (placesService && item.id) {
               placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
