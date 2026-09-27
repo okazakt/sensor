@@ -12,7 +12,7 @@
   
   <link rel="apple-touch-icon" href="https://okazakt.github.io/sensor/icon.png">
   
-  <!-- CSSとJSのキャッシュを毎回動的に回避するためのキャッシュバスター埋め込み -->
+  <!-- CSSキャッシュ回避用動的読み込み -->
   <script>
     const cacheBuster = Date.now();
     const linkEl = document.createElement('link');
@@ -323,7 +323,7 @@
           <option value="name_asc" id="opt-asort-name">名称あいうえお順</option>
         </select>
       </div>
-      <!-- 一時的なデータ移行メニュー（エクスポート・インポート） -->
+      <!-- データ移行メニュー（エクスポート・インポート） -->
       <div class="action-sub-bar" style="justify-content: space-between; background: rgba(0, 243, 255, 0.08); border-top: 1px solid var(--sheikah-cyan);">
         <button class="btn-sheikah-sm" id="btn-export-data" style="font-size: 0.72rem;">データ書出 (Export)</button>
         <button class="btn-sheikah-sm" id="btn-import-data" style="font-size: 0.72rem;">データ読込 (Import)</button>
