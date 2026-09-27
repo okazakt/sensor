@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.280015";
+const BASE_JS_VERSION = "v0.26.091.280045";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
@@ -714,18 +714,36 @@ function setupDataMigrationHandlers() {
   const actionBtn = document.getElementById('btn-migration-action');
   const closeBtn = document.getElementById('btn-migration-close');
 
-  let currentMode = ''; // 'export' or 'import'
+  let currentMode = '';
 
   if (exportCopyBtn && modalOverlay && textarea) {
     exportCopyBtn.addEventListener('click', () => {
-      currentMode = 'export';
       const db = loadSavedData();
-      textarea.value = JSON.stringify(db, null, 2);
-      textarea.readOnly = true;
-      actionBtn.textContent = "コピー (Copy to Clipboard)";
-      document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
-      document.getElementById('migration-modal-desc').textContent = "以下のJSONテキストをコピーしてください。";
-      modalOverlay.classList.add('show');
+      const jsonStr = JSON.stringify(db, null, 2);
+      
+      // ワンクリックで自動的にクリップボードにコピー
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonStr).then(() => {
+          alert("現在のデータをクリップボードにコピーしました！\n（移行先で「データ読込 (Paste)」を押してください）");
+        }).catch(() => {
+          // 失敗した場合はモーダルを開いて手動コピーさせる
+          currentMode = 'export';
+          textarea.value = jsonStr;
+          textarea.readOnly = true;
+          actionBtn.textContent = "コピー (Copy)";
+          document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
+          document.getElementById('migration-modal-desc').textContent = "下のテキストを選択してコピーしてください。";
+          modalOverlay.classList.add('show');
+        });
+      } else {
+        currentMode = 'export';
+        textarea.value = jsonStr;
+        textarea.readOnly = true;
+        actionBtn.textContent = "コピー (Copy)";
+        document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
+        document.getElementById('migration-modal-desc').textContent = "下のテキストを選択してコピーしてください。";
+        modalOverlay.classList.add('show');
+      }
     });
   }
 
@@ -736,7 +754,7 @@ function setupDataMigrationHandlers() {
       textarea.readOnly = false;
       actionBtn.textContent = "インポート実行 (Import)";
       document.getElementById('migration-modal-title').textContent = "データ読込 (Import)";
-      document.getElementById('migration-modal-desc').textContent = "移行先のJSONテキストをここに貼り付けてください。";
+      document.getElementById('migration-modal-desc').textContent = "移行元のJSONテキストをここに貼り付けてください。";
       modalOverlay.classList.add('show');
       textarea.focus();
     });
@@ -746,18 +764,9 @@ function setupDataMigrationHandlers() {
     actionBtn.onclick = () => {
       if (currentMode === 'export') {
         textarea.select();
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(textarea.value).then(() => {
-            alert("データをクリップボードにコピーしました！");
-            modalOverlay.classList.remove('show');
-          }).catch(() => {
-            alert("コピーしました（テキストを手動でコピーしてください）。");
-          });
-        } else {
-          document.execCommand('copy');
-          alert("コピーしました！");
-          modalOverlay.classList.remove('show');
-        }
+        document.execCommand('copy');
+        alert("コピーしました！");
+        modalOverlay.classList.remove('show');
       } else if (currentMode === 'import') {
         const textVal = textarea.value.trim();
         if (!textVal) {
