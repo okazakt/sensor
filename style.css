@@ -3,11 +3,11 @@
  * [CSS Version Management Specification]
  * - 採番範囲: 01 〜 99 (99の次は 01 にループ)
  * - 変更手順: style.css を修正した際、下記の --css-rev の値をインクリメントする
- * - 現在のCSS個別番号: 02
+ * - 現在のCSS個別番号: 03
  * ============================================================
  */
 :root {
-  --css-rev: "02";
+  --css-rev: "03";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -721,6 +721,16 @@ body {
   color: #556270;
   letter-spacing: 0.5px;
   margin-top: 2px;
+}
+
+.page-header {
+  padding-top: calc(max(env(safe-area-inset-top), 24px) + 10px);
+  padding-bottom: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: var(--sheikah-panel);
+  border-bottom: 1.5px solid var(--sheikah-gold);
+  flex-shrink: 0;
 }
 
 .slide-page {
