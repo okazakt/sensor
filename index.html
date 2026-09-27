@@ -43,7 +43,7 @@
     #app-container {
       width: 100%; max-width: 480px; height: 100vh; position: relative; overflow: hidden;
       background: var(--sheikah-bg); border-left: 2px solid var(--sheikah-border); border-right: 2px solid var(--sheikah-border);
-      display: flex; flex-direction: column; padding-top: env(safe-area-inset-top);
+      display: flex; flex-direction: column;
     }
 
     /* 安全警告モーダル */
@@ -91,8 +91,8 @@
     .pwa-step-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 243, 255, 0.15); border: 1.5px solid var(--sheikah-cyan); color: var(--sheikah-cyan); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.72rem; flex-shrink: 0; }
     .btn-dev-skip { background: transparent; border: none; color: #667788; font-size: 0.72rem; text-decoration: underline; cursor: pointer; margin-top: 4px; }
 
-    .top-left-ctrl { position: absolute; top: calc(max(env(safe-area-inset-top), 16px) + 6px); left: 18px; z-index: 25; }
-    .top-right-ctrl { position: absolute; top: calc(max(env(safe-area-inset-top), 16px) + 6px); right: 18px; z-index: 25; }
+    .top-left-ctrl { position: absolute; top: 18px; left: 18px; z-index: 25; }
+    .top-right-ctrl { position: absolute; top: 18px; right: 18px; z-index: 25; }
 
     .top-icon-btn {
       width: 40px; height: 40px; background: rgba(3, 8, 14, 0.85); border: 2px solid var(--sheikah-gold);
@@ -275,7 +275,7 @@
         <div class="warning-title" id="warning-title">安全にお楽しみいただくために</div>
         <div class="warning-text" id="warning-text">「Sensor Challenge」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。</div>
         <button class="btn-warning-ok" id="btn-warning-ok">OK / 同意して始める</button>
-        <div class="warning-version">v0.26.092.0947</div>
+        <div class="warning-version">v0.26.092.1010</div>
       </div>
     </div>
 
@@ -397,7 +397,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>v0.26.092.0947</span>
+        <span>v0.26.092.1010</span>
       </div>
     </div>
 
@@ -608,8 +608,7 @@
               <circle cx="14" cy="14" r="4.5" fill="#ffee33" />
             </svg>
           `),
-          scaledSize: new google.maps.Size(28, 28),
-          anchor: new google.maps.Point(14, 14)
+          scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14)
         };
       } else {
         return {
@@ -770,6 +769,7 @@
              window.matchMedia('(display-mode: fullscreen)').matches;
     }
 
+    // 24時間経過自動リロード ＆ キャッシュクリア付き
     function checkReloadAndPWA() {
       const now = Date.now();
       const lastReload = localStorage.getItem('sheikah_last_reload_time');
@@ -777,7 +777,13 @@
 
       if (!lastReload || (now - parseInt(lastReload, 10) > TWENTY_FOUR_HOURS)) {
         localStorage.setItem('sheikah_last_reload_time', now.toString());
-        location.reload();
+        // Service Workerのキャッシュをクリアしてからリロード
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            for (let reg of regs) reg.unregister();
+          });
+        }
+        location.reload(true);
         return;
       }
 
@@ -790,7 +796,10 @@
 
     let map = null;
     function initMap(lat, lng) {
-      if (typeof google === 'undefined' || !google.maps) return;
+      if (typeof google === 'undefined' || !google.maps) {
+        alert("Google Maps APIの読み込みに失敗しました。接続を確認してください。");
+        return;
+      }
       if (!map) {
         map = new google.maps.Map(document.getElementById('map'), {
           center: { lat, lng }, zoom: 17, disableDefaultUI: true,
@@ -815,77 +824,12 @@
             localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
             if (map) { map.setCenter(p); google.maps.event.trigger(map, 'resize'); }
           },
-          (err) => {},
+          (err) => { console.warn("GPS取得エラー:", err.message); },
           { enableHighAccuracy: true, timeout: 8000 }
         );
       }
     }
 
-    // ===================================================
-    // 検索実行関数の修正（確実にAPIを呼び出す構造に最適化）
-    // ===================================================
-    function executeSearch() {
-      if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
-      isSearchInProgress = true;
-      appState.lastSearchedPos = { ...appState.currentPos };
-      const r = RADIUS_OPTIONS[radiusIndex];
-      const t = I18N[currentLang];
-      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, r >= 1000 ? `${r/1000}km` : `${r}m`);
-
-      if (placesService) {
-        const queryWord = appState.activeKeyword.trim();
-        const request = {
-          location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
-          radius: r,
-          query: queryWord
-        };
-
-        placesService.textSearch(request, (results, status) => {
-          isSearchInProgress = false;
-          if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-            appState.places = results.filter(p => getDistance(appState.currentPos.lat, appState.currentPos.lng, p.geometry.location.lat(), p.geometry.location.lng()) <= r)
-              .map(p => ({ id: p.place_id, name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() }));
-          } else {
-            appState.places = [];
-            if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-              console.warn("Places API Status:", status);
-            }
-          }
-          evaluateSensorCycle();
-        });
-      } else {
-        isSearchInProgress = false;
-      }
-    }
-
-    async function startSearchFromSet() {
-      initAudio(); playBeep(2200); requestCompassPermissionIfNeeded();
-      if (appState.wakeLockActive) requestWakeLock();
-
-      const inputVal = document.getElementById('keyword-input').value.trim();
-      if (!inputVal) { alert("キーワードを入力してください"); return; }
-
-      appState.activeKeyword = inputVal; appState.pinpointTarget = null;
-      appState.isTracking = true; appState.isPaused = false;
-
-      const db = loadSavedData();
-      const now = new Date().toISOString();
-      if (!db.keywordHistory[appState.activeKeyword]) {
-        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
-      } else { db.keywordHistory[appState.activeKeyword].lastSearch = now; }
-      saveAppData(db); updateButtonStateUI();
-
-      if (!watchId && 'geolocation' in navigator) {
-        watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-          document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
-        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
-      } else { executeSearch(); }
-    }
-
-    document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
-    document.getElementById('keyword-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') startSearchFromSet(); });
-
-    // その他のユーティリティ・イベント定義
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
@@ -900,6 +844,7 @@
       return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     }
 
+    let radarTimer = null, scheduledInterval = null;
     function updateVisualRing(level) {
       const ring = document.getElementById('circle-map-wrapper');
       if (ring) ring.className = `circle-map-wrapper signal-${level}`;
@@ -1065,6 +1010,79 @@
       }
       evaluateSensorCycle();
     }
+
+    // ===================================================
+    // 【堅牢化された検索実行関数 ＆ アラートデバッグ対応】
+    // ===================================================
+    function executeSearch() {
+      if (!appState.currentPos) {
+        alert("エラー: 現在地がまだ特定されていません。GPSの測位を待ってから再度SETしてください。");
+        isSearchInProgress = false;
+        return;
+      }
+      if (isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
+      
+      isSearchInProgress = true;
+      appState.lastSearchedPos = { ...appState.currentPos };
+      const r = RADIUS_OPTIONS[radiusIndex];
+      const t = I18N[currentLang];
+      document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, r >= 1000 ? `${r/1000}km` : `${r}m`);
+
+      if (placesService) {
+        const queryWord = appState.activeKeyword.trim();
+        const request = {
+          location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
+          radius: r,
+          query: queryWord
+        };
+
+        placesService.textSearch(request, (results, status) => {
+          isSearchInProgress = false;
+          if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            appState.places = results.filter(p => getDistance(appState.currentPos.lat, appState.currentPos.lng, p.geometry.location.lat(), p.geometry.location.lng()) <= r)
+              .map(p => ({ id: p.place_id, name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() }));
+          } else {
+            appState.places = [];
+            if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+              alert(`「${queryWord}」は指定された範囲（${r >= 1000 ? r/1000+'km' : r+'m'}）内に見つかりませんでした。`);
+            } else {
+              alert(`Places API エラー: ${status}`);
+            }
+          }
+          evaluateSensorCycle();
+        });
+      } else {
+        isSearchInProgress = false;
+        alert("エラー: PlacesServiceが初期化されていません。ページを再読み込みしてください。");
+      }
+    }
+
+    async function startSearchFromSet() {
+      initAudio(); playBeep(2200); requestCompassPermissionIfNeeded();
+      if (appState.wakeLockActive) requestWakeLock();
+
+      const inputVal = document.getElementById('keyword-input').value.trim();
+      if (!inputVal) { alert("キーワードを入力してください"); return; }
+
+      appState.activeKeyword = inputVal; appState.pinpointTarget = null;
+      appState.isTracking = true; appState.isPaused = false;
+
+      const db = loadSavedData();
+      const now = new Date().toISOString();
+      if (!db.keywordHistory[appState.activeKeyword]) {
+        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
+      } else { db.keywordHistory[appState.activeKeyword].lastSearch = now; }
+      saveAppData(db); updateButtonStateUI();
+
+      if (!watchId && 'geolocation' in navigator) {
+        watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
+          alert("GPS測位エラー: " + err.message);
+        }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+      } else { executeSearch(); }
+    }
+
+    document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
+    document.getElementById('keyword-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') startSearchFromSet(); });
 
     document.getElementById('radius-select').value = radiusIndex.toString();
     document.getElementById('radius-val').textContent = RADIUS_OPTIONS[radiusIndex] >= 1000 ? `${RADIUS_OPTIONS[radiusIndex]/1000}km` : `${RADIUS_OPTIONS[radiusIndex]}m`;
@@ -1324,7 +1342,7 @@
       document.getElementById('detail-spot-name').textContent = item.name;
       document.getElementById('detail-spot-address').textContent = t.loadingAddress;
       const photosBox = document.getElementById('detail-photos-container');
-      photosBox.innerHTML = `<div class="no-photos-box">${t.loadingLoading ? t.loadingLoading : '写真を取得中...'}</div>`;
+      photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
 
       document.getElementById('detail-btn-pinpoint-set').onclick = () => setPinpointTargetAndStart(item);
       document.getElementById('detail-btn-copy').onclick = () => copyPlaceNameToClipboard(item.name);
@@ -1345,7 +1363,7 @@
       };
 
       document.getElementById('detail-btn-maps-review').onclick = () => window.open(item.id ? `https://search.google.com/local/writereview?placeid=${item.id}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
-      document.getElementById('detail-btn-maps-photo').onclick = () => window.open(item.id ? `https://search.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
+      document.getElementById('detail-btn-maps-photo').onclick = () => window.open(item.id ? `https://www.google.com/maps/contrib/reviews?placeid=${item.id}&action=upload` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`, '_blank');
 
       pageSpotDetail.classList.add('open');
 
@@ -1402,22 +1420,27 @@
     // ===================================================
     applyLanguage(currentLang);
 
-    // すでに安全警告に同意している場合は最初から隠す
+    // 24時間チェック ＆ キャッシュクリア付きリロード
+    const now = Date.now();
+    const lastReload = localStorage.getItem('sheikah_last_reload_time');
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    if (!lastReload || (now - parseInt(lastReload, 10) > TWENTY_FOUR_HOURS)) {
+      localStorage.setItem('sheikah_last_reload_time', now.toString());
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => { for (let reg of regs) reg.unregister(); });
+      }
+      location.reload(true);
+    }
+
     if (localStorage.getItem('sheikah_safety_agreed') === 'true') {
       document.getElementById('safety-warning-overlay').style.display = 'none';
-      initAudio();
-      requestCompassPermissionIfNeeded();
-      bootstrapMapAndLocation();
-      checkReloadAndPWA();
+      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation(); checkReloadAndPWA();
     }
 
     document.getElementById('btn-warning-ok').addEventListener('click', () => {
       localStorage.setItem('sheikah_safety_agreed', 'true');
       document.getElementById('safety-warning-overlay').style.display = 'none';
-      initAudio();
-      requestCompassPermissionIfNeeded();
-      bootstrapMapAndLocation();
-      checkReloadAndPWA();
+      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation(); checkReloadAndPWA();
     });
 
     document.getElementById('btn-pwa-skip').addEventListener('click', () => {
@@ -1425,32 +1448,8 @@
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
       if (warningOverlay) warningOverlay.style.display = 'none';
       if (pwaOverlay) pwaOverlay.classList.remove('show');
-      initAudio();
-      requestCompassPermissionIfNeeded();
-      bootstrapMapAndLocation();
+      initAudio(); requestCompassPermissionIfNeeded(); bootstrapMapAndLocation();
     });
-
-    // PWAキャッシュ自動強制アップデート登録（Service Worker）
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        const swCode = `
-          self.addEventListener('install', e => self.skipWaiting());
-          self.addEventListener('activate', e => e.waitUntil(clients.claim()));
-          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-        `;
-        const blob = new Blob([swCode], { type: 'text/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(blob)).then(reg => {
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                window.location.reload();
-              }
-            });
-          });
-        }).catch(err => console.log('SW registration failed: ', err));
-      });
-    }
   </script>
 </body>
 </html>
