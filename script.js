@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
+  // 全てのバージョン表示箇所に即時反映
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
@@ -168,7 +169,7 @@ const I18N = {
     pwaStep3: "ホーム画面に生成されたアイコンから起動",
     pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
     safetyTitle: "安全にお楽しみいただくために",
-    safetyDesc: "「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
+    safetyDesc: "When playing 'Sensor Challenge'...（安全にお楽しみください）",
     safetyOk: "OK",
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
@@ -1451,7 +1452,6 @@ document.getElementById('open-keywords-btn').addEventListener('click', () => {
   pageKeywords.classList.add('open');
 });
 
-// 各画面のコード
 document.getElementById('open-all-from-keywords').addEventListener('click', () => {
   renderAllHistoryList();
   pageAllHistory.classList.add('open');
