@@ -7,16 +7,16 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272215";
+const BASE_JS_VERSION = "v0.26.091.272230";
 
 // HTMLとCSSのバージョン番号を動的に取得して結合
 document.addEventListener("DOMContentLoaded", () => {
   const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "01";
+  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "02";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "01";
+  if (!cssRev) cssRev = "02";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
@@ -97,7 +97,7 @@ const I18N = {
     langSwitchLabel: "→EN",
     compendiumBtn: "到達済みリスト (図鑑)",
     footerTip: "※消音時も円周の光とフラッシュで反応",
-    backToMain: "◀ メイン",
+    backToMain: "◀メイン",
     keywordsTitle: "図鑑キーワード",
     filterKeywordsPlaceholder: "キーワード絞り込み...",
     filterHistoryPlaceholder: "到達スポット絞り込み...",
@@ -106,9 +106,10 @@ const I18N = {
     sortCount: "到達件数降順",
     cleanZeroBtn: "到達0件の履歴を一括削除",
     deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-    backToKeywords: "◀ 履歴一覧",
-    backToHistory: "◀ 到達リスト",
+    backToKeywords: "◀履歴一覧",
+    backToHistory: "◀到達リスト",
     spotDetailTitle: "スポット詳細",
+    allHistoryTitle: "全スポット一覧",
     deleteBtn: "削除",
     sortHNear: "現在地から近い順",
     sortHDesc: "到達日時が新しい順",
@@ -117,6 +118,7 @@ const I18N = {
     noSpotsInRange: "範囲内に対象なし",
     spotDetected: "探知反応あり",
     emptyHistory: "このキーワードでの到達実績はまだありません。",
+    emptyAllHistory: "到達したスポットはまだありません。",
     discoveryCompleted: "DISCOVERY COMPLETED",
     toastRecorded: (name) => `マップに「${name}」が記録されました`,
     toastCopied: (name) => `「${name}」をコピーしました`,
@@ -124,6 +126,7 @@ const I18N = {
     targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
     arrivalCount: (c) => `到達数: ${c} 箇所`,
     arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
+    targetKeywordLabel: (k) => `対象キーワード: ${k}`,
     radarOn: "レーダーON",
     radarOff: "レーダーOFF",
     copyBtn: "コピー",
@@ -166,7 +169,7 @@ const I18N = {
     langSwitchLabel: "→JP",
     compendiumBtn: "Discovered List (Atlas)",
     footerTip: "Visual ring pulses even in mute mode",
-    backToMain: "◀ Main",
+    backToMain: "◀Main",
     keywordsTitle: "Atlas Keywords",
     filterKeywordsPlaceholder: "Filter keywords...",
     filterHistoryPlaceholder: "Filter places...",
@@ -175,9 +178,10 @@ const I18N = {
     sortCount: "By Discovery Count",
     cleanZeroBtn: "Delete Zero-Hit Records",
     deleteCurrentKeyBtn: "Delete This Keyword's History",
-    backToKeywords: "◀ Keywords",
-    backToHistory: "◀ Places",
+    backToKeywords: "◀Keywords",
+    backToHistory: "◀Places",
     spotDetailTitle: "Place Details",
+    allHistoryTitle: "All Discovered Spots",
     deleteBtn: "Delete",
     sortHNear: "By Distance (Nearest)",
     sortHDesc: "Newest First",
@@ -186,6 +190,7 @@ const I18N = {
     noSpotsInRange: "No targets in range",
     spotDetected: "Target detected",
     emptyHistory: "No places discovered for this keyword yet.",
+    emptyAllHistory: "No places discovered yet.",
     discoveryCompleted: "DISCOVERY COMPLETED",
     toastRecorded: (name) => `Recorded "${name}" to slate map`,
     toastCopied: (name) => `Copied "${name}"`,
@@ -193,6 +198,7 @@ const I18N = {
     targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
     arrivalCount: (c) => `Discovered: ${c} spots`,
     arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
+    targetKeywordLabel: (k) => `Target Keyword: ${k}`,
     radarOn: "RADAR ON",
     radarOff: "RADAR OFF",
     copyBtn: "COPY",
@@ -391,6 +397,7 @@ function applyLanguage(lang) {
   document.getElementById('back-to-keywords').textContent = t.backToKeywords;
   document.getElementById('back-to-history-list').textContent = t.backToHistory;
   document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
+  document.getElementById('all-header-title').textContent = t.allHistoryTitle;
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
   document.getElementById('detail-btn-delete-single').textContent = t.deleteBtn;
   document.getElementById('detail-gallery-header').textContent = t.galleryHeader;
@@ -399,6 +406,10 @@ function applyLanguage(lang) {
   document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
   document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
   document.getElementById('opt-hsort-name').textContent = t.sortHName;
+  document.getElementById('opt-asort-near').textContent = t.sortHNear;
+  document.getElementById('opt-asort-desc').textContent = t.sortHDesc;
+  document.getElementById('opt-asort-asc').textContent = t.sortHAsc;
+  document.getElementById('opt-asort-name').textContent = t.sortHName;
   document.getElementById('toast-title').textContent = t.discoveryCompleted;
   document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
 
@@ -415,9 +426,14 @@ function applyLanguage(lang) {
   document.getElementById('btn-safety-ok').textContent = t.safetyOk;
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
 
+  // 各画面の「全て ▶」ボタンや戻るボタンのテキスト更新
+  document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
+  document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
+
   updateButtonStateUI();
   renderKeywordsList();
   if (appState.selectedKeywordForHistory) renderHistoryList();
+  renderAllHistoryList();
 }
 
 document.getElementById('pwa-lang-btn').addEventListener('click', () => {
@@ -628,6 +644,7 @@ let appState = {
   activeKeyword: "",
   selectedKeywordForHistory: null,
   selectedSpotForDetail: null,
+  fromAllHistory: false, // 第5画面から詳細を開いたかどうかのフラグ
   places: [],
   pinpointTarget: null
 };
@@ -1172,6 +1189,11 @@ setupInputClear(
   document.getElementById('btn-history-filter-clear'),
   () => renderHistoryList()
 );
+setupInputClear(
+  document.getElementById('all-history-filter'),
+  document.getElementById('btn-all-history-filter-clear'),
+  () => renderAllHistoryList()
+);
 
 function updateButtonStateUI() {
   const t = I18N[currentLang];
@@ -1331,8 +1353,10 @@ document.getElementById('pause-toggle-btn').addEventListener('click', () => {
 const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
 const pageSpotDetail = document.getElementById('page-spot-detail');
+const pageAllHistory = document.getElementById('page-all-history');
 
 function navigateToMain() {
+  pageAllHistory.classList.remove('open');
   pageSpotDetail.classList.remove('open');
   pageHistory.classList.remove('open');
   pageKeywords.classList.remove('open');
@@ -1342,10 +1366,25 @@ function navigateToMain() {
 document.getElementById('home-from-keywords').addEventListener('click', navigateToMain);
 document.getElementById('home-from-history').addEventListener('click', navigateToMain);
 document.getElementById('home-from-detail').addEventListener('click', navigateToMain);
+document.getElementById('home-from-all').addEventListener('click', navigateToMain);
 
 document.getElementById('open-keywords-btn').addEventListener('click', () => {
   renderKeywordsList();
   pageKeywords.classList.add('open');
+});
+
+// 各画面の「全て ▶」ボタン押下時
+document.getElementById('open-all-from-keywords').addEventListener('click', () => {
+  renderAllHistoryList();
+  pageAllHistory.classList.add('open');
+});
+document.getElementById('open-all-from-history').addEventListener('click', () => {
+  renderAllHistoryList();
+  pageAllHistory.classList.add('open');
+});
+document.getElementById('open-all-from-detail').addEventListener('click', () => {
+  renderAllHistoryList();
+  pageAllHistory.classList.add('open');
 });
 
 document.getElementById('back-to-main').addEventListener('click', () => {
@@ -1360,7 +1399,16 @@ document.getElementById('back-to-keywords').addEventListener('click', () => {
 
 document.getElementById('back-to-history-list').addEventListener('click', () => {
   pageSpotDetail.classList.remove('open');
-  renderHistoryList();
+  if (appState.fromAllHistory) {
+    pageAllHistory.classList.add('open');
+  } else {
+    renderHistoryList();
+  }
+});
+
+document.getElementById('back-from-all').addEventListener('click', () => {
+  pageAllHistory.classList.remove('open');
+  evaluateSensorCycle();
 });
 
 const mainBottomPanel = document.getElementById('main-bottom-panel');
@@ -1380,17 +1428,24 @@ mainBottomPanel.addEventListener('touchend', (e) => {
   }
 }, { passive: true });
 
-function setupSwipeBack(el, backCallback) {
+function setupSwipeNavigation(el, backCallback, forwardCallback) {
   let startX = 0;
   el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
   el.addEventListener('touchend', (e) => {
     const diffX = e.changedTouches[0].clientX - startX;
-    if (diffX > 75) backCallback();
+    if (diffX > 75 && backCallback) {
+      backCallback();
+    } else if (diffX < -75 && forwardCallback) {
+      forwardCallback();
+    }
   }, { passive: true });
 }
-setupSwipeBack(pageKeywords, () => document.getElementById('back-to-main').click());
-setupSwipeBack(pageHistory, () => document.getElementById('back-to-keywords').click());
-setupSwipeBack(pageSpotDetail, () => document.getElementById('back-to-history-list').click());
+
+// 各画面のスワイプ挙動設定
+setupSwipeNavigation(pageKeywords, () => document.getElementById('back-to-main').click(), () => document.getElementById('open-all-from-keywords').click());
+setupSwipeNavigation(pageHistory, () => document.getElementById('back-to-keywords').click(), () => document.getElementById('open-all-from-history').click());
+setupSwipeNavigation(pageSpotDetail, () => document.getElementById('back-to-history-list').click(), () => document.getElementById('open-all-from-detail').click());
+setupSwipeNavigation(pageAllHistory, () => document.getElementById('back-from-all').click(), null);
 
 // ===================================================
 // 7. リスト表示・ソート・詳細画面・写真＆固定ミニマップ
@@ -1566,6 +1621,7 @@ function renderHistoryList() {
 
       div.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') return;
+        appState.fromAllHistory = false;
         openSpotDetailModal(item);
       });
 
@@ -1590,6 +1646,119 @@ function renderHistoryList() {
     });
   }
 }
+
+// 第5画面：全スポット一覧のレンダリング
+function renderAllHistoryList() {
+  const db = loadSavedData();
+  const container = document.getElementById('all-history-list-container');
+  container.innerHTML = '';
+  const t = I18N[currentLang];
+
+  const filterText = document.getElementById('all-history-filter').value.toLowerCase();
+  const sortType = document.getElementById('sort-all-history').value;
+
+  let items = db.arrivals.filter(a => a.name.toLowerCase().includes(filterText));
+
+  const basePos = appState.currentPos || lastKnownPos;
+  if (basePos) {
+    items.forEach(item => {
+      item.calcDistance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng);
+    });
+  }
+
+  items.sort((a, b) => {
+    if (sortType === 'near_asc') {
+      return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
+    } else if (sortType === 'date_desc') {
+      return new Date(b.date) - new Date(a.date);
+    } else if (sortType === 'date_asc') {
+      return new Date(a.date) - new Date(b.date);
+    } else if (sortType === 'name_asc') {
+      return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+    }
+  });
+
+  if (items.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">
+        ${t.emptyAllHistory}
+      </div>
+    `;
+  } else {
+    items.forEach(item => {
+      const d = new Date(item.date);
+      const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+      let distStr = "";
+      if (item.calcDistance !== undefined) {
+        distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
+      }
+
+      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt > TWENTY_FOUR_HOURS)) {
+        if (placesService && item.id) {
+          placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) {
+              item.rating = place.rating;
+              item.ratingCachedAt = Date.now();
+              saveAppData(db);
+              const starEl = document.getElementById(`all-star-${item.id}`);
+              if (starEl) starEl.innerHTML = formatStarRating(item.rating);
+            }
+          });
+        }
+      }
+
+      const starHtml = formatStarRating(item.rating);
+      const keywordLabel = t.targetKeywordLabel(item.keyword || '-');
+
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      div.innerHTML = `
+        <div class="list-item-left">
+          <span class="list-item-title">${item.name}</span>
+          <div id="all-star-${item.id}" style="margin: 3px 0 2px 0;">${starHtml}</div>
+          <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
+          <div class="list-item-sub" style="color: #99aabb; margin-top: 2px;">${keywordLabel}</div>
+        </div>
+        <div class="action-button-row">
+          <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
+          <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">
+            ${item.muted ? t.radarOff : t.radarOn}
+          </button>
+          <button class="btn-sheikah-sm btn-copy-sm">${t.copyBtn}</button>
+        </div>
+      `;
+
+      div.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        appState.fromAllHistory = true;
+        openSpotDetailModal(item);
+      });
+
+      div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPinpointTargetAndStart(item);
+      });
+
+      div.querySelector('.btn-toggle-radar').addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.muted = !item.muted;
+        saveAppData(db);
+        renderAllHistoryList();
+      });
+
+      div.querySelector('.btn-copy-sm').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        copyPlaceNameToClipboard(item.name);
+      });
+
+      container.appendChild(div);
+    });
+  }
+}
+
+document.getElementById('all-history-filter').addEventListener('input', renderAllHistoryList);
+document.getElementById('sort-all-history').addEventListener('change', renderAllHistoryList);
 
 function copyPlaceNameToClipboard(text) {
   const t = I18N[currentLang];
@@ -1617,11 +1786,12 @@ function setPinpointTargetAndStart(item) {
     lat: item.lat,
     lng: item.lng
   };
-  appState.activeKeyword = item.name;
-  document.getElementById('keyword-input').value = item.name;
+  appState.activeKeyword = item.keyword || item.name;
+  document.getElementById('keyword-input').value = appState.activeKeyword;
   document.getElementById('btn-input-clear').classList.add('show');
   document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
+  pageAllHistory.classList.remove('open');
   pageSpotDetail.classList.remove('open');
   pageHistory.classList.remove('open');
   pageKeywords.classList.remove('open');
@@ -1637,6 +1807,14 @@ function openSpotDetailModal(item) {
   const t = I18N[currentLang];
   const db = loadSavedData();
 
+  // 第5画面から開いた場合の戻るボタン表示切替
+  const backBtn = document.getElementById('back-to-history-list');
+  if (appState.fromAllHistory) {
+    backBtn.textContent = currentLang === 'ja' ? '◀全て' : '◀All';
+  } else {
+    backBtn.textContent = currentLang === 'ja' ? '◀到達リスト' : '◀Places';
+  }
+
   document.getElementById('detail-spot-name').textContent = item.name;
   document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
   document.getElementById('detail-spot-address').textContent = t.loadingAddress;
@@ -1650,6 +1828,7 @@ function openSpotDetailModal(item) {
     distStr = calcDist >= 1000 ? `${(calcDist/1000).toFixed(1)}km` : `${Math.round(calcDist)}m`;
   }
   document.getElementById('detail-spot-meta').textContent = t.arrivalDate(dateStr, distStr);
+  document.getElementById('detail-spot-keyword').textContent = t.targetKeywordLabel(item.keyword || '-');
 
   const photosBox = document.getElementById('detail-photos-container');
   photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
@@ -1680,7 +1859,11 @@ function openSpotDetailModal(item) {
       db.arrivals = db.arrivals.filter(a => a.id !== item.id);
       saveAppData(db);
       pageSpotDetail.classList.remove('open');
-      renderHistoryList();
+      if (appState.fromAllHistory) {
+        renderAllHistoryList();
+      } else {
+        renderHistoryList();
+      }
     }
   };
 
@@ -1780,24 +1963,6 @@ function loadPhotosAndMap(item, gallery, photosBox) {
     });
   }, 80);
 }
-
-document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
-  const targetKey = appState.selectedKeywordForHistory;
-  if (!targetKey) return;
-  const t = I18N[currentLang];
-
-  if (confirm(t.confirmDeleteKeyword(targetKey))) {
-    const db = loadSavedData();
-    if (db.keywordHistory[targetKey]) {
-      delete db.keywordHistory[targetKey];
-    }
-    db.arrivals = db.arrivals.filter(item => item.keyword !== targetKey);
-    saveAppData(db);
-
-    pageHistory.classList.remove('open');
-    renderKeywordsList();
-  }
-});
 
 document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
 document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
