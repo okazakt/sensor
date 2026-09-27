@@ -1,40 +1,27 @@
 /**
  * ============================================================
  * [JavaScript Version Management Specification]
- * - 採番形式: v0.[Year].[Month]1.[DateHourMinute].[HTML Rev].[CSS Rev]
- * - HTML Rev (index.html): scriptタグの data-html-rev 属性から自動取得 (01〜99)
- * - CSS Rev (style.css): :root の --css-rev 変数から自動取得 (01〜99)
- * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
+ * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
+ * - 変更手順: script.js を修正した際、下記の BASE_JS_VERSION の値をインクリメントする
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.290101";
+const BASE_JS_VERSION = "v0.26.091.290400";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
-  const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "04";
-  const cssRev = "02";
-  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-  
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
-    el.textContent = fullVersion;
+    el.textContent = BASE_JS_VERSION;
   });
 })();
 
 // DOM構築完了時にも再度確実に反映 ＆ イベント設定
 document.addEventListener("DOMContentLoaded", () => {
-  const scriptTag = document.getElementById('main-script');
-  const htmlRev = scriptTag ? scriptTag.getAttribute('data-html-rev') : "04";
-
-  const computedStyle = getComputedStyle(document.documentElement);
-  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "02";
-
-  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
-    el.textContent = fullVersion;
+    el.textContent = BASE_JS_VERSION;
   });
+
+  // 裏コマンド（データ引き継ぎ）のセットアップ
+  setupDataTransferEasterEgg();
 });
 
 // グローバルエラーキャッチ（外部ドメインのエラーをフィルタリング）
@@ -2084,7 +2071,7 @@ document.getElementById('btn-pwa-skip').addEventListener('click', () => {
 });
 
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
-  document.getElementById('safety-prompt-overlay').classList.remove('show');
+  document.getElementById('safety-prompt-overlay').classList.remove('open');
   initAudio();
 
   if ('geolocation' in navigator) {
