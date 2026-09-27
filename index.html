@@ -1385,9 +1385,9 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.272033 (Year 2026, Month 09, fixed '1', Day 27, Hour 20, Minute 33)
+     * Current Version: v0.26.091.272100 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 00)
      */
-    const APP_VERSION = "v0.26.091.272033";
+    const APP_VERSION = "v0.26.091.272100";
 
     // グローバルエラーキャッチ（iPhone実機デバッグ用：エラー内容をアラート＆クリップボードコピー）
     window.addEventListener('error', function(event) {
@@ -1625,14 +1625,76 @@
     let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'botw';
     let markersList = [];
 
+    function clearAllMarkers() {
+      markersList.forEach(m => m.setMap(null));
+      markersList = [];
+    }
+
+    function redrawMarkersWithFade() {
+      if (!map) return;
+      clearAllMarkers();
+
+      const db = loadSavedData();
+      if (!db.arrivals || db.arrivals.length === 0) return;
+
+      // 到達日時が新しい順にソート
+      const sortedArrivals = [...db.arrivals].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const isDay = (currentMapStyleMode === 'botw');
+
+      sortedArrivals.forEach((item, index) => {
+        if (index >= 10) return; // 過去10件以上前の古いものは表示させない
+
+        // 0番目（最新）が1.0、9番目（10件目）が約0.15まで段階的に薄れていく不透明度を計算
+        const opacity = Math.max(0.15, 1.0 - (index * 0.09));
+
+        let iconObj;
+        if (isDay) {
+          iconObj = {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+                <circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="${opacity}" />
+                <circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="${opacity * 0.8}" />
+                <circle cx="14" cy="14" r="4.5" fill="#ffee33" opacity="${opacity}" />
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(28, 28),
+            anchor: new google.maps.Point(14, 14)
+          };
+        } else {
+          iconObj = {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#00f3ff",
+            fillOpacity: opacity,
+            strokeWeight: 2,
+            strokeColor: "#ffffff",
+            strokeOpacity: opacity
+          };
+        }
+
+        const marker = new google.maps.Marker({
+          position: { lat: item.lat, lng: item.lng },
+          map: map,
+          title: item.name,
+          icon: iconObj
+        });
+        markersList.push(marker);
+      });
+    }
+
     function getMarkerIcon(isDayMode) {
+      // 互換性のため残す（redrawMarkersWithFadeで動的生成するためここではデフォルトを返す）
+      return getMarkerIconDynamic(isDayMode, 1.0);
+    }
+
+    function getMarkerIconDynamic(isDayMode, opacity) {
       if (isDayMode) {
         return {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-              <circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="0.9" />
-              <circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="0.8" />
-              <circle cx="14" cy="14" r="4.5" fill="#ffee33" />
+              <circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="${opacity}" />
+              <circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="${opacity * 0.8}" />
+              <circle cx="14" cy="14" r="4.5" fill="#ffee33" opacity="${opacity}" />
             </svg>
           `),
           scaledSize: new google.maps.Size(28, 28),
@@ -1643,41 +1705,12 @@
           path: google.maps.SymbolPath.CIRCLE,
           scale: 8,
           fillColor: "#00f3ff",
-          fillOpacity: 1,
+          fillOpacity: opacity,
           strokeWeight: 2,
-          strokeColor: "#ffffff"
+          strokeColor: "#ffffff",
+          strokeOpacity: opacity
         };
       }
-    }
-
-    // 安定かつシンプルなSVG星評価描画関数
-    function formatStarRating(rating) {
-      if (rating === undefined || rating === null || isNaN(rating)) return "";
-      const r = Math.max(0, Math.min(5, rating));
-      
-      let html = '<span style="display:inline-flex; align-items:center; gap:1px; vertical-align:middle;">';
-      for (let i = 1; i <= 5; i++) {
-        let fill = '#445566'; // 空の星の色
-        if (r >= i) {
-          fill = '#ffaa00'; // 満点の星の色
-        } else if (r > i - 1 && r < i) {
-          fill = 'url(#half-star)'; // 半分の星
-        }
-        
-        html += `
-          <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block;">
-            <defs>
-              <linearGradient id="half-star">
-                <stop offset="50%" stop-color="#ffaa00"/>
-                <stop offset="50%" stop-color="#445566"/>
-              </linearGradient>
-            </defs>
-            <path fill="${fill}" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-          </svg>
-        `;
-      }
-      html += `</span> <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
-      return html;
     }
 
     function applyLanguage(lang) {
@@ -1775,8 +1808,7 @@
         `;
       }
 
-      const icon = getMarkerIcon(isDay);
-      markersList.forEach(m => m.setIcon(icon));
+      redrawMarkersWithFade();
     }
 
     mapContrastBtn.addEventListener('click', () => {
@@ -1979,6 +2011,7 @@
           gestureHandling: 'none'
         });
         placesService = new google.maps.places.PlacesService(map);
+        redrawMarkersWithFade();
       } else {
         map.setCenter(centerPos);
       }
@@ -2217,16 +2250,7 @@
       }
       saveAppData(db);
 
-      if (map) {
-        const isDay = (currentMapStyleMode === 'botw');
-        const marker = new google.maps.Marker({
-          position: { lat: target.lat, lng: target.lng },
-          map: map,
-          title: target.name,
-          icon: getMarkerIcon(isDay)
-        });
-        markersList.push(marker);
-      }
+      redrawMarkersWithFade();
 
       const t = I18N[currentLang];
       const toast = document.getElementById('toast-banner');
@@ -2608,7 +2632,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else {
-        db.keywordHistory[appState.activeKeyword].lastSearch = now;
+        db.keywordHistory[appState.activeKeyword].lastArrival = now;
       }
       saveAppData(db);
 
