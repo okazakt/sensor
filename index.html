@@ -61,7 +61,6 @@
       flex-direction: column;
     }
 
-    /* 共通オーバーレイモーダル */
     .overlay-modal {
       position: absolute;
       top: 0;
@@ -109,18 +108,22 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      z-index: 2;
     }
     .pwa-lang-btn:active {
       background: var(--sheikah-gold);
       color: #000;
     }
 
-    .pwa-sheikah-eye {
+    .pwa-icon-img {
       width: 60px;
       height: 60px;
       margin: 10px auto 16px auto;
-      fill: var(--sheikah-cyan);
-      filter: drop-shadow(0 0 10px var(--sheikah-cyan));
+      border-radius: 12px;
+      border: 1.5px solid var(--sheikah-gold);
+      object-fit: cover;
+      box-shadow: 0 0 12px rgba(197, 160, 89, 0.4);
+      display: block;
     }
 
     .pwa-title {
@@ -1127,13 +1130,7 @@
           <span id="pwa-lang-label">→EN</span>
         </button>
 
-        <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
-          <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
-          <path d="M 4 28 Q 22 22 44 26" stroke="#e4d5a8" stroke-width="4" stroke-linecap="round" fill="none"/>
-          <circle cx="24" cy="24" r="14" fill="none" stroke="#00f3ff" stroke-width="2" stroke-dasharray="3 3" opacity="0.9"/>
-          <circle cx="24" cy="24" r="8" fill="none" stroke="#ffee33" stroke-width="1.5" opacity="0.8"/>
-          <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ffee33"/>
-        </svg>
+        <img src="https://okazakt.github.io/sensor/icon.png" class="pwa-icon-img" alt="Sensor Challenge Icon">
 
         <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>
         <div class="pwa-desc" id="pwa-prompt-desc">
@@ -1163,12 +1160,12 @@
     <!-- 安全にお楽しみいただくための注意書きダイアログ -->
     <div id="safety-prompt-overlay" class="overlay-modal">
       <div class="pwa-relic-box">
-        <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
-          <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
-          <path d="M 4 28 Q 22 22 44 26" stroke="#ff4d4d" stroke-width="4" stroke-linecap="round" fill="none"/>
-          <circle cx="24" cy="24" r="14" fill="none" stroke="#ff9d00" stroke-width="2" stroke-dasharray="3 3" opacity="0.9"/>
-          <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ff9d00"/>
-        </svg>
+        <button class="pwa-lang-btn" id="safety-lang-btn">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+          <span id="safety-lang-label">→EN</span>
+        </button>
+
+        <img src="https://okazakt.github.io/sensor/icon.png" class="pwa-icon-img" alt="Sensor Challenge Icon">
 
         <div class="pwa-title" id="safety-prompt-title">安全にお楽しみいただくために</div>
         <div class="pwa-desc" id="safety-prompt-desc" style="text-align: center; margin-bottom: 10px;">
@@ -1384,6 +1381,18 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
 
   <script>
+    // ===================================================
+    // PWA起動時のキャッシュクリア＆最新版取得
+    // ===================================================
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (isStandaloneMode && 'caches' in window) {
+      caches.keys().then((names) => {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      }).catch(() => {});
+    }
+
     // ===================================================
     // 0. 国際化 ＆ 初期言語の自動判定
     // ===================================================
@@ -1639,6 +1648,7 @@
       document.getElementById('safety-prompt-title').textContent = t.safetyTitle;
       document.getElementById('safety-prompt-desc').textContent = t.safetyDesc;
       document.getElementById('btn-safety-ok').textContent = t.safetyOk;
+      document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
 
       updateButtonStateUI();
       renderKeywordsList();
@@ -1646,6 +1656,10 @@
     }
 
     document.getElementById('pwa-lang-btn').addEventListener('click', () => {
+      applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    });
+
+    document.getElementById('safety-lang-btn').addEventListener('click', () => {
       applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
     });
 
@@ -3003,11 +3017,10 @@
     // 起動時の初期化＆モーダル制御・権限リクエスト
     // ===================================================
     function checkAndShowStartupModals() {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
       const safetyOverlay = document.getElementById('safety-prompt-overlay');
 
-      if (!isStandalone) {
+      if (!isStandaloneMode) {
         // ブラウザ利用時：リロード毎に毎回PWA推奨を表示
         pwaOverlay.classList.add('show');
       } else {
