@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.290000";
+const BASE_JS_VERSION = "v0.26.091.290100";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
@@ -35,9 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
-
-  // 裏コマンド（データ引き継ぎ）のセットアップ
-  setupDataTransferEasterEgg();
 });
 
 // グローバルエラーキャッチ（外部ドメインのエラーをフィルタリング）
@@ -476,33 +473,32 @@ document.getElementById('pwa-lang-btn').addEventListener('click', () => {
 });
 
 // ===================================================
-// 注意書きダイアログ言語ボタンの「6連続タップ裏コマンド」
+// 注意書きダイアログ言語ボタン（通常の言語切替 ＆ 6連打裏コマンド統合）
 // ===================================================
-function setupDataTransferEasterEgg() {
-  const safetyLangBtn = document.getElementById('safety-lang-btn');
-  if (!safetyLangBtn) return;
+let safetyClickCount = 0;
+let safetyResetTimer = null;
 
-  let clickCount = 0;
-  let resetTimer = null;
+document.getElementById('safety-lang-btn').addEventListener('click', () => {
+  // 1. 通常の言語切り替えを実行
+  applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
 
-  safetyLangBtn.addEventListener('click', (e) => {
-    // 本来の言語切り替え動作も並行して動かすため伝播は止めない
-    clickCount++;
-    if (resetTimer) clearTimeout(resetTimer);
+  // 2. 裏コマンド（6連打）のカウント
+  safetyClickCount++;
+  if (safetyResetTimer) clearTimeout(safetyResetTimer);
 
-    if (clickCount >= 6) {
-      clickCount = 0;
-      triggerDataTransferPrompt();
-      return;
-    }
+  if (safetyClickCount >= 6) {
+    safetyClickCount = 0;
+    triggerDataTransferPrompt();
+    return;
+  }
 
-    // 2.5秒以内に6回押されなかったらリセット
-    resetTimer = setTimeout(() => {
-      clickCount = 0;
-    }, 2500);
-  });
-}
+  // 2.5秒以内に6回押されなかったらリセット
+  safetyResetTimer = setTimeout(() => {
+    safetyClickCount = 0;
+  }, 2500);
+});
 
+// 実績のあるデータ引き継ぎ（Base64 + prompt）関数
 function triggerDataTransferPrompt() {
   const db = loadSavedData();
   const jsonStr = JSON.stringify(db);
@@ -545,10 +541,6 @@ function triggerDataTransferPrompt() {
     }
   }
 }
-
-document.getElementById('safety-lang-btn').addEventListener('click', () => {
-  applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
-});
 
 document.getElementById('lang-toggle-btn').addEventListener('click', () => {
   applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
