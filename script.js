@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.280027";
+const BASE_JS_VERSION = "v0.26.091.290000";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
@@ -36,8 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
     el.textContent = fullVersion;
   });
 
-  // データ移行機能のイベント設定
-  setupDataMigrationHandlers();
+  // 裏コマンド（データ引き継ぎ）のセットアップ
+  setupDataTransferEasterEgg();
 });
 
 // グローバルエラーキャッチ（外部ドメインのエラーをフィルタリング）
@@ -464,8 +464,6 @@ function applyLanguage(lang) {
 
   document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
   document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
-  document.getElementById('btn-export-copy').textContent = currentLang === 'ja' ? 'データ書出 (Copy)' : 'Export (Copy)';
-  document.getElementById('btn-import-paste').textContent = currentLang === 'ja' ? 'データ読込 (Paste)' : 'Import (Paste)';
 
   updateButtonStateUI();
   renderKeywordsList();
@@ -476,6 +474,77 @@ function applyLanguage(lang) {
 document.getElementById('pwa-lang-btn').addEventListener('click', () => {
   applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
 });
+
+// ===================================================
+// 注意書きダイアログ言語ボタンの「6連続タップ裏コマンド」
+// ===================================================
+function setupDataTransferEasterEgg() {
+  const safetyLangBtn = document.getElementById('safety-lang-btn');
+  if (!safetyLangBtn) return;
+
+  let clickCount = 0;
+  let resetTimer = null;
+
+  safetyLangBtn.addEventListener('click', (e) => {
+    // 本来の言語切り替え動作も並行して動かすため伝播は止めない
+    clickCount++;
+    if (resetTimer) clearTimeout(resetTimer);
+
+    if (clickCount >= 6) {
+      clickCount = 0;
+      triggerDataTransferPrompt();
+      return;
+    }
+
+    // 2.5秒以内に6回押されなかったらリセット
+    resetTimer = setTimeout(() => {
+      clickCount = 0;
+    }, 2500);
+  });
+}
+
+function triggerDataTransferPrompt() {
+  const db = loadSavedData();
+  const jsonStr = JSON.stringify(db);
+  const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
+
+  const choice = prompt(
+    "【Sheikah Slate Data Transfer】\n" +
+    "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
+    "2: 引き継ぎコードを読み込む（データを復元する）\n" +
+    "半角数字「1」または「2」を入力してください:",
+    "1"
+  );
+
+  if (choice === "1") {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(base64Code).then(() => {
+        alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、裏コマンドから「2」で貼り付けてください。");
+      }).catch(() => {
+        prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+      });
+    } else {
+      prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+    }
+  } else if (choice === "2") {
+    const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
+    if (inputCode && inputCode.trim()) {
+      try {
+        const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
+        const restoredDb = JSON.parse(restoredJson);
+        if (restoredDb && restoredDb.arrivals) {
+          saveAppData(restoredDb);
+          renderKeywordsList();
+          alert("データの引き継ぎが完了しました！");
+        } else {
+          alert("無効な引き継ぎコードです。");
+        }
+      } catch (e) {
+        alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
+      }
+    }
+  }
+}
 
 document.getElementById('safety-lang-btn').addEventListener('click', () => {
   applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
@@ -702,101 +771,6 @@ function loadSavedData() {
 function saveAppData(db) {
   localStorage.setItem('sheikah_db_v1', JSON.stringify(db));
 }
-
-// ===================================================
-// コピペ式データ移行（エクスポート・インポート）機能
-// ===================================================
-// ===================================================
-// コピペ式データ移行（エクスポート・インポート）機能 [イベント委譲版]
-// ===================================================
-function setupDataMigrationHandlers() {
-  // すでにイベントリスナーが多重登録されるのを防ぐため、document全体で監視（イベント委譲）
-  if (window._migrationInitialized) return;
-  window._migrationInitialized = true;
-
-  document.addEventListener('click', (e) => {
-    const exportCopyBtn = e.target.closest('#btn-export-copy');
-    const importPasteBtn = e.target.closest('#btn-import-paste');
-    const actionBtn = e.target.closest('#btn-migration-action');
-    const closeBtn = e.target.closest('#btn-migration-close');
-
-    const modalOverlay = document.getElementById('migration-modal-overlay');
-    const textarea = document.getElementById('migration-textarea');
-
-    if (exportCopyBtn) {
-      const db = loadSavedData();
-      const jsonStr = JSON.stringify(db, null, 2);
-      
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(jsonStr).then(() => {
-          alert("現在のデータをクリップボードにコピーしました！\n（移行先で「データ読込 (Paste)」を押してください）");
-        }).catch(() => {
-          if (modalOverlay && textarea) {
-            textarea.value = jsonStr;
-            textarea.readOnly = true;
-            modalOverlay.classList.add('show');
-          }
-        });
-      } else {
-        if (modalOverlay && textarea) {
-          textarea.value = jsonStr;
-          textarea.readOnly = true;
-          modalOverlay.classList.add('show');
-        }
-      }
-    }
-
-    if (importPasteBtn) {
-      if (modalOverlay && textarea) {
-        textarea.value = '';
-        textarea.readOnly = false;
-        document.getElementById('migration-modal-title').textContent = "データ読込 (Import)";
-        document.getElementById('migration-modal-desc').textContent = "移行元のJSONテキストをここに貼り付けてください。";
-        document.getElementById('btn-migration-action').textContent = "インポート実行 (Import)";
-        modalOverlay.classList.add('show');
-        textarea.focus();
-      }
-    }
-
-    if (closeBtn && modalOverlay) {
-      modalOverlay.classList.remove('show');
-    }
-  });
-
-  // モーダル内の「実行」ボタンの処理
-  document.addEventListener('click', (e) => {
-    const actionBtn = e.target.closest('#btn-migration-action');
-    if (!actionBtn) return;
-
-    const textarea = document.getElementById('migration-textarea');
-    const modalOverlay = document.getElementById('migration-modal-overlay');
-    if (!textarea || !modalOverlay) return;
-
-    if (actionBtn.textContent.includes("インポート") || actionBtn.textContent.includes("Import")) {
-      const textVal = textarea.value.trim();
-      if (!textVal) {
-        alert("JSONテキストが入力されていません。");
-        return;
-      }
-      try {
-        const importedData = JSON.parse(textVal);
-        if (importedData && importedData.arrivals && importedData.keywordHistory) {
-          if (confirm("既存のデータに上書きしてインポートしますか？")) {
-            saveAppData(importedData);
-            alert("データのインポートが完了しました。アプリを再読み込みします。");
-            modalOverlay.classList.remove('show');
-            window.location.reload();
-          }
-        } else {
-          alert("無効なバックアップデータ形式です。");
-        }
-      } catch (err) {
-        alert("JSONの解析に失敗しました。正しいフォーマットかご確認ください。\n" + err.message);
-      }
-    }
-  });
-}
-
 
 // ===================================================
 // 3. Google Maps
