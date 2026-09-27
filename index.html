@@ -238,13 +238,13 @@
 
     .top-left-ctrl {
       position: absolute;
-      top: calc(max(env(safe-area-inset-top), 36px) + 6px);
+      top: 12px;
       left: 18px;
       z-index: 25;
     }
     .top-right-ctrl {
       position: absolute;
-      top: calc(max(env(safe-area-inset-top), 36px) + 6px);
+      top: 12px;
       right: 18px;
       z-index: 25;
     }
@@ -296,7 +296,7 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      padding-top: max(env(safe-area-inset-top), 32px);
+      padding-top: 10px;
     }
 
     .sheikah-divider-bar {
@@ -1153,7 +1153,7 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271530</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271546</span></div>
       </div>
     </div>
 
@@ -1173,7 +1173,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271530</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271546</span></div>
       </div>
     </div>
 
@@ -1280,7 +1280,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span><span class="app-build-ver-span">v0.26.091.271530</span></span>
+        <span><span class="app-build-ver-span">v0.26.091.271546</span></span>
       </div>
     </div>
 
@@ -1384,20 +1384,50 @@
     /**
      * Versioning Rule Specification:
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
-     * Example: v0.26.091.271530 (Year 2026, Month 09, fixed '1', Day 27, Hour 15, Minute 30)
+     * Rule: Update the version number using the latest modification date/time upon every update,
+     * maintaining this exact rule and format for future modifications.
+     * Current Version: v0.26.091.271546 (Year 2026, Month 09, fixed '1', Day 27, Hour 15, Minute 46)
      */
 
     // ===================================================
-    // PWA起動時のキャッシュクリア＆最新版取得
+    // キャッシュ管理 ＆ 24時間経過時の強制クリア・再ロード判定（PWA / ブラウザ共通）
     // ===================================================
-    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    if (isStandaloneMode && 'caches' in window) {
-      caches.keys().then((names) => {
-        for (let name of names) {
-          caches.delete(name);
-        }
-      }).catch(() => {});
+    const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
+    const nowTime = Date.now();
+    const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+    if (!lastCacheTime || (nowTime - lastCacheTime > TWENTY_FOUR_HOURS)) {
+      localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          for (let name of names) {
+            caches.delete(name);
+          }
+        }).catch(() => {});
+      }
+      if (lastCacheTime !== 0) {
+        window.location.reload(true);
+      }
     }
+
+    // バックグラウンドから復帰時（visibilitychange）に24時間経過していれば強制キャッシュクリア＆再ロード
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
+        if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
+          localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              for (let name of names) {
+                caches.delete(name);
+              }
+            }).catch(() => {});
+          }
+          window.location.reload(true);
+        }
+      }
+    });
 
     // ===================================================
     // 0. 国際化 ＆ 初期言語の自動判定
@@ -1580,7 +1610,6 @@
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#38485c" }] }
     ];
 
-    // 初期モードを昼モード (botw) に設定
     let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'botw';
     let markersList = [];
 
