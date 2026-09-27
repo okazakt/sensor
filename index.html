@@ -10,8 +10,6 @@
   <meta name="apple-mobile-web-app-title" content="Sensor Challenge">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <!-- 【GitHub配置対応】ご提示いただいた画像をホーム画面アイコンとして指定 -->
-  <!-- ※ "your-username" と "your-repo" をご自身のGitHubアカウント名・リポジトリ名に書き換えてください -->
   <link rel="apple-touch-icon" href="https://okazakt.github.io/sensor/icon.png">
 
   <style>
@@ -63,7 +61,8 @@
       flex-direction: column;
     }
 
-    #pwa-prompt-overlay {
+    /* 共通オーバーレイモーダル */
+    .overlay-modal {
       position: absolute;
       top: 0;
       left: 0;
@@ -80,7 +79,7 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    #pwa-prompt-overlay.show {
+    .overlay-modal.show {
       display: flex;
     }
 
@@ -182,7 +181,36 @@
       font-size: 0.72rem;
       text-decoration: underline;
       cursor: pointer;
-      margin-top: 4px;
+      margin-top: 10px;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .btn-safety-ok {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 243, 255, 0.2);
+      border: 1.5px solid var(--sheikah-cyan);
+      color: var(--sheikah-cyan);
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+    }
+    .btn-safety-ok:active {
+      background: var(--sheikah-cyan);
+      color: #000;
+    }
+
+    .modal-version {
+      font-size: 0.62rem;
+      color: #556270;
+      letter-spacing: 0.5px;
+      margin-top: 12px;
+      text-align: center;
     }
 
     #arrival-flash-overlay {
@@ -697,9 +725,6 @@
       margin-top: 2px;
     }
 
-    /* ===================================================
-       スライド画面共通
-    =================================================== */
     .slide-page {
       position: absolute;
       top: 0;
@@ -974,9 +999,6 @@
       flex-wrap: wrap;
     }
 
-    /* ===================================================
-       第4画面：スポット詳細（ミニマップ＆現地写真カルーセル）
-    =================================================== */
     #page-spot-detail {
       z-index: 150;
     }
@@ -1097,8 +1119,8 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内オーバーレイ -->
-    <div id="pwa-prompt-overlay">
+    <!-- PWA推奨案内オーバーレイ（ブラウザ時・リロード毎に毎回表示） -->
+    <div id="pwa-prompt-overlay" class="overlay-modal">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
           <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.79 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
@@ -1134,6 +1156,27 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
+        <div class="modal-version">VER: <span class="app-build-ver-span">v0.26.091.262350</span></div>
+      </div>
+    </div>
+
+    <!-- 安全にお楽しみいただくための注意書きダイアログ -->
+    <div id="safety-prompt-overlay" class="overlay-modal">
+      <div class="pwa-relic-box">
+        <svg class="pwa-sheikah-eye" viewBox="0 0 48 48" style="width: 52px; height: 52px;">
+          <circle cx="24" cy="24" r="22" fill="#453820" stroke="#c5a059" stroke-width="2"/>
+          <path d="M 4 28 Q 22 22 44 26" stroke="#ff4d4d" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="24" cy="24" r="14" fill="none" stroke="#ff9d00" stroke-width="2" stroke-dasharray="3 3" opacity="0.9"/>
+          <path d="M24 14 L19 25 L24 22 L29 25 Z" fill="#ff9d00"/>
+        </svg>
+
+        <div class="pwa-title" id="safety-prompt-title">安全にお楽しみいただくために</div>
+        <div class="pwa-desc" id="safety-prompt-desc" style="text-align: center; margin-bottom: 10px;">
+          「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。
+        </div>
+
+        <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
+        <div class="modal-version">VER: <span class="app-build-ver-span">v0.26.091.262350</span></div>
       </div>
     </div>
 
@@ -1240,7 +1283,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span>VER: <span id="app-build-ver">v0.26.091.262350</span></span>
+        <span>VER: <span class="app-build-ver-span">v0.26.091.262350</span></span>
       </div>
     </div>
 
@@ -1298,7 +1341,7 @@
       <div class="list-scroll" id="history-list-container"></div>
     </div>
 
-    <!-- 第4画面：スポット詳細（ミニマップ＆現地写真カルーセル） -->
+    <!-- 第4画面：スポット詳細 -->
     <div class="slide-page" id="page-spot-detail">
       <div class="page-header">
         <button class="back-btn" id="back-to-history-list">◀ 到達リスト</button>
@@ -1408,6 +1451,9 @@
         pwaStep2: "メニューから「ホーム画面に追加」を選択",
         pwaStep3: "ホーム画面に生成されたアイコンから起動",
         pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
+        safetyTitle: "安全にお楽しみいただくために",
+        safetyDesc: "「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
+        safetyOk: "OK",
         confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
         confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
         confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
@@ -1476,6 +1522,9 @@
         pwaStep2: "Select 'Add to Home Screen'",
         pwaStep3: "Open from your Home Screen icon",
         pwaSkip: "Continue in browser for testing (Data will be temporary)",
+        safetyTitle: "For Safe Enjoyment",
+        safetyDesc: "When playing 'Sensor Challenge', please obey traffic rules and pay close attention to your surroundings.",
+        safetyOk: "OK",
         confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
         confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
         confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
@@ -1587,6 +1636,10 @@
       document.getElementById('btn-pwa-skip').textContent = t.pwaSkip;
       document.getElementById('pwa-lang-label').textContent = t.langSwitchLabel;
 
+      document.getElementById('safety-prompt-title').textContent = t.safetyTitle;
+      document.getElementById('safety-prompt-desc').textContent = t.safetyDesc;
+      document.getElementById('btn-safety-ok').textContent = t.safetyOk;
+
       updateButtonStateUI();
       renderKeywordsList();
       if (appState.selectedKeywordForHistory) renderHistoryList();
@@ -1696,12 +1749,10 @@
 
     window.addEventListener('touchstart', () => { 
       initAudio(); 
-      requestCompassPermissionIfNeeded();
     }, { once: true });
 
     window.addEventListener('click', () => { 
       initAudio(); 
-      requestCompassPermissionIfNeeded();
     }, { once: true });
 
     function playBeep(freq = 1800, duration = 0.12) {
@@ -2124,8 +2175,6 @@
     }
 
     function onDeviceOrientation(e) {
-      if (!appState.isTracking || appState.isPaused) return;
-
       let compassHeading = null;
       if (e.webkitCompassHeading !== undefined) {
         compassHeading = e.webkitCompassHeading;
@@ -2268,7 +2317,7 @@
     }
 
     // ===================================================
-    // 6. UI制御 ＆ ポップアップRADIUS選択
+    // 6. UI制御 ＆ 初期化フロー（PWA判定・注意書き・パーミッション）
     // ===================================================
     function getRadiusText(r) {
       return r >= 1000 ? `${r/1000}km` : `${r}m`;
@@ -2418,7 +2467,6 @@
     async function startSearchFromSet() {
       initAudio();
       playBeep(2200);
-      requestCompassPermissionIfNeeded();
       if (appState.wakeLockActive) requestWakeLock();
 
       const inputVal = document.getElementById('keyword-input').value.trim();
@@ -2952,12 +3000,70 @@
     document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
     // ===================================================
-    // 起動時の初期化実行
+    // 起動時の初期化＆モーダル制御・権限リクエスト
     // ===================================================
+    function checkAndShowStartupModals() {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const pwaOverlay = document.getElementById('pwa-prompt-overlay');
+      const safetyOverlay = document.getElementById('safety-prompt-overlay');
+
+      if (!isStandalone) {
+        // ブラウザ利用時：リロード毎に毎回PWA推奨を表示
+        pwaOverlay.classList.add('show');
+      } else {
+        // PWA利用時は直接安全注意書きを表示
+        safetyOverlay.classList.add('show');
+      }
+    }
+
+    // PWAスキップボタン（ブラウザのままテスト起動）押下時
+    document.getElementById('btn-pwa-skip').addEventListener('click', () => {
+      document.getElementById('pwa-prompt-overlay').classList.remove('show');
+      // 続いて安全上の注意書きダイアログを表示
+      document.getElementById('safety-prompt-overlay').classList.add('show');
+    });
+
+    // 安全注意書きの「OK」押下時に位置情報・コンパスの許可を求める
+    document.getElementById('btn-safety-ok').addEventListener('click', async () => {
+      document.getElementById('safety-prompt-overlay').classList.remove('show');
+      initAudio();
+
+      // 位置情報の許可ダイアログをトリガー
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            appState.currentPos = p;
+            lastKnownPos = p;
+            localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
+            if (map) map.setCenter(p);
+          },
+          (err) => { console.warn("位置情報許可拒否またはエラー:", err.message); },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
+
+      // コンパス（デバイス方位）の許可ダイアログをトリガー (iOS 13+など対応)
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation, true);
+            compassActive = true;
+          }
+        } catch (e) {
+          console.warn("コンパス権限エラー:", e);
+        }
+      } else {
+        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        compassActive = true;
+      }
+    });
+
     applyLanguage(currentLang);
     window.addEventListener('load', () => {
-      enforcePWAMode();
       bootstrapMapAndLocation();
+      checkAndShowStartupModals();
     });
   </script>
 </body>
