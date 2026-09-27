@@ -11,7 +11,16 @@
   <meta name="mobile-web-app-capable" content="yes">
   
   <link rel="apple-touch-icon" href="https://okazakt.github.io/sensor/icon.png">
-  <link rel="stylesheet" href="style.css">
+  
+  <!-- CSSとJSのキャッシュを毎回動的に回避するためのキャッシュバスター埋め込み -->
+  <script>
+    const cacheBuster = Date.now();
+    // style.css を動的生成して読み込み
+    const linkEl = document.createElement('link');
+    linkEl.rel = 'stylesheet';
+    linkEl.href = 'style.css?v=' + cacheBuster;
+    document.head.appendChild(linkEl);
+  </script>
 </head>
 <body>
   <!-- 
@@ -320,6 +329,14 @@
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
-  <script src="script.js" id="main-script" data-html-rev="02"></script>
+  
+  <!-- script.js を動的キャッシュバスター付きで読み込み -->
+  <script>
+    const scriptEl = document.createElement('script');
+    scriptEl.src = 'script.js?v=' + cacheBuster;
+    scriptEl.id = 'main-script';
+    scriptEl.setAttribute('data-html-rev', '02');
+    document.body.appendChild(scriptEl);
+  </script>
 </body>
 </html>
