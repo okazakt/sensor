@@ -2,6 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <!-- 
+    ============================================================
+    [HTML Version Management Specification]
+    - 採番範囲: 01 〜 99 (99の次は 01 にループ)
+    - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
+    - 現在のHTML個別番号: 04
+    ============================================================
+  -->
+  <meta name="html-rev" content="04">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
   
@@ -22,15 +32,6 @@
   </script>
 </head>
 <body>
-  <!-- 
-    ============================================================
-    [HTML Version Management Specification]
-    - 採番範囲: 01 〜 99 (99の次は 01 にループ)
-    - 変更手順: index.html を修正した際、下記の data-html-rev をインクリメントする
-    - 現在のHTML個別番号: 04
-    ============================================================
-  -->
-
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
@@ -69,7 +70,7 @@
       </div>
     </div>
 
-    <!-- 安全にお楽しみいただくための注意書きダイアログ（裏コマンド対応: 語学ボタン6連打） -->
+    <!-- 安全にお楽しみいただくための注意書きダイアログ -->
     <div id="safety-prompt-overlay" class="overlay-modal">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="safety-lang-btn">
@@ -329,12 +330,10 @@
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
   
-  <!-- script.js を動的キャッシュバスター付きで読み込み -->
   <script>
     const scriptEl = document.createElement('script');
     scriptEl.src = 'script.js?v=' + cacheBuster;
     scriptEl.id = 'main-script';
-    scriptEl.setAttribute('data-html-rev', '04');
     document.body.appendChild(scriptEl);
   </script>
 </body>
