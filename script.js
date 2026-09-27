@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.280045";
+const BASE_JS_VERSION = "v0.26.091.280027";
 
 // 読み込み直後に即時バージョン文字列を全プレースホルダーへ流し込む
 (function() {
@@ -706,98 +706,97 @@ function saveAppData(db) {
 // ===================================================
 // コピペ式データ移行（エクスポート・インポート）機能
 // ===================================================
+// ===================================================
+// コピペ式データ移行（エクスポート・インポート）機能 [イベント委譲版]
+// ===================================================
 function setupDataMigrationHandlers() {
-  const exportCopyBtn = document.getElementById('btn-export-copy');
-  const importPasteBtn = document.getElementById('btn-import-paste');
-  const modalOverlay = document.getElementById('migration-modal-overlay');
-  const textarea = document.getElementById('migration-textarea');
-  const actionBtn = document.getElementById('btn-migration-action');
-  const closeBtn = document.getElementById('btn-migration-close');
+  // すでにイベントリスナーが多重登録されるのを防ぐため、document全体で監視（イベント委譲）
+  if (window._migrationInitialized) return;
+  window._migrationInitialized = true;
 
-  let currentMode = '';
+  document.addEventListener('click', (e) => {
+    const exportCopyBtn = e.target.closest('#btn-export-copy');
+    const importPasteBtn = e.target.closest('#btn-import-paste');
+    const actionBtn = e.target.closest('#btn-migration-action');
+    const closeBtn = e.target.closest('#btn-migration-close');
 
-  if (exportCopyBtn && modalOverlay && textarea) {
-    exportCopyBtn.addEventListener('click', () => {
+    const modalOverlay = document.getElementById('migration-modal-overlay');
+    const textarea = document.getElementById('migration-textarea');
+
+    if (exportCopyBtn) {
       const db = loadSavedData();
       const jsonStr = JSON.stringify(db, null, 2);
       
-      // ワンクリックで自動的にクリップボードにコピー
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(jsonStr).then(() => {
           alert("現在のデータをクリップボードにコピーしました！\n（移行先で「データ読込 (Paste)」を押してください）");
         }).catch(() => {
-          // 失敗した場合はモーダルを開いて手動コピーさせる
-          currentMode = 'export';
-          textarea.value = jsonStr;
-          textarea.readOnly = true;
-          actionBtn.textContent = "コピー (Copy)";
-          document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
-          document.getElementById('migration-modal-desc').textContent = "下のテキストを選択してコピーしてください。";
-          modalOverlay.classList.add('show');
+          if (modalOverlay && textarea) {
+            textarea.value = jsonStr;
+            textarea.readOnly = true;
+            modalOverlay.classList.add('show');
+          }
         });
       } else {
-        currentMode = 'export';
-        textarea.value = jsonStr;
-        textarea.readOnly = true;
-        actionBtn.textContent = "コピー (Copy)";
-        document.getElementById('migration-modal-title').textContent = "データ書出 (Export)";
-        document.getElementById('migration-modal-desc').textContent = "下のテキストを選択してコピーしてください。";
+        if (modalOverlay && textarea) {
+          textarea.value = jsonStr;
+          textarea.readOnly = true;
+          modalOverlay.classList.add('show');
+        }
+      }
+    }
+
+    if (importPasteBtn) {
+      if (modalOverlay && textarea) {
+        textarea.value = '';
+        textarea.readOnly = false;
+        document.getElementById('migration-modal-title').textContent = "データ読込 (Import)";
+        document.getElementById('migration-modal-desc').textContent = "移行元のJSONテキストをここに貼り付けてください。";
+        document.getElementById('btn-migration-action').textContent = "インポート実行 (Import)";
         modalOverlay.classList.add('show');
+        textarea.focus();
       }
-    });
-  }
+    }
 
-  if (importPasteBtn && modalOverlay && textarea) {
-    importPasteBtn.addEventListener('click', () => {
-      currentMode = 'import';
-      textarea.value = '';
-      textarea.readOnly = false;
-      actionBtn.textContent = "インポート実行 (Import)";
-      document.getElementById('migration-modal-title').textContent = "データ読込 (Import)";
-      document.getElementById('migration-modal-desc').textContent = "移行元のJSONテキストをここに貼り付けてください。";
-      modalOverlay.classList.add('show');
-      textarea.focus();
-    });
-  }
-
-  if (actionBtn && textarea) {
-    actionBtn.onclick = () => {
-      if (currentMode === 'export') {
-        textarea.select();
-        document.execCommand('copy');
-        alert("コピーしました！");
-        modalOverlay.classList.remove('show');
-      } else if (currentMode === 'import') {
-        const textVal = textarea.value.trim();
-        if (!textVal) {
-          alert("JSONテキストが入力されていません。");
-          return;
-        }
-        try {
-          const importedData = JSON.parse(textVal);
-          if (importedData && importedData.arrivals && importedData.keywordHistory) {
-            if (confirm("既存のデータに上書きしてインポートしますか？")) {
-              saveAppData(importedData);
-              alert("データのインポートが完了しました。アプリを再読み込みします。");
-              modalOverlay.classList.remove('show');
-              window.location.reload();
-            }
-          } else {
-            alert("無効なバックアップデータ形式です。");
-          }
-        } catch (err) {
-          alert("JSONの解析に失敗しました。正しいフォーマットかご確認ください。\n" + err.message);
-        }
-      }
-    };
-  }
-
-  if (closeBtn && modalOverlay) {
-    closeBtn.onclick = () => {
+    if (closeBtn && modalOverlay) {
       modalOverlay.classList.remove('show');
-    };
-  }
+    }
+  });
+
+  // モーダル内の「実行」ボタンの処理
+  document.addEventListener('click', (e) => {
+    const actionBtn = e.target.closest('#btn-migration-action');
+    if (!actionBtn) return;
+
+    const textarea = document.getElementById('migration-textarea');
+    const modalOverlay = document.getElementById('migration-modal-overlay');
+    if (!textarea || !modalOverlay) return;
+
+    if (actionBtn.textContent.includes("インポート") || actionBtn.textContent.includes("Import")) {
+      const textVal = textarea.value.trim();
+      if (!textVal) {
+        alert("JSONテキストが入力されていません。");
+        return;
+      }
+      try {
+        const importedData = JSON.parse(textVal);
+        if (importedData && importedData.arrivals && importedData.keywordHistory) {
+          if (confirm("既存のデータに上書きしてインポートしますか？")) {
+            saveAppData(importedData);
+            alert("データのインポートが完了しました。アプリを再読み込みします。");
+            modalOverlay.classList.remove('show');
+            window.location.reload();
+          }
+        } else {
+          alert("無効なバックアップデータ形式です。");
+        }
+      } catch (err) {
+        alert("JSONの解析に失敗しました。正しいフォーマットかご確認ください。\n" + err.message);
+      }
+    }
+  });
 }
+
 
 // ===================================================
 // 3. Google Maps
