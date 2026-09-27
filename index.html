@@ -1109,7 +1109,8 @@
       border-radius: 8px;
       text-align: center;
       z-index: 400;
-      transform: translateY(-200%);
+      /* チラ見え防止のため初期位置を完全に画面外（上方向）へ退避 */
+      transform: translateY(-250%);
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     }
     #toast-banner.show {
@@ -1122,7 +1123,7 @@
   <div id="app-container">
     <div id="arrival-flash-overlay"></div>
 
-    <!-- PWA推奨案内オーバーレイ（ブラウザ起動時・リロード時は毎回表示） -->
+    <!-- PWA推奨案内オーバーレイ -->
     <div id="pwa-prompt-overlay" class="overlay-modal">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="pwa-lang-btn">
@@ -1153,11 +1154,11 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271605</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271618</span></div>
       </div>
     </div>
 
-    <!-- 安全にお楽しみいただくための注意書きダイアログ（起動時・リロード時は毎回表示） -->
+    <!-- 安全にお楽しみいただくための注意書きダイアログ -->
     <div id="safety-prompt-overlay" class="overlay-modal">
       <div class="pwa-relic-box">
         <button class="pwa-lang-btn" id="safety-lang-btn">
@@ -1173,7 +1174,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271605</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271618</span></div>
       </div>
     </div>
 
@@ -1280,7 +1281,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span><span class="app-build-ver-span">v0.26.091.271605</span></span>
+        <span><span class="app-build-ver-span">v0.26.091.271618</span></span>
       </div>
     </div>
 
@@ -1386,7 +1387,7 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Update the version number using the latest modification date/time upon every update,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.271605 (Year 2026, Month 09, fixed '1', Day 27, Hour 16, Minute 05)
+     * Current Version: v0.26.091.271618 (Year 2026, Month 09, fixed '1', Day 27, Hour 16, Minute 18)
      */
 
     // ===================================================
@@ -1397,8 +1398,6 @@
     const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-    // ブラウザ版：リロード時または初回は常にキャッシュクリア＆最新版取得の対象とする
-    // PWA版：他アプリから戻ったとき、前回のキャッシュ取得から24時間経過していれば強制再ロード
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
     if (!lastCacheTime) {
@@ -1415,7 +1414,6 @@
       window.location.reload(true);
     }
 
-    // バックグラウンドから復帰時（visibilitychange）の24時間経過チェック
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
@@ -2539,7 +2537,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else {
-        db.keywordHistory[appState.activeKeyword].lastSearch = now;
+        db.keywordHistory[appState.activeKeyword].lastArrival = now;
       }
       saveAppData(db);
 
@@ -3060,7 +3058,6 @@
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
       const safetyOverlay = document.getElementById('safety-prompt-overlay');
 
-      // 起動時・手動リロード時は毎回必ずモーダルを表示する
       if (!isStandaloneMode) {
         pwaOverlay.classList.add('show');
       } else {
@@ -3071,7 +3068,6 @@
     // PWAスキップボタン（ブラウザのままテスト起動）押下時
     document.getElementById('btn-pwa-skip').addEventListener('click', () => {
       document.getElementById('pwa-prompt-overlay').classList.remove('show');
-      // 続いて安全上の注意書きダイアログを表示
       document.getElementById('safety-prompt-overlay').classList.add('show');
     });
 
@@ -3080,7 +3076,6 @@
       document.getElementById('safety-prompt-overlay').classList.remove('show');
       initAudio();
 
-      // 位置情報の許可ダイアログをトリガー
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -3095,7 +3090,6 @@
         );
       }
 
-      // コンパス（デバイス方位）の許可ダイアログをトリガー (iOS 13+など対応)
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
           const permission = await DeviceOrientationEvent.requestPermission();
