@@ -7,7 +7,7 @@
  * - 変更手順: script.js を修正した際、下記のベースバージョン（日時分）を最新に更新する
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.272330";
+const BASE_JS_VERSION = "v0.26.091.272351";
 
 // HTMLとCSSのバージョン番号を動的に取得して結合
 document.addEventListener("DOMContentLoaded", () => {
@@ -169,7 +169,7 @@ const I18N = {
     pwaStep3: "ホーム画面に生成されたアイコンから起動",
     pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
     safetyTitle: "安全にお楽しみいただくために",
-    safetyDesc: "When playing 'Sensor Challenge'...（安全にお楽しみください）",
+    safetyDesc: "「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
     safetyOk: "OK",
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
