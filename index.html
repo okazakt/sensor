@@ -1153,7 +1153,7 @@
         </div>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271558</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271605</span></div>
       </div>
     </div>
 
@@ -1173,7 +1173,7 @@
         </div>
 
         <button class="btn-safety-ok" id="btn-safety-ok">OK</button>
-        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271558</span></div>
+        <div class="modal-version"><span class="app-build-ver-span">v0.26.091.271605</span></div>
       </div>
     </div>
 
@@ -1280,7 +1280,7 @@
 
       <div class="app-version-footer">
         <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span><span class="app-build-ver-span">v0.26.091.271558</span></span>
+        <span><span class="app-build-ver-span">v0.26.091.271605</span></span>
       </div>
     </div>
 
@@ -1386,16 +1386,20 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Update the version number using the latest modification date/time upon every update,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.271558 (Year 2026, Month 09, fixed '1', Day 27, Hour 15, Minute 58)
+     * Current Version: v0.26.091.271605 (Year 2026, Month 09, fixed '1', Day 27, Hour 16, Minute 05)
      */
 
     // ===================================================
-    // キャッシュ管理 ＆ 24時間経過時の強制クリア・再ロード判定（PWA / ブラウザ共通）
+    // 起動・キャッシュ・再ロード制御ロジック
     // ===================================================
     const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
     const nowTime = Date.now();
     const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+    // ブラウザ版：リロード時または初回は常にキャッシュクリア＆最新版取得の対象とする
+    // PWA版：他アプリから戻ったとき、前回のキャッシュ取得から24時間経過していれば強制再ロード
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
     if (!lastCacheTime) {
       localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
@@ -1411,7 +1415,7 @@
       window.location.reload(true);
     }
 
-    // バックグラウンドから復帰時（visibilitychange）に24時間経過していれば強制キャッシュクリア＆再ロード
+    // バックグラウンドから復帰時（visibilitychange）の24時間経過チェック
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
@@ -3056,7 +3060,7 @@
       const pwaOverlay = document.getElementById('pwa-prompt-overlay');
       const safetyOverlay = document.getElementById('safety-prompt-overlay');
 
-      // 手動リロードや通常起動問わず、常に起動時はモーダルを表示する
+      // 起動時・手動リロード時は毎回必ずモーダルを表示する
       if (!isStandaloneMode) {
         pwaOverlay.classList.add('show');
       } else {
@@ -3071,7 +3075,7 @@
       document.getElementById('safety-prompt-overlay').classList.add('show');
     });
 
-    // 安全注意書きのアプリ「OK」押下時に位置情報・コンパスの許可を求める
+    // 安全注意書きの「OK」押下時に位置情報・コンパスの許可を求める
     document.getElementById('btn-safety-ok').addEventListener('click', async () => {
       document.getElementById('safety-prompt-overlay').classList.remove('show');
       initAudio();
