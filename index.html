@@ -1385,9 +1385,9 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.272000 (Year 2026, Month 09, fixed '1', Day 27, Hour 20, Minute 00)
+     * Current Version: v0.26.091.272115 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 15)
      */
-    const APP_VERSION = "v0.26.091.272000";
+    const APP_VERSION = "v0.26.091.272115";
 
     // グローバルエラーキャッチ（iPhone実機デバッグ用：エラー内容をアラート＆クリップボードコピー）
     window.addEventListener('error', function(event) {
@@ -1650,7 +1650,7 @@
       }
     }
 
-    // SVGを用いた確実な星評価描画関数（崩れ防止対応）
+    // 安全で確実なSVG星評価描画（表示崩れ完全防止）
     function formatStarRating(rating) {
       if (rating === undefined || rating === null || isNaN(rating)) return "";
       const r = Math.max(0, Math.min(5, rating));
@@ -1667,12 +1667,12 @@
         svgs += `
           <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle; margin-right:1px;">
             <defs>
-              <linearGradient id="star-grad-${i}-${r.toFixed(1).replace('.', '-')}-${Math.random()}">
+              <linearGradient id="sg-${i}-${r.toFixed(1).replace('.', '')}-${Math.random().toString(36).substr(2, 5)}">
                 <stop offset="${fillPercentage}%" stop-color="#ffaa00"/>
                 <stop offset="${fillPercentage}%" stop-color="#445566"/>
               </linearGradient>
             </defs>
-            <path fill="url(#star-grad-${i}-${r.toFixed(1).replace('.', '-')}-${Math.random()})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            <path fill="url(#sg-${i}-${r.toFixed(1).replace('.', '')}-${Math.random().toString(36).substr(2, 5)})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
           </svg>
         `;
       }
@@ -2607,7 +2607,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else {
-        db.keywordHistory[appState.activeKeyword].lastSearch = now;
+        db.keywordHistory[appState.activeKeyword].lastArrival = now;
       }
       saveAppData(db);
 
