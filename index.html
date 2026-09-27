@@ -1076,7 +1076,7 @@
       height: 220px;
       border-radius: 8px;
       overflow: hidden;
-      border: 1px solid var(--sheikah-cyan);
+      border: 1.5px solid var(--sheikah-cyan);
       box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
       scroll-snap-align: center;
       background: #000;
@@ -1385,9 +1385,9 @@
      * Format: v0.[Year(2 digits)].[Month(2 digits)]1.[DateHourMinute(6 digits total)]
      * Rule: Acquire the exact current time at the start of modification work and update the version number accordingly,
      * maintaining this exact rule and format for future modifications.
-     * Current Version: v0.26.091.272115 (Year 2026, Month 09, fixed '1', Day 27, Hour 21, Minute 15)
+     * Current Version: v0.26.091.272033 (Year 2026, Month 09, fixed '1', Day 27, Hour 20, Minute 33)
      */
-    const APP_VERSION = "v0.26.091.272115";
+    const APP_VERSION = "v0.26.091.272033";
 
     // グローバルエラーキャッチ（iPhone実機デバッグ用：エラー内容をアラート＆クリップボードコピー）
     window.addEventListener('error', function(event) {
@@ -1650,33 +1650,34 @@
       }
     }
 
-    // 安全で確実なSVG星評価描画（表示崩れ完全防止）
+    // 安定かつシンプルなSVG星評価描画関数
     function formatStarRating(rating) {
       if (rating === undefined || rating === null || isNaN(rating)) return "";
       const r = Math.max(0, Math.min(5, rating));
       
-      let svgs = '';
+      let html = '<span style="display:inline-flex; align-items:center; gap:1px; vertical-align:middle;">';
       for (let i = 1; i <= 5; i++) {
-        let fillPercentage = 0;
+        let fill = '#445566'; // 空の星の色
         if (r >= i) {
-          fillPercentage = 100;
+          fill = '#ffaa00'; // 満点の星の色
         } else if (r > i - 1 && r < i) {
-          fillPercentage = (r - (i - 1)) * 100;
+          fill = 'url(#half-star)'; // 半分の星
         }
-
-        svgs += `
-          <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle; margin-right:1px;">
+        
+        html += `
+          <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block;">
             <defs>
-              <linearGradient id="sg-${i}-${r.toFixed(1).replace('.', '')}-${Math.random().toString(36).substr(2, 5)}">
-                <stop offset="${fillPercentage}%" stop-color="#ffaa00"/>
-                <stop offset="${fillPercentage}%" stop-color="#445566"/>
+              <linearGradient id="half-star">
+                <stop offset="50%" stop-color="#ffaa00"/>
+                <stop offset="50%" stop-color="#445566"/>
               </linearGradient>
             </defs>
-            <path fill="url(#sg-${i}-${r.toFixed(1).replace('.', '')}-${Math.random().toString(36).substr(2, 5)})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            <path fill="${fill}" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
           </svg>
         `;
       }
-      return `${svgs} <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
+      html += `</span> <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
+      return html;
     }
 
     function applyLanguage(lang) {
@@ -2607,7 +2608,7 @@
       if (!db.keywordHistory[appState.activeKeyword]) {
         db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
       } else {
-        db.keywordHistory[appState.activeKeyword].lastArrival = now;
+        db.keywordHistory[appState.activeKeyword].lastSearch = now;
       }
       saveAppData(db);
 
