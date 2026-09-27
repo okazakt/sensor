@@ -1389,6 +1389,15 @@
      */
     const APP_VERSION = "v0.26.091.272000";
 
+    // グローバルエラーキャッチ（iPhone実機デバッグ用：エラー内容をアラート＆クリップボードコピー）
+    window.addEventListener('error', function(event) {
+      const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(errorMsg).catch(() => {});
+      }
+      alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.app-build-ver-span').forEach(el => {
         el.textContent = APP_VERSION;
@@ -1497,7 +1506,7 @@
         minimapBadge: "位置マップ",
         pwaTitle: "Sensor Challenge",
         pwaDesc: "「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。",
-        pwaStep1: "ブラウザ下部のG「共有（四角と矢印）」をタップ",
+        pwaStep1: "ブラウザ下部の「共有（四角と矢印）」をタップ",
         pwaStep2: "メニューから「ホーム画面に追加」を選択",
         pwaStep3: "ホーム画面に生成されたアイコンから起動",
         pwaSkip: "ブラウザのままテスト起動（記録は一時的になります）",
@@ -1639,6 +1648,35 @@
           strokeColor: "#ffffff"
         };
       }
+    }
+
+    // SVGを用いた確実な星評価描画関数（崩れ防止対応）
+    function formatStarRating(rating) {
+      if (rating === undefined || rating === null || isNaN(rating)) return "";
+      const r = Math.max(0, Math.min(5, rating));
+      
+      let svgs = '';
+      for (let i = 1; i <= 5; i++) {
+        let fillPercentage = 0;
+        if (r >= i) {
+          fillPercentage = 100;
+        } else if (r > i - 1 && r < i) {
+          fillPercentage = (r - (i - 1)) * 100;
+        }
+
+        svgs += `
+          <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle; margin-right:1px;">
+            <defs>
+              <linearGradient id="star-grad-${i}-${r.toFixed(1).replace('.', '-')}-${Math.random()}">
+                <stop offset="${fillPercentage}%" stop-color="#ffaa00"/>
+                <stop offset="${fillPercentage}%" stop-color="#445566"/>
+              </linearGradient>
+            </defs>
+            <path fill="url(#star-grad-${i}-${r.toFixed(1).replace('.', '-')}-${Math.random()})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+        `;
+      }
+      return `${svgs} <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
     }
 
     function applyLanguage(lang) {
@@ -2137,16 +2175,18 @@
       if (cacheValid) {
         updateArrivalRecord(db, target, now, existing.rating, existing.ratingCachedAt);
       } else if (placesService && target.id) {
-        placesService.getDetails({ placeId: target.id, fields: ['rating'] }, (place, status) => {
+        placesService.getDetails({ placeId: target.id, fields: ['rating', 'photos', 'formatted_address'] }, (place, status) => {
           const ratingVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) ? place.rating : null;
-          updateArrivalRecord(db, target, now, ratingVal, Date.now());
+          const addrVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.formatted_address) ? place.formatted_address : null;
+          const photosVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.photos) ? place.photos.map(p => p.getUrl({ maxWidth: 800, maxHeight: 600 })) : [];
+          updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, photosVal, Date.now());
         });
       } else {
-        updateArrivalRecord(db, target, now, null, Date.now());
+        updateArrivalRecordWithDetails(db, target, now, null, null, [], Date.now());
       }
     }
 
-    function updateArrivalRecord(db, target, now, ratingVal, cachedTime) {
+    function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, photosVal, cachedTime) {
       const existing = db.arrivals.find(a => a.id === target.id);
       if (!existing) {
         db.arrivals.push({
@@ -2158,10 +2198,14 @@
           date: now,
           muted: true,
           rating: ratingVal,
+          formatted_address: addrVal,
+          cachedPhotos: photosVal,
           ratingCachedAt: cachedTime
         });
       } else {
         if (ratingVal !== null) existing.rating = ratingVal;
+        if (addrVal) existing.formatted_address = addrVal;
+        if (photosVal && photosVal.length > 0) existing.cachedPhotos = photosVal;
         existing.ratingCachedAt = cachedTime;
       }
 
@@ -2197,6 +2241,10 @@
       setTimeout(() => {
         evaluateSensorCycle();
       }, 1500);
+    }
+
+    function updateArrivalRecord(db, target, now, ratingVal, cachedTime) {
+      updateArrivalRecordWithDetails(db, target, now, ratingVal, null, [], cachedTime);
     }
 
     // ===================================================
@@ -2968,7 +3016,7 @@
         initMap(item.lat, item.lng);
       }
 
-      const detailCacheValid = item.rating !== undefined && item.rating !== null && item.ratingCachedAt && (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS);
+      const detailCacheValid = item.rating !== undefined && item.rating !== null && item.ratingCachedAt && (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS) && item.cachedPhotos && item.cachedPhotos.length > 0;
 
       if (detailCacheValid) {
         document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
@@ -3009,6 +3057,12 @@
           wrap.innerHTML = `<img src="${url}" alt="${item.name}" loading="lazy">`;
           gallery.appendChild(wrap);
         });
+      } else {
+        const noPhoto = document.createElement('div');
+        noPhoto.className = 'no-photos-box';
+        noPhoto.style.flex = '0 0 85%';
+        noPhoto.textContent = I18N[currentLang].noPhotosText;
+        gallery.appendChild(noPhoto);
       }
       photosBox.innerHTML = '';
       photosBox.appendChild(gallery);
