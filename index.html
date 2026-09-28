@@ -2,6 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KNSDVDXHGZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KNSDVDXHGZ');
+  </script>
+
   <!-- 
     ============================================================
     [HTML Version Management Specification]
@@ -9,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="05">
+  <meta name="html-rev" content="06">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -42,21 +53,21 @@
           <span id="pwa-lang-label">→EN</span>
         </button>
 
-        <img src="https://okazakt.github.io/sensor/icon.png" class="pwa-icon-img" alt="Sensor Challenge Icon">
+        <img src="https://okazakt.github.io/sensor/icon.png" class="pwa-icon-img" alt="Sensor Challenge Icon">[span_2](start_span)[span_2](end_span)
 
-        <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>
+        <div class="pwa-title" id="pwa-prompt-title">Sensor Challenge</div>[span_3](start_span)[span_3](end_span)
         <div class="pwa-desc" id="pwa-prompt-desc">
-          「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。
+          「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。[span_4](start_span)[span_4](end_span)
         </div>
 
         <div class="pwa-step-card">
           <div class="pwa-step-item">
             <div class="pwa-step-num">1</div>
-            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>
+            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>[span_5](start_span)[span_5](end_span)
           </div>
           <div class="pwa-step-item">
             <div class="pwa-step-num">2</div>
-            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>
+            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>[span_6](start_span)[span_6](end_span)
           </div>
           <div class="pwa-step-item">
             <div class="pwa-step-num">3</div>
@@ -174,6 +185,7 @@
           <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           <span id="label-sensor-state">SENSOR: STANDBY</span>
         </button>
+
         <div class="dual-btn-row">
           <button class="btn-sheikah btn-sub-control active" id="mute-toggle-btn">
             <svg class="svg-icon" id="svg-sound" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
@@ -184,8 +196,22 @@
             <span id="label-wake-state">WAKE LOCK: ON</span>
           </button>
         </div>
-        <button class="btn-sheikah" id="open-keywords-btn">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+
+        <!-- ミッションボタン ＆ 探索履歴ボタン（横並び） -->
+        <div class="dual-btn-row">
+          <button class="btn-sheikah" id="open-mission-btn">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+            <span>ミッション</span>
+          </button>
+          <button class="btn-sheikah" id="open-keywords-btn">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span>探索履歴</span>
+          </button>
+        </div>
+
+        <!-- 到達済みリストボタン（一番下・図鑑アイコン） -->
+        <button class="btn-sheikah" id="open-all-history-main-btn">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
           <span id="label-compendium-btn">到達済みリスト (図鑑)</span>
         </button>
       </div>
@@ -196,7 +222,7 @@
       </div>
     </div>
 
-    <!-- 第2画面：図鑑キーワード -->
+    <!-- 第2画面：図鑑キーワード（探索履歴ボタンから遷移） -->
     <div class="slide-page" id="page-keywords">
       <div class="page-header header-flex">
         <div class="header-left-group">
@@ -299,7 +325,7 @@
       </div>
     </div>
 
-    <!-- 第5画面：全スポット一覧 -->
+    <!-- 第5画面：全スポット一覧（到達済みリストボタンから遷移） -->
     <div class="slide-page" id="page-all-history">
       <div class="page-header header-flex">
         <div class="header-left-group">
@@ -325,6 +351,26 @@
       </div>
       <div class="list-scroll" id="all-history-list-container"></div>
     </div>
+
+    <!-- 第6画面：ミッション画面（新規追加・スタブ） -->
+    <div class="slide-page" id="page-mission">
+      <div class="page-header header-flex">
+        <div class="header-left-group">
+          <button class="btn-home-shortcut" id="home-from-mission" title="Home">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+          <button class="back-btn" id="back-from-mission">◀メイン</button>
+        </div>
+        <div class="page-title-text">ミッション</div>
+        <div style="width: 50px;"></div>
+      </div>
+      <div class="spot-detail-content">
+        <div class="detail-card-panel" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 1.1rem; color: var(--sheikah-gold); font-weight: bold; margin-bottom: 10px;">MISSION CHALLENGE</div>
+          <div style="font-size: 0.85rem; color: #99aabb;">ミッション画面の詳細は順次追加されます。お楽しみに！</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
@@ -333,6 +379,7 @@
     const scriptEl = document.createElement('script');
     scriptEl.src = 'script.js?v=' + cacheBuster;
     scriptEl.id = 'main-script';
+    scriptEl.setAttribute('data-html-rev', '06');
     document.body.appendChild(scriptEl);
   </script>
 </body>
