@@ -5,12 +5,12 @@
  * - 変更手順: script.js を修正した際、下記の BASE_JS_VERSION の値をインクリメントする
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.290830";
+const BASE_JS_VERSION = "v0.26.091.222300";
 
 // 読み込み直後にHTML(meta)とCSS(root変数)のバージョンを動的に取得して結合し、全プレースホルダーへ流し込む
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "06";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -26,7 +26,7 @@ const BASE_JS_VERSION = "v0.26.091.290830";
 // DOM構築完了時にも再度確実に反映 ＆ イベント設定
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "06";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -1457,12 +1457,14 @@ const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
 const pageSpotDetail = document.getElementById('page-spot-detail');
 const pageAllHistory = document.getElementById('page-all-history');
+const pageMission = document.getElementById('page-mission');
 
 function navigateToMain() {
   pageAllHistory.classList.remove('open');
   pageSpotDetail.classList.remove('open');
   pageHistory.classList.remove('open');
   pageKeywords.classList.remove('open');
+  if (pageMission) pageMission.classList.remove('open');
   evaluateSensorCycle();
 }
 
@@ -1470,11 +1472,36 @@ document.getElementById('home-from-keywords').addEventListener('click', navigate
 document.getElementById('home-from-history').addEventListener('click', navigateToMain);
 document.getElementById('home-from-detail').addEventListener('click', navigateToMain);
 document.getElementById('home-from-all').addEventListener('click', navigateToMain);
+const homeFromMission = document.getElementById('home-from-mission');
+if (homeFromMission) homeFromMission.addEventListener('click', navigateToMain);
 
+// 探索履歴ボタン（第2画面へ）
 document.getElementById('open-keywords-btn').addEventListener('click', () => {
   renderKeywordsList();
   pageKeywords.classList.add('open');
 });
+
+// 到達済みリストボタン（第5画面：全スポット一覧へ）
+document.getElementById('open-all-history-main-btn').addEventListener('click', () => {
+  renderAllHistoryList();
+  pageAllHistory.classList.add('open');
+});
+
+// ミッションボタン（第6画面へ）
+const openMissionBtn = document.getElementById('open-mission-btn');
+if (openMissionBtn) {
+  openMissionBtn.addEventListener('click', () => {
+    if (pageMission) pageMission.classList.add('open');
+  });
+}
+
+const backFromMission = document.getElementById('back-from-mission');
+if (backFromMission) {
+  backFromMission.addEventListener('click', () => {
+    if (pageMission) pageMission.classList.remove('open');
+    evaluateSensorCycle();
+  });
+}
 
 document.getElementById('open-all-from-keywords').addEventListener('click', () => {
   renderAllHistoryList();
