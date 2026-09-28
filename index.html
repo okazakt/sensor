@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="06">
+  <meta name="html-rev" content="07">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -197,21 +197,21 @@
           </button>
         </div>
 
-        <!-- ミッションボタン ＆ 探索履歴ボタン（横並び） -->
+        <!-- ミッションボタン ＆ 探索履歴ボタン（横並び・上の行と同じ幅・レイアウト） -->
         <div class="dual-btn-row">
-          <button class="btn-sheikah" id="open-mission-btn">
+          <button class="btn-sheikah btn-sub-control" id="open-mission-btn">
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
             <span>ミッション</span>
           </button>
-          <button class="btn-sheikah" id="open-keywords-btn">
+          <button class="btn-sheikah btn-sub-control" id="open-keywords-btn">
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
             <span>探索履歴</span>
           </button>
         </div>
 
-        <!-- 到達済みリストボタン（一番下・図鑑アイコン） -->
+        <!-- 到達済みリストボタン（一番下・図鑑/アーカイブ風アイコンに変更） -->
         <button class="btn-sheikah" id="open-all-history-main-btn">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
           <span id="label-compendium-btn">到達済みリスト (図鑑)</span>
         </button>
       </div>
