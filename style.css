@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "05";
+  --css-rev: "06";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -74,13 +74,14 @@ body {
   fill: currentColor;
 }
 
-/* ボトムナビゲーション (固定フッター) */
+/* ボトムナビゲーション (固定フッター / PWAセーフエリア対応) */
 .bottom-nav-bar {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--sheikah-panel);
   border-top: 1px solid var(--sheikah-border);
   display: flex;
@@ -777,21 +778,29 @@ body {
   margin-top: 2px;
 }
 
+/* スライドページ（フッターの高さ分を引く） */
 .slide-page {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - 56px);
+  height: calc(100% - (56px + env(safe-area-inset-bottom, 0px)));
   background: var(--sheikah-bg);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
   pointer-events: none;
   visibility: hidden;
   box-shadow: -6px 0 25px rgba(0,0,0,0.85);
+}
+
+/* 移動方向用のクラス群 */
+.slide-page.pos-left {
+  transform: translateX(-100%);
+}
+.slide-page.pos-right {
+  transform: translateX(100%);
 }
 .slide-page.open {
   transform: translateX(0);
