@@ -4,15 +4,15 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.012410";
+const BASE_JS_VERSION = "v0.26.101.233510";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "06";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "07";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "03";
+  if (!cssRev) cssRev = "06";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
   
@@ -23,11 +23,11 @@ const BASE_JS_VERSION = "v0.26.101.012410";
 
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "06";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "07";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "03";
+  if (!cssRev) cssRev = "06";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
@@ -121,7 +121,6 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→EN",
-    compendiumBtn: "到達済みリスト (図鑑)",
     footerTip: "※消音時も円周の光とフラッシュで反応",
     backToMain: "◀メイン",
     keywordsTitle: "図鑑キーワード",
@@ -196,7 +195,6 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→JP",
-    compendiumBtn: "Discovered List (Atlas)",
     footerTip: "Visual ring pulses even in mute mode",
     backToMain: "◀Main",
     keywordsTitle: "Atlas Keywords",
@@ -418,7 +416,6 @@ function applyLanguage(lang) {
   }
   document.getElementById('label-unvisited').textContent = t.unvisited;
   document.getElementById('label-detecting').textContent = t.detecting;
-  document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
   document.getElementById('label-footer-tip').textContent = t.footerTip;
   document.getElementById('title-page-challenges').textContent = t.challengesTitle;
   document.getElementById('challenge-filter').placeholder = t.filterChallengesPlaceholder;
@@ -1473,20 +1470,18 @@ document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
 
-// フッターナビゲーション定義 (左から: チャレンジ, メイン, 図鑑キーワード, 全スポット)
 const pageElementsOrder = [
-  document.getElementById('page-challenges'), // index 0: 新画面
-  document.getElementById('page-main-wrap'),    // index 1: メイン画面
-  document.getElementById('page-keywords'),   // index 2: 図鑑キーワード画面
-  document.getElementById('page-all-history') // index 3: 全スポット一覧画面
+  document.getElementById('page-challenges'),
+  document.getElementById('page-main-wrap'),
+  document.getElementById('page-keywords'),
+  document.getElementById('page-all-history')
 ];
-let activePageIndex = 1; // 初期はメイン画面
+let activePageIndex = 1;
 
 function switchTab(targetIndex) {
   if (targetIndex < 0 || targetIndex >= pageElementsOrder.length) return;
   activePageIndex = targetIndex;
 
-  // 各画面の表示/非表示切替
   pageElementsOrder.forEach((el, idx) => {
     if (idx === targetIndex) {
       el.classList.add('open');
@@ -1495,7 +1490,6 @@ function switchTab(targetIndex) {
     }
   });
 
-  // フッターのactive状態更新
   const footerBtns = document.querySelectorAll('.app-footer-nav .footer-nav-btn');
   footerBtns.forEach((btn, idx) => {
     if (idx === targetIndex) {
@@ -1524,7 +1518,7 @@ function initFooterNavigation() {
       switchTab(idx);
     });
   });
-  switchTab(1); // 初期表示はメイン
+  switchTab(1);
 }
 
 function initCircularSwipeNavigation() {
@@ -1542,11 +1536,9 @@ function initCircularSwipeNavigation() {
 
       if (Math.abs(diffX) > 75 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
         if (diffX > 0) {
-          // 右スワイプ -> 左のタブへ (循環)
           let nextIdx = (activePageIndex - 1 + pageElementsOrder.length) % pageElementsOrder.length;
           switchTab(nextIdx);
         } else {
-          // 左スワイプ -> 右のタブへ (循環)
           let nextIdx = (activePageIndex + 1) % pageElementsOrder.length;
           switchTab(nextIdx);
         }
@@ -1561,7 +1553,6 @@ function renderChallengesList() {
   const filterText = document.getElementById('challenge-filter').value.toLowerCase();
   const t = I18N[currentLang];
 
-  // 仮置きデータ
   const dummyChallenges = [
     { id: 'c1', name: 'チャレンジA', desc: '最初のチャレンジ項目です。' },
     { id: 'c2', name: 'チャレンジB', desc: '中級者向けのチャレンジ項目です。' },
@@ -1595,7 +1586,7 @@ function renderChallengesList() {
       e.stopPropagation();
       document.getElementById('keyword-input').value = item.name;
       document.getElementById('btn-input-clear').classList.add('show');
-      switchTab(1); // メイン画面へ切り替え
+      switchTab(1);
       startSearchFromSet();
     });
 
@@ -1943,7 +1934,7 @@ function setPinpointTargetAndStart(item) {
   document.getElementById('btn-input-clear').classList.add('show');
   document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
-  switchTab(1); // メイン画面へ切替
+  switchTab(1);
 
   appState.isTracking = true;
   appState.isPaused = false;
