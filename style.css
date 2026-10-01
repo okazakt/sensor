@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "04";
+  --css-rev: "05";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -582,6 +582,16 @@ body {
 .btn-set:active {
   background: var(--sheikah-cyan);
   color: #000;
+}
+.btn-set.active {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: var(--sheikah-cyan);
+  color: var(--sheikah-cyan);
+}
+.btn-set.paused {
+  background: rgba(197, 160, 89, 0.12);
+  border-color: #8899aa;
+  color: #8899aa;
 }
 
 .status-panel {
