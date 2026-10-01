@@ -20,23 +20,18 @@ const BASE_JS_VERSION = "v0.26.101.012440";
   });
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
-  const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
-
-  const computedStyle = getComputedStyle(document.documentElement);
-  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "08";
-
-  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-  document.querySelectorAll('.app-build-ver-span').forEach(el => {
-    el.textContent = fullVersion;
-  });
-
+// ▼ 修正: DOMContentLoadedで囲むとスクリプト動的ロード時に発火しないため、即時実行に変更
+function initAppWhenReady() {
   setupDataTransferEasterEgg();
   initFooterNavigation();
   initCircularSwipeNavigation();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener("DOMContentLoaded", initAppWhenReady);
+} else {
+  initAppWhenReady();
+}
 
 window.addEventListener('error', function(event) {
   if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
