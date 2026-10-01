@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "05";
+  --css-rev: "06";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -279,6 +279,37 @@ body {
 .lang-toggle-btn:active {
   background: var(--sheikah-gold);
   color: #000;
+}
+
+/* タブ画面ベース (メイン画面含め各タブで共通化) */
+.tab-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 56px); /* フッターの分を引く */
+  background: var(--sheikah-bg);
+  display: none;
+  flex-direction: column;
+  z-index: 10;
+}
+.tab-page.open {
+  display: flex;
+}
+
+/* メイン画面ラッパー */
+#page-main-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 56px);
+  display: none;
+  flex-direction: column;
+  z-index: 10;
+}
+#page-main-wrap.open {
+  display: flex;
 }
 
 .top-section {
@@ -732,29 +763,44 @@ body {
   margin-top: 2px;
 }
 
-.slide-page {
+/* 下部固定フッターナビゲーション (Xのモバイルアプリ風) */
+.app-footer-nav {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  background: var(--sheikah-bg);
-  z-index: 100;
+  height: 56px;
+  background: var(--sheikah-panel);
+  border-top: 1.5px solid var(--sheikah-gold);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.footer-nav-btn {
+  background: transparent;
+  border: none;
+  color: #667788;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
-  pointer-events: none;
-  visibility: hidden;
-  box-shadow: -6px 0 25px rgba(0,0,0,0.85);
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  cursor: pointer;
+  transition: color 0.2s;
 }
-.slide-page.open {
-  transform: translateX(0);
-  pointer-events: auto;
-  visibility: visible;
+.footer-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.footer-nav-btn.active {
+  color: var(--sheikah-cyan);
 }
 
-/* ページヘッダー（ノッチ・セーフエリア完全対応） */
+/* ページヘッダー */
 .page-header {
   padding-top: calc(max(env(safe-area-inset-top), 24px) + 10px);
   padding-bottom: 12px;
@@ -771,79 +817,13 @@ body {
   justify-content: space-between;
   gap: 8px;
 }
-.header-left-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
 .page-title-text {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: bold;
   color: var(--sheikah-gold);
   letter-spacing: 0.5px;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-.btn-all-history {
-  background: rgba(255, 170, 0, 0.12);
-  border: 1.5px solid #ffaa00;
-  color: #ffbb33;
-  padding: 5px 10px;
-  font-size: 0.76rem;
-  border-radius: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.btn-all-history:active {
-  background: #ffaa00;
-  color: #000;
-}
-
-.back-btn {
-  color: var(--sheikah-cyan);
-  background: rgba(0, 243, 255, 0.1);
-  border: 1.5px solid var(--sheikah-cyan);
-  font-size: 0.82rem;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.back-btn:active {
-  background: var(--sheikah-cyan);
-  color: #000;
-}
-
-.btn-home-shortcut {
-  color: var(--sheikah-gold);
-  background: rgba(197, 160, 89, 0.12);
-  border: 1.5px solid var(--sheikah-gold);
-  cursor: pointer;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-  padding: 0;
-}
-.btn-home-shortcut:active {
-  background: var(--sheikah-gold);
-  color: #000;
-}
-.btn-home-shortcut .svg-icon {
-  width: 16px;
-  height: 16px;
+  text-align: center;
+  width: 100%;
 }
 
 .filter-bar {
@@ -990,11 +970,6 @@ body {
 .btn-sheikah-sm:active {
   background: var(--sheikah-cyan);
   color: #000;
-}
-.btn-sheikah-sm.off {
-  border-color: #666;
-  color: #888;
-  background: transparent;
 }
 
 .btn-copy-sm {
