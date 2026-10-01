@@ -8,7 +8,7 @@ const BASE_JS_VERSION = "v0.26.101.012440";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -22,7 +22,7 @@ const BASE_JS_VERSION = "v0.26.101.012440";
 
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
@@ -1330,7 +1330,7 @@ function updateButtonStateUI() {
   const labelWake = document.getElementById('label-wake-state');
   if (appState.wakeLockActive) {
     wakeBtn.className = "btn-sheikah btn-sub-control active";
-    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1 z"/>';
+    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
     labelWake.textContent = t.wakeLockOn;
   } else {
     wakeBtn.className = "btn-sheikah btn-sub-control";
@@ -1463,7 +1463,6 @@ function switchTab(targetIndex) {
   if (targetIndex < 0 || targetIndex >= pageElementsOrder.length) return;
   activePageIndex = targetIndex;
 
-  // サブ画面（履歴や詳細）は閉じる
   document.getElementById('page-history').classList.remove('open');
   document.getElementById('page-spot-detail').classList.remove('open');
 
@@ -1528,12 +1527,10 @@ function initCircularSwipeNavigation() {
 
     if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
       if (diffX > 0) {
-        // 右へスワイプ（前の画面へ）
         if (activePageIndex > 0) {
           switchTab(activePageIndex - 1);
         }
       } else {
-        // 左へスワイプ（次の画面へ）
         if (activePageIndex < pageElementsOrder.length - 1) {
           switchTab(activePageIndex + 1);
         }
