@@ -8,14 +8,27 @@ const BASE_JS_VERSION = "v0.26.101.012440";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "07";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "06";
+  if (!cssRev) cssRev = "08";
 
-  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;      document.querySelectorAll('.app-build-ver-span').forEach(el => {     el.textContent = fullVersion;   }); })();  document.addEventListener("DOMContentLoaded", () => {   const metaTag = document.querySelector('meta[name="html-rev"]');   const htmlRev = metaTag ? metaTag.getAttribute('content') : "07";    const computedStyle = getComputedStyle(document.documentElement);   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');   if (!cssRev) cssRev = "06";    const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+  document.querySelectorAll('.app-build-ver-span').forEach(el => {
+    el.textContent = fullVersion;
+  });
+})();
 
+document.addEventListener("DOMContentLoaded", () => {
+  const metaTag = document.querySelector('meta[name="html-rev"]');
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
+
+  const computedStyle = getComputedStyle(document.documentElement);
+  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
+  if (!cssRev) cssRev = "08";
+
+  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
@@ -29,9 +42,116 @@ window.addEventListener('error', function(event) {
   if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
     return;
   }
-  const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;   if (navigator.clipboard && navigator.clipboard.writeText) {     navigator.clipboard.writeText(errorMsg).catch(() => {});   }   alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg); });  const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches \vert{}\vert{} window.navigator.standalone === true;  if (isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed')) {   sessionStorage.setItem('sheikah_pwa_refreshed', 'true');   if ('caches' in window) {     caches.keys().then((names) => {       Promise.all(names.map(name => caches.delete(name))).then(() => {         window.location.reload(true);       });     }).catch(() => {       window.location.reload(true);     });   } else {     window.location.reload(true);   } }  const CACHE_CHECK_KEY = 'sheikah_last_cache_time'; const nowTime = Date.now(); const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) \vert{}\vert{} '0', 10); const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;  if (!lastCacheTime) {   localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString()); } else if (nowTime - lastCacheTime > TWENTY_FOUR_HOURS) {   localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());   if ('caches' in window) {     caches.keys().then((names) => {       for (let name of names) {         caches.delete(name);       }     }).catch(() => {});   }   window.location.reload(true); }  document.addEventListener('visibilitychange', () => {   if (document.visibilityState === 'visible') {     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) \vert{}\vert{} '0', 10);     if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {       localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());       if ('caches' in window) {         caches.keys().then((names) => {           for (let name of names) {             caches.delete(name);           }         }).catch(() => {});       }       window.location.reload(true);     }   } });  const I18N = {   ja: {     inputPlaceholder: "探す対象を入力...",     btnSet: "SET",     unvisited: "未踏:",     detecting: "件探知中",     standby: "STANDBY",     searching: "SEARCHING...",     paused: "PAUSED",     sensorActive: "SENSOR: ACTIVE",     sensorPaused: "SENSOR: PAUSED",     sensorStandby: "SENSOR: STANDBY",     soundOn: "SOUND: ON",     soundOff: "SOUND: MUTED",     wakeLockOn: "WAKE LOCK: ON",     wakeLockOff: "WAKE LOCK: OFF",     langSwitchLabel: "→EN",     footerTip: "※消音時も円周の光とフラッシュで反応",     backToMain: "◀メイン",     keywordsTitle: "図鑑キーワード",     challengesTitle: "チャレンジ一覧",     filterKeywordsPlaceholder: "キーワード絞り込み...",     filterChallengesPlaceholder: "チャレンジ絞り込み...",     filterHistoryPlaceholder: "到達スポット絞り込み...",     sortSearch: "検索日時順",     sortArrival: "到達日時順",     sortCount: "到達件数降順",     cleanZeroBtn: "到達0件の履歴を一括削除",     deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",     backToKeywords: "◀履歴一覧",     backToHistory: "◀到達リスト",     spotDetailTitle: "スポット詳細",     allHistoryTitle: "全スポット一覧",     deleteBtn: "削除",     sortHNear: "現在地から近い順",     sortHDesc: "到達日時が新しい順",     sortHAsc: "到達日時が古い順",     sortHName: "名称あいうえお順",     noSpotsInRange: "範囲内に対象なし",     spotDetected: "探知反応あり",     emptyHistory: "このキーワードでの到達実績はまだありません。",     emptyAllHistory: "到達したスポットはまだありません。",     discoveryCompleted: "DISCOVERY COMPLETED",     toastRecorded: (name) => `マップに「${name}」が記録されました`,
-    toastCopied: (name) => `「${name}」をコピーしました`,     targetMeta: (k, r) => `[対象: ${k || '未設定'} / 範囲: ${r}]`,     targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
-    arrivalCount: (c) => `到達数: ${c} 箇所`,     arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,     targetKeywordLabel: (k) => `対象キーワード: ${k}`,
+  const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(errorMsg).catch(() => {});
+  }
+  alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
+});
+
+const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if (isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed')) {
+  sessionStorage.setItem('sheikah_pwa_refreshed', 'true');
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      Promise.all(names.map(name => caches.delete(name))).then(() => {
+        window.location.reload(true);
+      });
+    }).catch(() => {
+      window.location.reload(true);
+    });
+  } else {
+    window.location.reload(true);
+  }
+}
+
+const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
+const nowTime = Date.now();
+const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+if (!lastCacheTime) {
+  localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
+} else if (nowTime - lastCacheTime > TWENTY_FOUR_HOURS) {
+  localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      for (let name of names) {
+        caches.delete(name);
+      }
+    }).catch(() => {});
+  }
+  window.location.reload(true);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
+    if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
+      localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          for (let name of names) {
+            caches.delete(name);
+          }
+        }).catch(() => {});
+      }
+      window.location.reload(true);
+    }
+  }
+});
+
+const I18N = {
+  ja: {
+    inputPlaceholder: "探す対象を入力...",
+    btnSet: "SET",
+    unvisited: "未踏:",
+    detecting: "件探知中",
+    standby: "STANDBY",
+    searching: "SEARCHING...",
+    paused: "PAUSED",
+    sensorActive: "SENSOR: ACTIVE",
+    sensorPaused: "SENSOR: PAUSED",
+    sensorStandby: "SENSOR: STANDBY",
+    soundOn: "SOUND: ON",
+    soundOff: "SOUND: MUTED",
+    wakeLockOn: "WAKE LOCK: ON",
+    wakeLockOff: "WAKE LOCK: OFF",
+    langSwitchLabel: "→EN",
+    footerTip: "※消音時も円周の光とフラッシュで反応",
+    backToMain: "◀メイン",
+    keywordsTitle: "図鑑キーワード",
+    challengesTitle: "チャレンジ一覧",
+    filterKeywordsPlaceholder: "キーワード絞り込み...",
+    filterChallengesPlaceholder: "チャレンジ絞り込み...",
+    filterHistoryPlaceholder: "到達スポット絞り込み...",
+    sortSearch: "検索日時順",
+    sortArrival: "到達日時順",
+    sortCount: "到達件数降順",
+    cleanZeroBtn: "到達0件の履歴を一括削除",
+    deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
+    backToKeywords: "履歴一覧",
+    backToHistory: "戻る",
+    spotDetailTitle: "スポット詳細",
+    allHistoryTitle: "全スポット一覧",
+    deleteBtn: "削除",
+    sortHNear: "現在地から近い順",
+    sortHDesc: "到達日時が新しい順",
+    sortHAsc: "到達日時が古い順",
+    sortHName: "名称あいうえお順",
+    noSpotsInRange: "範囲内に対象なし",
+    spotDetected: "探知反応あり",
+    emptyHistory: "このキーワードでの到達実績はまだありません。",
+    emptyAllHistory: "到達したスポットはまだありません。",
+    discoveryCompleted: "DISCOVERY COMPLETED",
+    toastRecorded: (name) => `マップに「${name}」が記録されました`,
+    toastCopied: (name) => `「${name}」をコピーしました`,
+    targetMeta: (k, r) => `[対象: ${k || '未設定'} / 範囲: ${r}]`,
+    targetMetaPinpoint: (name) => `[ピンポイント探索: ${name}]`,
+    arrivalCount: (c) => `到達数: ${c} 箇所`,
+    arrivalDate: (d, dist) => `到達: ${d}${dist ? ' • 約' + dist : ''}`,
+    targetKeywordLabel: (k) => `対象キーワード: ${k}`,
     radarOn: "レーダーON",
     radarOff: "レーダーOFF",
     copyBtn: "コピー",
@@ -51,11 +171,59 @@ window.addEventListener('error', function(event) {
     safetyTitle: "安全にお楽しみいただくために",
     safetyDesc: "「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
     safetyOk: "OK",
-    confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
-    confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,     noZeroKeywords: "削除対象となる到達0件の履歴はありません。",     confirmEndSearch: "探索を終了しますか？"   },   en: {     inputPlaceholder: "Enter search keyword...",     btnSet: "SET",     unvisited: "Left:",     detecting: " detected",     standby: "STANDBY",     searching: "SEARCHING...",     paused: "PAUSED",     sensorActive: "SENSOR: ACTIVE",     sensorPaused: "SENSOR: PAUSED",     sensorStandby: "SENSOR: STANDBY",     soundOn: "SOUND: ON",     soundOff: "SOUND: MUTED",     wakeLockOn: "WAKE LOCK: ON",     wakeLockOff: "WAKE LOCK: OFF",     langSwitchLabel: "→JP",     footerTip: "Visual ring pulses even in mute mode",     backToMain: "◀Main",     keywordsTitle: "Atlas Keywords",     challengesTitle: "Challenges",     filterKeywordsPlaceholder: "Filter keywords...",     filterChallengesPlaceholder: "Filter challenges...",     filterHistoryPlaceholder: "Filter places...",     sortSearch: "By Search Date",     sortArrival: "By Discovery Date",     sortCount: "By Discovery Count",     cleanZeroBtn: "Delete Zero-Hit Records",     deleteCurrentKeyBtn: "Delete This Keyword's History",     backToKeywords: "◀Keywords",     backToHistory: "◀Places",     spotDetailTitle: "Place Details",     allHistoryTitle: "All Discovered Spots",     deleteBtn: "Delete",     sortHNear: "By Distance (Nearest)",     sortHDesc: "Newest First",     sortHAsc: "Oldest First",     sortHName: "Alphabetical",     noSpotsInRange: "No targets in range",     spotDetected: "Target detected",     emptyHistory: "No places discovered for this keyword yet.",     emptyAllHistory: "No places discovered yet.",     discoveryCompleted: "DISCOVERY COMPLETED",     toastRecorded: (name) => `Recorded "${name}" to slate map`,
+    confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
+    confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
+    confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
+    noZeroKeywords: "削除対象となる到達0件の履歴はありません。",
+    confirmEndSearch: "探索を終了しますか？"
+  },
+  en: {
+    inputPlaceholder: "Enter search keyword...",
+    btnSet: "SET",
+    unvisited: "Left:",
+    detecting: " detected",
+    standby: "STANDBY",
+    searching: "SEARCHING...",
+    paused: "PAUSED",
+    sensorActive: "SENSOR: ACTIVE",
+    sensorPaused: "SENSOR: PAUSED",
+    sensorStandby: "SENSOR: STANDBY",
+    soundOn: "SOUND: ON",
+    soundOff: "SOUND: MUTED",
+    wakeLockOn: "WAKE LOCK: ON",
+    wakeLockOff: "WAKE LOCK: OFF",
+    langSwitchLabel: "→JP",
+    footerTip: "Visual ring pulses even in mute mode",
+    backToMain: "◀Main",
+    keywordsTitle: "Atlas Keywords",
+    challengesTitle: "Challenges",
+    filterKeywordsPlaceholder: "Filter keywords...",
+    filterChallengesPlaceholder: "Filter challenges...",
+    filterHistoryPlaceholder: "Filter places...",
+    sortSearch: "By Search Date",
+    sortArrival: "By Discovery Date",
+    sortCount: "By Discovery Count",
+    cleanZeroBtn: "Delete Zero-Hit Records",
+    deleteCurrentKeyBtn: "Delete This Keyword's History",
+    backToKeywords: "Keywords",
+    backToHistory: "Back",
+    spotDetailTitle: "Place Details",
+    allHistoryTitle: "All Discovered Spots",
+    deleteBtn: "Delete",
+    sortHNear: "By Distance (Nearest)",
+    sortHDesc: "Newest First",
+    sortHAsc: "Oldest First",
+    sortHName: "Alphabetical",
+    noSpotsInRange: "No targets in range",
+    spotDetected: "Target detected",
+    emptyHistory: "No places discovered for this keyword yet.",
+    emptyAllHistory: "No places discovered yet.",
+    discoveryCompleted: "DISCOVERY COMPLETED",
+    toastRecorded: (name) => `Recorded "${name}" to slate map`,
     toastCopied: (name) => `Copied "${name}"`,
-    targetMeta: (k, r) => `[Target: ${k \vert{}\vert{} 'None'} / Range:${r}]`,
-    targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,     arrivalCount: (c) => `Discovered: ${c} spots`,
+    targetMeta: (k, r) => `[Target: ${k || 'None'} / Range:${r}]`,
+    targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
+    arrivalCount: (c) => `Discovered: ${c} spots`,
     arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
     targetKeywordLabel: (k) => `Target Keyword: ${k}`,
     radarOn: "RADAR ON",
@@ -257,7 +425,8 @@ function applyLanguage(lang) {
   document.getElementById('opt-sort-count').textContent = t.sortCount;
   document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
   document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
-  document.getElementById('back-to-history-list').textContent = t.backToHistory;
+  document.getElementById('back-to-history-list').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToHistory;
+  document.getElementById('back-to-keywords').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToKeywords;
   document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
   document.getElementById('all-header-title').textContent = t.allHistoryTitle;
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
@@ -334,7 +503,7 @@ function triggerDataTransferPrompt() {
   if (choice === "1") {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(base64Code).then(() => {
-        alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、裏コマンドから「2`で貼り付けてください。");
+        alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、裏コマンドから「2」で貼り付けてください。");
       }).catch(() => {
         prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
       });
@@ -1152,7 +1321,7 @@ function updateButtonStateUI() {
     labelSound.textContent = t.soundOff;
   } else {
     muteBtn.className = "btn-sheikah btn-sub-control active";
-    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.02v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
     labelSound.textContent = t.soundOn;
   }
 
@@ -1161,7 +1330,7 @@ function updateButtonStateUI() {
   const labelWake = document.getElementById('label-wake-state');
   if (appState.wakeLockActive) {
     wakeBtn.className = "btn-sheikah btn-sub-control active";
-    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
+    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1 z"/>';
     labelWake.textContent = t.wakeLockOn;
   } else {
     wakeBtn.className = "btn-sheikah btn-sub-control";
@@ -1294,7 +1463,7 @@ function switchTab(targetIndex) {
   if (targetIndex < 0 || targetIndex >= pageElementsOrder.length) return;
   activePageIndex = targetIndex;
 
-  // サブ画面（履歴や詳細）は強制的に閉じる
+  // サブ画面（履歴や詳細）は閉じる
   document.getElementById('page-history').classList.remove('open');
   document.getElementById('page-spot-detail').classList.remove('open');
 
@@ -1343,7 +1512,6 @@ function initCircularSwipeNavigation() {
   let startY = 0;
 
   container.addEventListener('touchstart', (e) => {
-    // サブ画面が開いている時はスワイプバックを優先するためタブスワイプを無効化
     if (document.getElementById('page-spot-detail').classList.contains('open') || document.getElementById('page-history').classList.contains('open')) {
       return;
     }
@@ -1360,11 +1528,15 @@ function initCircularSwipeNavigation() {
 
     if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
       if (diffX > 0) {
-        let nextIdx = (activePageIndex - 1 + pageElementsOrder.length) % pageElementsOrder.length;
-        switchTab(nextIdx);
+        // 右へスワイプ（前の画面へ）
+        if (activePageIndex > 0) {
+          switchTab(activePageIndex - 1);
+        }
       } else {
-        let nextIdx = (activePageIndex + 1) % pageElementsOrder.length;
-        switchTab(nextIdx);
+        // 左へスワイプ（次の画面へ）
+        if (activePageIndex < pageElementsOrder.length - 1) {
+          switchTab(activePageIndex + 1);
+        }
       }
     }
   }, { passive: true });
