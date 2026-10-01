@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.091.290830";
+const BASE_JS_VERSION = "v0.26.101.012255";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -173,7 +173,8 @@ const I18N = {
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
     confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
-    noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
+    noZeroKeywords: "削除対象となる到達0件の履歴はありません。",
+    confirmEndSearch: "探索を終了しますか？"
   },
   en: {
     inputPlaceholder: "Enter search keyword...",
@@ -245,7 +246,8 @@ const I18N = {
     confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
     confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
     confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
-    noZeroKeywords: "No zero-discovery keywords found."
+    noZeroKeywords: "No zero-discovery keywords found.",
+    confirmEndSearch: "End the current search?"
   }
 };
 
@@ -405,6 +407,9 @@ function applyLanguage(lang) {
   const t = I18N[lang];
 
   document.getElementById('keyword-input').placeholder = t.inputPlaceholder;
+  if (!appState.isTracking) {
+    document.getElementById('set-btn').textContent = t.btnSet;
+  }
   document.getElementById('label-unvisited').textContent = t.unvisited;
   document.getElementById('label-detecting').textContent = t.detecting;
   document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
@@ -1238,10 +1243,47 @@ function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
   });
 }
 
-setupInputClear(
-  document.getElementById('keyword-input'),
-  document.getElementById('btn-input-clear')
-);
+// メインのキーワード入力欄専用のクリア/変更チェック処理
+const keywordInputEl = document.getElementById('keyword-input');
+const btnInputClearEl = document.getElementById('btn-input-clear');
+
+function checkMainInputClearState() {
+  if (keywordInputEl.value.trim().length > 0) {
+    btnInputClearEl.classList.add('show');
+  } else {
+    btnInputClearEl.classList.remove('show');
+  }
+}
+keywordInputEl.addEventListener('input', checkMainInputClearState);
+checkMainInputClearState();
+
+btnInputClearEl.addEventListener('click', (e) => {
+  e.preventDefault();
+  const t = I18N[currentLang];
+  if (appState.isTracking) {
+    if (!confirm(t.confirmEndSearch)) {
+      return;
+    }
+    stopSearchAndReset();
+  }
+  keywordInputEl.value = '';
+  checkMainInputClearState();
+  keywordInputEl.focus();
+});
+
+keywordInputEl.addEventListener('focus', () => {
+  if (appState.isTracking && keywordInputEl.value.trim() !== "") {
+    const t = I18N[currentLang];
+    if (confirm(t.confirmEndSearch)) {
+      stopSearchAndReset();
+      keywordInputEl.value = '';
+      checkMainInputClearState();
+    } else {
+      keywordInputEl.blur();
+    }
+  }
+});
+
 setupInputClear(
   document.getElementById('keyword-filter'),
   document.getElementById('btn-keyword-filter-clear'),
@@ -1261,27 +1303,27 @@ setupInputClear(
 function updateButtonStateUI() {
   const t = I18N[currentLang];
   const indicator = document.getElementById('status-indicator');
-  const pauseBtn = document.getElementById('pause-toggle-btn');
-  const svgSensor = document.getElementById('svg-sensor');
+  const setBtn = document.getElementById('set-btn');
+  const svgSet = document.getElementById('svg-set-icon');
   const labelSensor = document.getElementById('label-sensor-state');
 
   if (!appState.isTracking) {
     indicator.textContent = t.standby;
     indicator.className = "status-indicator paused";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    setBtn.className = "btn-set";
+    setBtn.innerHTML = t.btnSet;
     labelSensor.textContent = t.sensorStandby;
   } else if (appState.isPaused) {
     indicator.textContent = t.paused;
     indicator.className = "status-indicator paused";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    setBtn.className = "btn-set paused";
+    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>`;
     labelSensor.textContent = t.sensorPaused;
   } else {
     indicator.textContent = t.searching;
     indicator.className = "status-indicator active";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle";
-    svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    setBtn.className = "btn-set active";
+    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
     labelSensor.textContent = t.sensorActive;
   }
 
@@ -1352,6 +1394,19 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
   updateButtonStateUI();
 });
 
+function stopSearchAndReset() {
+  appState.isTracking = false;
+  appState.isPaused = false;
+  appState.activeKeyword = "";
+  if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+  scheduledInterval = null;
+  updateVisualRing('idle');
+  document.getElementById('unknown-count').textContent = "--";
+  document.getElementById('distance-info').textContent = "--";
+  document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta("", getRadiusText(RADIUS_OPTIONS[radiusIndex]));
+  updateButtonStateUI();
+}
+
 async function startSearchFromSet() {
   initAudio();
   playBeep(2200);
@@ -1392,25 +1447,24 @@ async function startSearchFromSet() {
   }
 }
 
-document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
-document.getElementById('keyword-input').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') startSearchFromSet();
-});
-
-document.getElementById('pause-toggle-btn').addEventListener('click', () => {
+document.getElementById('set-btn').addEventListener('click', () => {
   initAudio();
   if (!appState.isTracking) {
     startSearchFromSet();
-    return;
+  } else {
+    // 探索中はSETボタンが再生/一時停止切り替えボタンとして機能
+    appState.isPaused = !appState.isPaused;
+    if (appState.isPaused) {
+      if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+      scheduledInterval = null;
+    }
+    updateButtonStateUI();
+    evaluateSensorCycle();
   }
+});
 
-  appState.isPaused = !appState.isPaused;
-  if (appState.isPaused) {
-    if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-    scheduledInterval = null;
-  }
-  updateButtonStateUI();
-  evaluateSensorCycle();
+document.getElementById('keyword-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') startSearchFromSet();
 });
 
 const pageKeywords = document.getElementById('page-keywords');
