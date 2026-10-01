@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.020800";
+const BASE_JS_VERSION = "v0.26.101.020845";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -718,6 +718,7 @@ let compassActive = false;
 let placesService = null;
 let isSearchInProgress = false;
 let detailMinimapInstance = null;
+let lastSearchTimestamp = 0; // 高速移動時のスロットル用
 
 function loadSavedData() {
   const data = localStorage.getItem('sheikah_db_v1');
@@ -1117,7 +1118,8 @@ function onPositionUpdate(pos) {
   }
 
   if (map) {
-    map.setCenter(newPos);
+    // 高速移動時の追従を滑らかにするため panTo に変更
+    map.panTo(newPos);
   }
 
   if (!appState.pinpointTarget) {
@@ -1141,8 +1143,13 @@ function onPositionUpdate(pos) {
 }
 
 function executeSearch() {
+  const now = Date.now();
+  // 連続探索によるメインスレッドブロックを防止（5秒間のスロットル）
+  if (now - lastSearchTimestamp < 5000) return;
+
   if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
   isSearchInProgress = true;
+  lastSearchTimestamp = now;
   appState.lastSearchedPos = { ...appState.currentPos };
   const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
@@ -1202,6 +1209,7 @@ document.getElementById('radius-select').addEventListener('change', (e) => {
   document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
   localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
   if (appState.isTracking) {
+    lastSearchTimestamp = 0; // 手動変更時は即時反映
     executeSearch();
   }
 });
@@ -1356,6 +1364,7 @@ async function startSearchFromSet() {
   appState.pinpointTarget = null;
   appState.isTracking = true;
   appState.isPaused = false;
+  lastSearchTimestamp = 0; // 手動操作時はスロットルをリセット
 
   const db = loadSavedData();
   const now = new Date().toISOString();
@@ -1408,7 +1417,7 @@ const pageSpotDetail = document.getElementById('page-spot-detail');
 const pageAllHistory = document.getElementById('page-all-history');
 const pageChallenge = document.getElementById('page-challenge');
 
-// --- 新規追加：ページ管理とスワイプ処理 ---
+// --- ページ管理とスワイプ処理 (アニメーション方向制御) ---
 const MAIN_PAGES = [
   { id: 'challenge', el: pageChallenge },
   { id: 'main', el: null },
@@ -1437,8 +1446,19 @@ function switchMainPage(newIndex) {
 
   MAIN_PAGES.forEach((page, idx) => {
     if (page.el) {
-      if (idx === newIndex) page.el.classList.add('open');
-      else page.el.classList.remove('open');
+      // クラスをリセット
+      page.el.classList.remove('pos-left', 'pos-right', 'open');
+
+      if (idx < newIndex) {
+        // 現在より左にあるページは左に待機
+        page.el.classList.add('pos-left');
+      } else if (idx > newIndex) {
+        // 現在より右にあるページは右に待機
+        page.el.classList.add('pos-right');
+      } else {
+        // 表示するページ
+        page.el.classList.add('open');
+      }
     }
   });
 
@@ -1475,7 +1495,8 @@ document.getElementById('app-container').addEventListener('touchend', (e) => {
   
   if (Math.abs(diffY) > Math.abs(diffX) * 1.5) return;
 
-  if (diffX > 75) {
+  if (diffX > 75) { 
+    // 右スワイプ（指を右へ動かす）：左画面へ戻る/移動
     if (document.getElementById('page-spot-detail').classList.contains('open')) {
       document.getElementById('back-to-history-list').click();
       return;
@@ -1486,6 +1507,8 @@ document.getElementById('app-container').addEventListener('touchend', (e) => {
     }
     switchMainPage(currentMainPageIndex - 1);
   } else if (diffX < -75) {
+    // 左スワイプ（指を左へ動かす）：右画面へ進む/移動
+    // 子画面が開いていても、親の「右」へ移動する
     switchMainPage(currentMainPageIndex + 1);
   }
 }, { passive: true });
@@ -1853,6 +1876,7 @@ function setPinpointTargetAndStart(item) {
 
   appState.isTracking = true;
   appState.isPaused = false;
+  lastSearchTimestamp = 0; // 手動設定時はスロットルリセット
   updateButtonStateUI();
   evaluateSensorCycle();
 }
