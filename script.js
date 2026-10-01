@@ -4,34 +4,39 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.012440";
+const BASE_JS_VERSION = "v0.26.101.020800";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "08";
+  if (!cssRev) cssRev = "02";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+  
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
 })();
 
-// ▼ 修正: DOMContentLoadedで囲むとスクリプト動的ロード時に発火しないため、即時実行に変更
-function initAppWhenReady() {
-  setupDataTransferEasterEgg();
-  initFooterNavigation();
-  initCircularSwipeNavigation();
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const metaTag = document.querySelector('meta[name="html-rev"]');
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
 
-if (document.readyState === 'loading') {
-  document.addEventListener("DOMContentLoaded", initAppWhenReady);
-} else {
-  initAppWhenReady();
-}
+  const computedStyle = getComputedStyle(document.documentElement);
+  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
+  if (!cssRev) cssRev = "02";
+
+  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+
+  document.querySelectorAll('.app-build-ver-span').forEach(el => {
+    el.textContent = fullVersion;
+  });
+
+  setupDataTransferEasterEgg();
+});
 
 window.addEventListener('error', function(event) {
   if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
@@ -114,20 +119,16 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→EN",
+    compendiumBtn: "到達済みリスト (図鑑)",
     footerTip: "※消音時も円周の光とフラッシュで反応",
-    backToMain: "◀メイン",
     keywordsTitle: "図鑑キーワード",
-    challengesTitle: "チャレンジ一覧",
     filterKeywordsPlaceholder: "キーワード絞り込み...",
-    filterChallengesPlaceholder: "チャレンジ絞り込み...",
     filterHistoryPlaceholder: "到達スポット絞り込み...",
     sortSearch: "検索日時順",
     sortArrival: "到達日時順",
     sortCount: "到達件数降順",
     cleanZeroBtn: "到達0件の履歴を一括削除",
     deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-    backToKeywords: "履歴一覧",
-    backToHistory: "戻る",
     spotDetailTitle: "スポット詳細",
     allHistoryTitle: "全スポット一覧",
     deleteBtn: "削除",
@@ -169,8 +170,7 @@ const I18N = {
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
     confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
-    noZeroKeywords: "削除対象となる到達0件の履歴はありません。",
-    confirmEndSearch: "探索を終了しますか？"
+    noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
   },
   en: {
     inputPlaceholder: "Enter search keyword...",
@@ -188,20 +188,16 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→JP",
+    compendiumBtn: "Discovered List (Atlas)",
     footerTip: "Visual ring pulses even in mute mode",
-    backToMain: "◀Main",
     keywordsTitle: "Atlas Keywords",
-    challengesTitle: "Challenges",
     filterKeywordsPlaceholder: "Filter keywords...",
-    filterChallengesPlaceholder: "Filter challenges...",
     filterHistoryPlaceholder: "Filter places...",
     sortSearch: "By Search Date",
     sortArrival: "By Discovery Date",
     sortCount: "By Discovery Count",
     cleanZeroBtn: "Delete Zero-Hit Records",
     deleteCurrentKeyBtn: "Delete This Keyword's History",
-    backToKeywords: "Keywords",
-    backToHistory: "Back",
     spotDetailTitle: "Place Details",
     allHistoryTitle: "All Discovered Spots",
     deleteBtn: "Delete",
@@ -216,7 +212,7 @@ const I18N = {
     discoveryCompleted: "DISCOVERY COMPLETED",
     toastRecorded: (name) => `Recorded "${name}" to slate map`,
     toastCopied: (name) => `Copied "${name}"`,
-    targetMeta: (k, r) => `[Target: ${k || 'None'} / Range:${r}]`,
+    targetMeta: (k, r) => `[Target: ${k || 'None'} / Range: ${r}]`,
     targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
     arrivalCount: (c) => `Discovered: ${c} spots`,
     arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
@@ -243,8 +239,7 @@ const I18N = {
     confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
     confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
     confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
-    noZeroKeywords: "No zero-discovery keywords found.",
-    confirmEndSearch: "End the current search?"
+    noZeroKeywords: "No zero-discovery keywords found."
   }
 };
 
@@ -404,14 +399,10 @@ function applyLanguage(lang) {
   const t = I18N[lang];
 
   document.getElementById('keyword-input').placeholder = t.inputPlaceholder;
-  if (!appState.isTracking) {
-    document.getElementById('set-btn').textContent = t.btnSet;
-  }
   document.getElementById('label-unvisited').textContent = t.unvisited;
   document.getElementById('label-detecting').textContent = t.detecting;
+  document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
   document.getElementById('label-footer-tip').textContent = t.footerTip;
-  document.getElementById('title-page-challenges').textContent = t.challengesTitle;
-  document.getElementById('challenge-filter').placeholder = t.filterChallengesPlaceholder;
   document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
   document.getElementById('keyword-filter').placeholder = t.filterKeywordsPlaceholder;
   document.getElementById('history-filter').placeholder = t.filterHistoryPlaceholder;
@@ -420,8 +411,6 @@ function applyLanguage(lang) {
   document.getElementById('opt-sort-count').textContent = t.sortCount;
   document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
   document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
-  document.getElementById('back-to-history-list').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToHistory;
-  document.getElementById('back-to-keywords').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToKeywords;
   document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
   document.getElementById('all-header-title').textContent = t.allHistoryTitle;
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
@@ -453,7 +442,6 @@ function applyLanguage(lang) {
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
 
   updateButtonStateUI();
-  renderChallengesList();
   renderKeywordsList();
   if (appState.selectedKeywordForHistory) renderHistoryList();
   renderAllHistoryList();
@@ -599,6 +587,24 @@ function initAudio() {
     source.connect(audioCtx.destination);
     source.start(0);
   } catch (e) {}
+}
+
+async function requestCompassPermissionIfNeeded() {
+  if (compassActive) return;
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      if (permission === 'granted') {
+        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        compassActive = true;
+      }
+    } catch (e) {
+      console.warn("コンパス権限エラー:", e);
+    }
+  } else {
+    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+    compassActive = true;
+  }
 }
 
 window.addEventListener('touchstart', () => { 
@@ -1201,6 +1207,7 @@ document.getElementById('radius-select').addEventListener('change', (e) => {
 });
 
 function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
+  if(!inputEl || !clearBtnEl) return;
   function check() {
     if (inputEl.value.trim().length > 0) {
       clearBtnEl.classList.add('show');
@@ -1220,50 +1227,9 @@ function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
   });
 }
 
-const keywordInputEl = document.getElementById('keyword-input');
-const btnInputClearEl = document.getElementById('btn-input-clear');
-
-function checkMainInputClearState() {
-  if (keywordInputEl.value.trim().length > 0) {
-    btnInputClearEl.classList.add('show');
-  } else {
-    btnInputClearEl.classList.remove('show');
-  }
-}
-keywordInputEl.addEventListener('input', checkMainInputClearState);
-checkMainInputClearState();
-
-btnInputClearEl.addEventListener('click', (e) => {
-  e.preventDefault();
-  const t = I18N[currentLang];
-  if (appState.isTracking) {
-    if (!confirm(t.confirmEndSearch)) {
-      return;
-    }
-    stopSearchAndReset();
-  }
-  keywordInputEl.value = '';
-  checkMainInputClearState();
-  keywordInputEl.focus();
-});
-
-keywordInputEl.addEventListener('focus', () => {
-  if (appState.isTracking && keywordInputEl.value.trim() !== "") {
-    const t = I18N[currentLang];
-    if (confirm(t.confirmEndSearch)) {
-      stopSearchAndReset();
-      keywordInputEl.value = '';
-      checkMainInputClearState();
-    } else {
-      keywordInputEl.blur();
-    }
-  }
-});
-
 setupInputClear(
-  document.getElementById('challenge-filter'),
-  document.getElementById('btn-challenge-filter-clear'),
-  () => renderChallengesList()
+  document.getElementById('keyword-input'),
+  document.getElementById('btn-input-clear')
 );
 setupInputClear(
   document.getElementById('keyword-filter'),
@@ -1284,26 +1250,27 @@ setupInputClear(
 function updateButtonStateUI() {
   const t = I18N[currentLang];
   const indicator = document.getElementById('status-indicator');
-  const setBtn = document.getElementById('set-btn');
+  const pauseBtn = document.getElementById('pause-toggle-btn');
+  const svgSensor = document.getElementById('svg-sensor');
   const labelSensor = document.getElementById('label-sensor-state');
 
   if (!appState.isTracking) {
     indicator.textContent = t.standby;
     indicator.className = "status-indicator paused";
-    setBtn.className = "btn-set";
-    setBtn.innerHTML = t.btnSet;
+    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
+    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
     labelSensor.textContent = t.sensorStandby;
   } else if (appState.isPaused) {
     indicator.textContent = t.paused;
     indicator.className = "status-indicator paused";
-    setBtn.className = "btn-set paused";
-    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>`;
+    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
+    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
     labelSensor.textContent = t.sensorPaused;
   } else {
     indicator.textContent = t.searching;
     indicator.className = "status-indicator active";
-    setBtn.className = "btn-set active";
-    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+    pauseBtn.className = "btn-sheikah btn-pause-toggle";
+    svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
     labelSensor.textContent = t.sensorActive;
   }
 
@@ -1316,7 +1283,7 @@ function updateButtonStateUI() {
     labelSound.textContent = t.soundOff;
   } else {
     muteBtn.className = "btn-sheikah btn-sub-control active";
-    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.02v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
     labelSound.textContent = t.soundOn;
   }
 
@@ -1374,19 +1341,6 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
   updateButtonStateUI();
 });
 
-function stopSearchAndReset() {
-  appState.isTracking = false;
-  appState.isPaused = false;
-  appState.activeKeyword = "";
-  if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-  scheduledInterval = null;
-  updateVisualRing('idle');
-  document.getElementById('unknown-count').textContent = "--";
-  document.getElementById('distance-info').textContent = "--";
-  document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta("", getRadiusText(RADIUS_OPTIONS[radiusIndex]));
-  updateButtonStateUI();
-}
-
 async function startSearchFromSet() {
   initAudio();
   playBeep(2200);
@@ -1427,167 +1381,133 @@ async function startSearchFromSet() {
   }
 }
 
-document.getElementById('set-btn').addEventListener('click', () => {
-  initAudio();
-  if (!appState.isTracking) {
-    startSearchFromSet();
-  } else {
-    appState.isPaused = !appState.isPaused;
-    if (appState.isPaused) {
-      if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-      scheduledInterval = null;
-    }
-    updateButtonStateUI();
-    evaluateSensorCycle();
-  }
-});
-
+document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
 document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
 
-const pageElementsOrder = [
-  document.getElementById('page-challenges'),
-  document.getElementById('page-main-wrap'),
-  document.getElementById('page-keywords'),
-  document.getElementById('page-all-history')
+document.getElementById('pause-toggle-btn').addEventListener('click', () => {
+  initAudio();
+  if (!appState.isTracking) {
+    startSearchFromSet();
+    return;
+  }
+
+  appState.isPaused = !appState.isPaused;
+  if (appState.isPaused) {
+    if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+    scheduledInterval = null;
+  }
+  updateButtonStateUI();
+  evaluateSensorCycle();
+});
+
+const pageKeywords = document.getElementById('page-keywords');
+const pageHistory = document.getElementById('page-history');
+const pageSpotDetail = document.getElementById('page-spot-detail');
+const pageAllHistory = document.getElementById('page-all-history');
+const pageChallenge = document.getElementById('page-challenge');
+
+// --- 新規追加：ページ管理とスワイプ処理 ---
+const MAIN_PAGES = [
+  { id: 'challenge', el: pageChallenge },
+  { id: 'main', el: null },
+  { id: 'keywords', el: pageKeywords },
+  { id: 'all', el: pageAllHistory }
 ];
-let activePageIndex = 1;
+let currentMainPageIndex = 1;
 
-function switchTab(targetIndex) {
-  if (targetIndex < 0 || targetIndex >= pageElementsOrder.length) return;
-  activePageIndex = targetIndex;
+function switchMainPage(newIndex) {
+  if (newIndex < 0) newIndex = MAIN_PAGES.length - 1;
+  if (newIndex >= MAIN_PAGES.length) newIndex = 0;
+  
+  const navItems = [
+    document.getElementById('nav-challenge'),
+    document.getElementById('nav-main'),
+    document.getElementById('nav-keywords'),
+    document.getElementById('nav-all')
+  ];
+  
+  navItems.forEach((el, idx) => {
+    if (el) {
+      if (idx === newIndex) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  });
 
+  MAIN_PAGES.forEach((page, idx) => {
+    if (page.el) {
+      if (idx === newIndex) page.el.classList.add('open');
+      else page.el.classList.remove('open');
+    }
+  });
+
+  if (MAIN_PAGES[newIndex].id === 'keywords') renderKeywordsList();
+  if (MAIN_PAGES[newIndex].id === 'all') renderAllHistoryList();
+  if (MAIN_PAGES[newIndex].id === 'main') evaluateSensorCycle();
+
+  // 子画面も閉じる
   document.getElementById('page-history').classList.remove('open');
   document.getElementById('page-spot-detail').classList.remove('open');
 
-  pageElementsOrder.forEach((el, idx) => {
-    if (idx === targetIndex) {
-      el.classList.add('open');
-    } else {
-      el.classList.remove('open');
-    }
-  });
+  currentMainPageIndex = newIndex;
+}
 
-  const footerBtns = document.querySelectorAll('.app-footer-nav .footer-nav-btn');
-  footerBtns.forEach((btn, idx) => {
-    if (idx === targetIndex) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
+if (document.getElementById('nav-challenge')) {
+  document.getElementById('nav-challenge').addEventListener('click', () => switchMainPage(0));
+  document.getElementById('nav-main').addEventListener('click', () => switchMainPage(1));
+  document.getElementById('nav-keywords').addEventListener('click', () => switchMainPage(2));
+  document.getElementById('nav-all').addEventListener('click', () => switchMainPage(3));
+}
 
-  if (targetIndex === 1) {
-    evaluateSensorCycle();
-  } else if (targetIndex === 0) {
-    renderChallengesList();
-  } else if (targetIndex === 2) {
-    renderKeywordsList();
-  } else if (targetIndex === 3) {
-    renderAllHistoryList();
+let globalTouchStartX = 0;
+let globalTouchStartY = 0;
+document.getElementById('app-container').addEventListener('touchstart', (e) => {
+  if (e.target.closest('.photo-gallery-scroll') || e.target.closest('.list-scroll') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select') return;
+  globalTouchStartX = e.touches[0].clientX;
+  globalTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.getElementById('app-container').addEventListener('touchend', (e) => {
+  if (e.target.closest('.photo-gallery-scroll') || e.target.closest('.list-scroll') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select') return;
+  const diffX = e.changedTouches[0].clientX - globalTouchStartX;
+  const diffY = e.changedTouches[0].clientY - globalTouchStartY;
+  
+  if (Math.abs(diffY) > Math.abs(diffX) * 1.5) return;
+
+  if (diffX > 75) {
+    if (document.getElementById('page-spot-detail').classList.contains('open')) {
+      document.getElementById('back-to-history-list').click();
+      return;
+    }
+    if (document.getElementById('page-history').classList.contains('open')) {
+      document.getElementById('back-to-keywords').click();
+      return;
+    }
+    switchMainPage(currentMainPageIndex - 1);
+  } else if (diffX < -75) {
+    switchMainPage(currentMainPageIndex + 1);
   }
-}
+}, { passive: true });
+// ----------------------------------------
 
-function initFooterNavigation() {
-  const footerBtns = document.querySelectorAll('.app-footer-nav .footer-nav-btn');
-  footerBtns.forEach((btn, idx) => {
-    btn.addEventListener('click', () => {
-      initAudio();
-      switchTab(idx);
-    });
-  });
-  switchTab(1);
-}
-
-function initCircularSwipeNavigation() {
-  const container = document.getElementById('app-container');
-  let startX = 0;
-  let startY = 0;
-
-  container.addEventListener('touchstart', (e) => {
-    if (document.getElementById('page-spot-detail').classList.contains('open') || document.getElementById('page-history').classList.contains('open')) {
-      return;
-    }
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-
-  container.addEventListener('touchend', (e) => {
-    if (document.getElementById('page-spot-detail').classList.contains('open') || document.getElementById('page-history').classList.contains('open')) {
-      return;
-    }
-    const diffX = e.changedTouches[0].clientX - startX;
-    const diffY = e.changedTouches[0].clientY - startY;
-
-    if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
-      if (diffX > 0) {
-        if (activePageIndex > 0) {
-          switchTab(activePageIndex - 1);
-        }
-      } else {
-        if (activePageIndex < pageElementsOrder.length - 1) {
-          switchTab(activePageIndex + 1);
-        }
-      }
-    }
-  }, { passive: true });
-}
+document.getElementById('open-keywords-btn').addEventListener('click', () => {
+  switchMainPage(2);
+});
 
 document.getElementById('back-to-keywords').addEventListener('click', () => {
-  document.getElementById('page-history').classList.remove('open');
+  pageHistory.classList.remove('open');
   renderKeywordsList();
 });
 
 document.getElementById('back-to-history-list').addEventListener('click', () => {
-  document.getElementById('page-spot-detail').classList.remove('open');
-});
-
-function renderChallengesList() {
-  const container = document.getElementById('challenges-list-container');
-  container.innerHTML = '';
-  const filterText = document.getElementById('challenge-filter').value.toLowerCase();
-
-  const dummyChallenges = [
-    { id: 'c1', name: 'チャレンジA', desc: '最初のチャレンジ項目です。' },
-    { id: 'c2', name: 'チャレンジB', desc: '中級者向けのチャレンジ項目です。' },
-    { id: 'c3', name: 'チャレンジC', desc: '上級者向けのチャレンジ項目です。' }
-  ];
-
-  const filtered = dummyChallenges.filter(c => c.name.toLowerCase().includes(filterText) || c.desc.toLowerCase().includes(filterText));
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">チャレンジはありません。</div>`;
-    return;
+  pageSpotDetail.classList.remove('open');
+  if (appState.fromAllHistory) {
+    pageAllHistory.classList.add('open');
+  } else {
+    renderHistoryList();
   }
-
-  filtered.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.innerHTML = `
-      <div class="list-item-row">
-        <div class="list-item-left">
-          <span class="list-item-title">${item.name}</span>
-          <div class="list-item-sub">${item.desc}</div>
-        </div>
-        <div class="item-right-actions">
-          <button class="btn-sheikah-sm btn-reset-search" data-key="${item.name}">SET</button>
-          <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-        </div>
-      </div>
-    `;
-
-    div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('keyword-input').value = item.name;
-      document.getElementById('btn-input-clear').classList.add('show');
-      switchTab(1);
-      startSearchFromSet();
-    });
-
-    container.appendChild(div);
-  });
-}
+});
 
 function renderKeywordsList() {
   const db = loadSavedData();
@@ -1639,14 +1559,14 @@ function renderKeywordsList() {
       document.getElementById('history-filter').value = '';
       document.getElementById('btn-history-filter-clear').classList.remove('show');
       renderHistoryList();
-      document.getElementById('page-history').classList.add('open');
+      pageHistory.classList.add('open');
     });
 
     div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById('keyword-input').value = k;
       document.getElementById('btn-input-clear').classList.add('show');
-      switchTab(1);
+      switchMainPage(1); // 検索のためにメイン画面へ戻る
       startSearchFromSet();
     });
 
@@ -1929,7 +1849,7 @@ function setPinpointTargetAndStart(item) {
   document.getElementById('btn-input-clear').classList.add('show');
   document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
-  switchTab(1);
+  switchMainPage(1); // メイン画面へ
 
   appState.isTracking = true;
   appState.isPaused = false;
@@ -1985,7 +1905,7 @@ function openSpotDetailModal(item) {
     if (confirm(t.confirmDeleteSingle(item.name))) {
       db.arrivals = db.arrivals.filter(a => a.id !== item.id);
       saveAppData(db);
-      document.getElementById('page-spot-detail').classList.remove('open');
+      pageSpotDetail.classList.remove('open');
       if (appState.fromAllHistory) {
         renderAllHistoryList();
       } else {
@@ -2001,7 +1921,7 @@ function openSpotDetailModal(item) {
     window.open(reviewUrl, '_blank');
   };
 
-  document.getElementById('page-spot-detail').classList.add('open');
+  pageSpotDetail.classList.add('open');
 
   const gallery = document.createElement('div');
   gallery.className = 'photo-gallery-scroll';
@@ -2091,7 +2011,6 @@ function loadPhotosAndMap(item, gallery, photosBox) {
   }, 80);
 }
 
-document.getElementById('challenge-filter').addEventListener('input', renderChallengesList);
 document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
 document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
 document.getElementById('history-filter').addEventListener('input', renderHistoryList);
