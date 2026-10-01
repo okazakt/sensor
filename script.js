@@ -4,18 +4,17 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.012255";
+const BASE_JS_VERSION = "v0.26.101.012440";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "02";
+  if (!cssRev) cssRev = "08";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-  
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
@@ -23,19 +22,20 @@ const BASE_JS_VERSION = "v0.26.101.012255";
 
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "09";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "02";
+  if (!cssRev) cssRev = "08";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
 
   setupDataTransferEasterEgg();
+  initFooterNavigation();
+  initCircularSwipeNavigation();
 });
 
 window.addEventListener('error', function(event) {
@@ -119,19 +119,20 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→EN",
-    compendiumBtn: "到達済みリスト (図鑑)",
     footerTip: "※消音時も円周の光とフラッシュで反応",
     backToMain: "◀メイン",
     keywordsTitle: "図鑑キーワード",
+    challengesTitle: "チャレンジ一覧",
     filterKeywordsPlaceholder: "キーワード絞り込み...",
+    filterChallengesPlaceholder: "チャレンジ絞り込み...",
     filterHistoryPlaceholder: "到達スポット絞り込み...",
     sortSearch: "検索日時順",
     sortArrival: "到達日時順",
     sortCount: "到達件数降順",
     cleanZeroBtn: "到達0件の履歴を一括削除",
     deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-    backToKeywords: "◀履歴一覧",
-    backToHistory: "◀到達リスト",
+    backToKeywords: "履歴一覧",
+    backToHistory: "戻る",
     spotDetailTitle: "スポット詳細",
     allHistoryTitle: "全スポット一覧",
     deleteBtn: "削除",
@@ -192,19 +193,20 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→JP",
-    compendiumBtn: "Discovered List (Atlas)",
     footerTip: "Visual ring pulses even in mute mode",
     backToMain: "◀Main",
     keywordsTitle: "Atlas Keywords",
+    challengesTitle: "Challenges",
     filterKeywordsPlaceholder: "Filter keywords...",
+    filterChallengesPlaceholder: "Filter challenges...",
     filterHistoryPlaceholder: "Filter places...",
     sortSearch: "By Search Date",
     sortArrival: "By Discovery Date",
     sortCount: "By Discovery Count",
     cleanZeroBtn: "Delete Zero-Hit Records",
     deleteCurrentKeyBtn: "Delete This Keyword's History",
-    backToKeywords: "◀Keywords",
-    backToHistory: "◀Places",
+    backToKeywords: "Keywords",
+    backToHistory: "Back",
     spotDetailTitle: "Place Details",
     allHistoryTitle: "All Discovered Spots",
     deleteBtn: "Delete",
@@ -219,7 +221,7 @@ const I18N = {
     discoveryCompleted: "DISCOVERY COMPLETED",
     toastRecorded: (name) => `Recorded "${name}" to slate map`,
     toastCopied: (name) => `Copied "${name}"`,
-    targetMeta: (k, r) => `[Target: ${k || 'None'} / Range: ${r}]`,
+    targetMeta: (k, r) => `[Target: ${k || 'None'} / Range:${r}]`,
     targetMetaPinpoint: (name) => `[Pinpoint Target: ${name}]`,
     arrivalCount: (c) => `Discovered: ${c} spots`,
     arrivalDate: (d, dist) => `Date: ${d}${dist ? ' • ~' + dist : ''}`,
@@ -412,9 +414,9 @@ function applyLanguage(lang) {
   }
   document.getElementById('label-unvisited').textContent = t.unvisited;
   document.getElementById('label-detecting').textContent = t.detecting;
-  document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
   document.getElementById('label-footer-tip').textContent = t.footerTip;
-  document.getElementById('back-to-main').textContent = t.backToMain;
+  document.getElementById('title-page-challenges').textContent = t.challengesTitle;
+  document.getElementById('challenge-filter').placeholder = t.filterChallengesPlaceholder;
   document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
   document.getElementById('keyword-filter').placeholder = t.filterKeywordsPlaceholder;
   document.getElementById('history-filter').placeholder = t.filterHistoryPlaceholder;
@@ -423,8 +425,8 @@ function applyLanguage(lang) {
   document.getElementById('opt-sort-count').textContent = t.sortCount;
   document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
   document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
-  document.getElementById('back-to-keywords').textContent = t.backToKeywords;
-  document.getElementById('back-to-history-list').textContent = t.backToHistory;
+  document.getElementById('back-to-history-list').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToHistory;
+  document.getElementById('back-to-keywords').innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>` + t.backToKeywords;
   document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
   document.getElementById('all-header-title').textContent = t.allHistoryTitle;
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
@@ -455,10 +457,8 @@ function applyLanguage(lang) {
   document.getElementById('btn-safety-ok').textContent = t.safetyOk;
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
 
-  document.querySelectorAll('.btn-all-history').forEach(b => b.textContent = currentLang === 'ja' ? '全て ▶' : 'All ▶');
-  document.getElementById('back-from-all').textContent = currentLang === 'ja' ? '◀メイン' : '◀Main';
-
   updateButtonStateUI();
+  renderChallengesList();
   renderKeywordsList();
   if (appState.selectedKeywordForHistory) renderHistoryList();
   renderAllHistoryList();
@@ -604,24 +604,6 @@ function initAudio() {
     source.connect(audioCtx.destination);
     source.start(0);
   } catch (e) {}
-}
-
-async function requestCompassPermissionIfNeeded() {
-  if (compassActive) return;
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission === 'granted') {
-        window.addEventListener('deviceorientation', onDeviceOrientation, true);
-        compassActive = true;
-      }
-    } catch (e) {
-      console.warn("コンパス権限エラー:", e);
-    }
-  } else {
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
-    compassActive = true;
-  }
 }
 
 window.addEventListener('touchstart', () => { 
@@ -1243,7 +1225,6 @@ function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
   });
 }
 
-// メインのキーワード入力欄専用のクリア/変更チェック処理
 const keywordInputEl = document.getElementById('keyword-input');
 const btnInputClearEl = document.getElementById('btn-input-clear');
 
@@ -1285,6 +1266,11 @@ keywordInputEl.addEventListener('focus', () => {
 });
 
 setupInputClear(
+  document.getElementById('challenge-filter'),
+  document.getElementById('btn-challenge-filter-clear'),
+  () => renderChallengesList()
+);
+setupInputClear(
   document.getElementById('keyword-filter'),
   document.getElementById('btn-keyword-filter-clear'),
   () => renderKeywordsList()
@@ -1304,7 +1290,6 @@ function updateButtonStateUI() {
   const t = I18N[currentLang];
   const indicator = document.getElementById('status-indicator');
   const setBtn = document.getElementById('set-btn');
-  const svgSet = document.getElementById('svg-set-icon');
   const labelSensor = document.getElementById('label-sensor-state');
 
   if (!appState.isTracking) {
@@ -1336,7 +1321,7 @@ function updateButtonStateUI() {
     labelSound.textContent = t.soundOff;
   } else {
     muteBtn.className = "btn-sheikah btn-sub-control active";
-    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+    svgSound.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.02v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
     labelSound.textContent = t.soundOn;
   }
 
@@ -1345,7 +1330,7 @@ function updateButtonStateUI() {
   const labelWake = document.getElementById('label-wake-state');
   if (appState.wakeLockActive) {
     wakeBtn.className = "btn-sheikah btn-sub-control active";
-    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
+    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1 z"/>';
     labelWake.textContent = t.wakeLockOn;
   } else {
     wakeBtn.className = "btn-sheikah btn-sub-control";
@@ -1452,7 +1437,6 @@ document.getElementById('set-btn').addEventListener('click', () => {
   if (!appState.isTracking) {
     startSearchFromSet();
   } else {
-    // 探索中はSETボタンが再生/一時停止切り替えボタンとして機能
     appState.isPaused = !appState.isPaused;
     if (appState.isPaused) {
       if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
@@ -1467,100 +1451,151 @@ document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
 
-const pageKeywords = document.getElementById('page-keywords');
-const pageHistory = document.getElementById('page-history');
-const pageSpotDetail = document.getElementById('page-spot-detail');
-const pageAllHistory = document.getElementById('page-all-history');
+const pageElementsOrder = [
+  document.getElementById('page-challenges'),
+  document.getElementById('page-main-wrap'),
+  document.getElementById('page-keywords'),
+  document.getElementById('page-all-history')
+];
+let activePageIndex = 1;
 
-function navigateToMain() {
-  pageAllHistory.classList.remove('open');
-  pageSpotDetail.classList.remove('open');
-  pageHistory.classList.remove('open');
-  pageKeywords.classList.remove('open');
-  evaluateSensorCycle();
+function switchTab(targetIndex) {
+  if (targetIndex < 0 || targetIndex >= pageElementsOrder.length) return;
+  activePageIndex = targetIndex;
+
+  // サブ画面（履歴や詳細）は閉じる
+  document.getElementById('page-history').classList.remove('open');
+  document.getElementById('page-spot-detail').classList.remove('open');
+
+  pageElementsOrder.forEach((el, idx) => {
+    if (idx === targetIndex) {
+      el.classList.add('open');
+    } else {
+      el.classList.remove('open');
+    }
+  });
+
+  const footerBtns = document.querySelectorAll('.app-footer-nav .footer-nav-btn');
+  footerBtns.forEach((btn, idx) => {
+    if (idx === targetIndex) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (targetIndex === 1) {
+    evaluateSensorCycle();
+  } else if (targetIndex === 0) {
+    renderChallengesList();
+  } else if (targetIndex === 2) {
+    renderKeywordsList();
+  } else if (targetIndex === 3) {
+    renderAllHistoryList();
+  }
 }
 
-document.getElementById('home-from-keywords').addEventListener('click', navigateToMain);
-document.getElementById('home-from-history').addEventListener('click', navigateToMain);
-document.getElementById('home-from-detail').addEventListener('click', navigateToMain);
-document.getElementById('home-from-all').addEventListener('click', navigateToMain);
+function initFooterNavigation() {
+  const footerBtns = document.querySelectorAll('.app-footer-nav .footer-nav-btn');
+  footerBtns.forEach((btn, idx) => {
+    btn.addEventListener('click', () => {
+      initAudio();
+      switchTab(idx);
+    });
+  });
+  switchTab(1);
+}
 
-document.getElementById('open-keywords-btn').addEventListener('click', () => {
-  renderKeywordsList();
-  pageKeywords.classList.add('open');
-});
-
-document.getElementById('open-all-from-keywords').addEventListener('click', () => {
-  renderAllHistoryList();
-  pageAllHistory.classList.add('open');
-});
-document.getElementById('open-all-from-history').addEventListener('click', () => {
-  renderAllHistoryList();
-  pageAllHistory.classList.add('open');
-});
-document.getElementById('open-all-from-detail').addEventListener('click', () => {
-  renderAllHistoryList();
-  pageAllHistory.classList.add('open');
-});
-
-document.getElementById('back-to-main').addEventListener('click', () => {
-  pageKeywords.classList.remove('open');
-  evaluateSensorCycle();
-});
-
-document.getElementById('back-to-keywords').addEventListener('click', () => {
-  pageHistory.classList.remove('open');
-  renderKeywordsList();
-});
-
-document.getElementById('back-to-history-list').addEventListener('click', () => {
-  pageSpotDetail.classList.remove('open');
-  if (appState.fromAllHistory) {
-    pageAllHistory.classList.add('open');
-  } else {
-    renderHistoryList();
-  }
-});
-
-document.getElementById('back-from-all').addEventListener('click', () => {
-  pageAllHistory.classList.remove('open');
-  evaluateSensorCycle();
-});
-
-const mainBottomPanel = document.getElementById('main-bottom-panel');
-let touchStartX = 0;
-let touchStartY = 0;
-
-mainBottomPanel.addEventListener('touchstart', (e) => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-mainBottomPanel.addEventListener('touchend', (e) => {
-  const diffX = e.changedTouches[0].clientX - touchStartX;
-  const diffY = e.changedTouches[0].clientY - touchStartY;
-  if (diffX < -60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
-    document.getElementById('open-keywords-btn').click();
-  }
-}, { passive: true });
-
-function setupSwipeNavigation(el, backCallback, forwardCallback) {
+function initCircularSwipeNavigation() {
+  const container = document.getElementById('app-container');
   let startX = 0;
-  el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-  el.addEventListener('touchend', (e) => {
+  let startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    if (document.getElementById('page-spot-detail').classList.contains('open') || document.getElementById('page-history').classList.contains('open')) {
+      return;
+    }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  container.addEventListener('touchend', (e) => {
+    if (document.getElementById('page-spot-detail').classList.contains('open') || document.getElementById('page-history').classList.contains('open')) {
+      return;
+    }
     const diffX = e.changedTouches[0].clientX - startX;
-    if (diffX > 75 && backCallback) {
-      backCallback();
-    } else if (diffX < -75 && forwardCallback) {
-      forwardCallback();
+    const diffY = e.changedTouches[0].clientY - startY;
+
+    if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+      if (diffX > 0) {
+        // 右へスワイプ（前の画面へ）
+        if (activePageIndex > 0) {
+          switchTab(activePageIndex - 1);
+        }
+      } else {
+        // 左へスワイプ（次の画面へ）
+        if (activePageIndex < pageElementsOrder.length - 1) {
+          switchTab(activePageIndex + 1);
+        }
+      }
     }
   }, { passive: true });
 }
 
-setupSwipeNavigation(pageKeywords, () => document.getElementById('back-to-main').click(), () => document.getElementById('open-all-from-keywords').click());
-setupSwipeNavigation(pageHistory, () => document.getElementById('back-to-keywords').click(), () => document.getElementById('open-all-from-history').click());
-setupSwipeNavigation(pageSpotDetail, () => document.getElementById('back-to-history-list').click(), () => document.getElementById('open-all-from-detail').click());
-setupSwipeNavigation(pageAllHistory, () => document.getElementById('back-from-all').click(), null);
+document.getElementById('back-to-keywords').addEventListener('click', () => {
+  document.getElementById('page-history').classList.remove('open');
+  renderKeywordsList();
+});
+
+document.getElementById('back-to-history-list').addEventListener('click', () => {
+  document.getElementById('page-spot-detail').classList.remove('open');
+});
+
+function renderChallengesList() {
+  const container = document.getElementById('challenges-list-container');
+  container.innerHTML = '';
+  const filterText = document.getElementById('challenge-filter').value.toLowerCase();
+
+  const dummyChallenges = [
+    { id: 'c1', name: 'チャレンジA', desc: '最初のチャレンジ項目です。' },
+    { id: 'c2', name: 'チャレンジB', desc: '中級者向けのチャレンジ項目です。' },
+    { id: 'c3', name: 'チャレンジC', desc: '上級者向けのチャレンジ項目です。' }
+  ];
+
+  const filtered = dummyChallenges.filter(c => c.name.toLowerCase().includes(filterText) || c.desc.toLowerCase().includes(filterText));
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: #889; padding: 40px 10px; font-size: 0.95rem;">チャレンジはありません。</div>`;
+    return;
+  }
+
+  filtered.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      <div class="list-item-row">
+        <div class="list-item-left">
+          <span class="list-item-title">${item.name}</span>
+          <div class="list-item-sub">${item.desc}</div>
+        </div>
+        <div class="item-right-actions">
+          <button class="btn-sheikah-sm btn-reset-search" data-key="${item.name}">SET</button>
+          <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
+        </div>
+      </div>
+    `;
+
+    div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('keyword-input').value = item.name;
+      document.getElementById('btn-input-clear').classList.add('show');
+      switchTab(1);
+      startSearchFromSet();
+    });
+
+    container.appendChild(div);
+  });
+}
 
 function renderKeywordsList() {
   const db = loadSavedData();
@@ -1612,14 +1647,14 @@ function renderKeywordsList() {
       document.getElementById('history-filter').value = '';
       document.getElementById('btn-history-filter-clear').classList.remove('show');
       renderHistoryList();
-      pageHistory.classList.add('open');
+      document.getElementById('page-history').classList.add('open');
     });
 
     div.querySelector('.btn-reset-search').addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById('keyword-input').value = k;
       document.getElementById('btn-input-clear').classList.add('show');
-      pageKeywords.classList.remove('open');
+      switchTab(1);
       startSearchFromSet();
     });
 
@@ -1902,10 +1937,7 @@ function setPinpointTargetAndStart(item) {
   document.getElementById('btn-input-clear').classList.add('show');
   document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
-  pageAllHistory.classList.remove('open');
-  pageSpotDetail.classList.remove('open');
-  pageHistory.classList.remove('open');
-  pageKeywords.classList.remove('open');
+  switchTab(1);
 
   appState.isTracking = true;
   appState.isPaused = false;
@@ -1917,13 +1949,6 @@ function openSpotDetailModal(item) {
   appState.selectedSpotForDetail = item;
   const t = I18N[currentLang];
   const db = loadSavedData();
-
-  const backBtn = document.getElementById('back-to-history-list');
-  if (appState.fromAllHistory) {
-    backBtn.textContent = currentLang === 'ja' ? '◀全て' : '◀All';
-  } else {
-    backBtn.textContent = currentLang === 'ja' ? '◀到達リスト' : '◀Places';
-  }
 
   document.getElementById('detail-spot-name').textContent = item.name;
   document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
@@ -1968,7 +1993,7 @@ function openSpotDetailModal(item) {
     if (confirm(t.confirmDeleteSingle(item.name))) {
       db.arrivals = db.arrivals.filter(a => a.id !== item.id);
       saveAppData(db);
-      pageSpotDetail.classList.remove('open');
+      document.getElementById('page-spot-detail').classList.remove('open');
       if (appState.fromAllHistory) {
         renderAllHistoryList();
       } else {
@@ -1984,7 +2009,7 @@ function openSpotDetailModal(item) {
     window.open(reviewUrl, '_blank');
   };
 
-  pageSpotDetail.classList.add('open');
+  document.getElementById('page-spot-detail').classList.add('open');
 
   const gallery = document.createElement('div');
   gallery.className = 'photo-gallery-scroll';
@@ -2074,6 +2099,7 @@ function loadPhotosAndMap(item, gallery, photosBox) {
   }, 80);
 }
 
+document.getElementById('challenge-filter').addEventListener('input', renderChallengesList);
 document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
 document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
 document.getElementById('history-filter').addEventListener('input', renderHistoryList);
