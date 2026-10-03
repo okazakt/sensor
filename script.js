@@ -1456,13 +1456,53 @@ document.getElementById('wakelock-toggle-btn').addEventListener('click', async (
   updateButtonStateUI();
 });
 
+let soundModeToastTimer = null;
+
+function showSoundModeToast() {
+  const toast = document.getElementById('sound-mode-toast');
+  if (!toast) return;
+
+  const t = I18N[currentLang];
+  if (appState.soundMode === 'headphone') {
+    toast.textContent = t.soundModeHeadphoneDesc;
+  } else if (appState.soundMode === 'speaker') {
+    toast.textContent = t.soundModeSpeakerDesc;
+  } else {
+    toast.textContent = t.soundModeMutedDesc;
+  }
+
+  toast.classList.add('show');
+
+  if (soundModeToastTimer) {
+    clearTimeout(soundModeToastTimer);
+  }
+
+  soundModeToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    soundModeToastTimer = null;
+  }, 2800);
+}
+
 document.getElementById('mute-toggle-btn').addEventListener('click', () => {
-  appState.isMuted = !appState.isMuted;
+  const modes = ['headphone', 'speaker', 'muted'];
+  const currentIndex = modes.indexOf(appState.soundMode);
+  appState.soundMode = modes[(currentIndex + 1) % modes.length];
+  appState.isMuted = appState.soundMode === 'muted';
+
+  localStorage.setItem('sheikah_sound_mode', appState.soundMode);
+
+  if (navigator.audioSession) {
+    navigator.audioSession.type =
+      appState.soundMode === 'speaker' ? 'playback' : 'transient';
+  }
+
   if (!appState.isMuted) {
     initAudio();
     playBeep(2000, 0.08);
   }
+
   updateButtonStateUI();
+  showSoundModeToast();
 });
 
 function stopSearchAndReset() {
@@ -1480,7 +1520,7 @@ function stopSearchAndReset() {
 
 async function startSearchFromSet() {
   initAudio();
-  playHtmlAudioTestBeep(2200, 0.15);
+  playBeep(2200);
   if (appState.wakeLockActive) requestWakeLock();
 
   const inputVal = document.getElementById('keyword-input').value.trim();
