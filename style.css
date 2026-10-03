@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "14";
+  --css-rev: "15";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -663,6 +663,7 @@ body {
 .dual-btn-row {
   display: flex;
   gap: 8px;
+  min-width: 0;
 }
 
 .btn-sheikah {
@@ -710,7 +711,8 @@ body {
 }
 
 .btn-sub-control {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   border-color: #556677;
   color: #778899;
   background: rgba(20, 25, 30, 0.6);
@@ -727,6 +729,7 @@ body {
   position: relative;
   white-space: nowrap;
   gap: 6px;
+  justify-content: flex-start;
 }
 
 .sound-mode-icons {
@@ -763,7 +766,10 @@ body {
 }
 
 #label-sound-state {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
+  text-align: center;
 }
 
 .sound-mode-toast {
