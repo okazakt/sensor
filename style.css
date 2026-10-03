@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "16";
+  --css-rev: "17";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -775,7 +775,7 @@ body {
 .sound-mode-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(180px + env(safe-area-inset-bottom));
+  bottom: calc(240px + env(safe-area-inset-bottom));
   z-index: 1000;
   width: min(calc(100vw - 32px), 420px);
   height: 58px;
