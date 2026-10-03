@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040811";
+const BASE_JS_VERSION = "v0.26.101.040815";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -2477,6 +2477,10 @@ document.getElementById('btn-pwa-skip').addEventListener('click', () => {
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
   document.getElementById('safety-prompt-overlay').classList.remove('show');
   initAudio();
+
+  if (appState.wakeLockActive) {
+    await requestWakeLock();
+  }
 
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
