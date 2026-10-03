@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.031822";
+const BASE_JS_VERSION = "v0.26.101.031900";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -654,7 +654,9 @@ function playBeep(freq = 1800, duration = 0.12) {
       "【音声診断】\n" +
       "AudioContext.state = " + audioCtx.state + "\n" +
       "currentTime = " + audioCtx.currentTime.toFixed(3) + "\n" +
-      "visibility = " + document.visibilityState
+      "visibility = " + document.visibilityState + "\n" +
+      "audioSession.type = " +
+      (navigator.audioSession ? navigator.audioSession.type : "not supported")
     );
   }
 
