@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="08">
+  <meta name="html-rev" content="10">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -120,162 +120,142 @@
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 5px; color: var(--sheikah-cyan);"></div>
     </div>
 
-    <!-- 上部：正円マップ -->
-    <div class="top-section">
-      <div class="relic-circuit"></div>
-      <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
-        <div id="map-container">
-          <div id="map"></div>
-          <div class="player-pointer" id="player-pointer">
-            <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#ffee33" />
-            </svg>
-          </div>
-          <div class="radar-pulse-ring" id="radar-pulse"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 立体ゴールドモールドライン -->
-    <div class="sheikah-divider-bar"></div>
-
-    <!-- 下部：操作パネル -->
-    <div class="bottom-section" id="main-bottom-panel">
-      <div class="input-row">
-        <div class="keyword-input-wrap">
-          <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
-          <button class="btn-input-clear" id="btn-input-clear">✕</button>
-        </div>
-
-        <div class="dial-lock" id="dial-btn">
-          <div class="dial-label">RADIUS</div>
-          <div class="dial-value" id="radius-val">3km</div>
-          <select class="dial-select-overlay" id="radius-select">
-            <option value="0">100m</option>
-            <option value="1">1km</option>
-            <option value="2" selected>3km</option>
-            <option value="3">10km</option>
-            <option value="4">50km</option>
-            <option value="5">100km</option>
-          </select>
-        </div>
-
-        <button class="btn-set" id="set-btn">SET</button>
-      </div>
-
-      <div class="status-panel">
-        <div>
-          <div class="target-meta-info" id="target-meta-info">[対象: 未設定 / 範囲: 3km]</div>
-          <div class="unknown-badge">
-            <span id="label-unvisited" style="font-size: 0.8rem; color: #889;">未踏:</span>
-            <span class="unknown-count" id="unknown-count">--</span>
-            <span id="label-detecting" style="font-size: 0.85rem; color: #bbb;">件探知中</span>
-          </div>
-        </div>
-        <div class="search-status-badge">
-          <div class="status-indicator paused" id="status-indicator">STANDBY</div>
-          <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">
-            --
-          </div>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-sheikah btn-pause-toggle paused" id="pause-toggle-btn">
-          <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          <span id="label-sensor-state">SENSOR: STANDBY</span>
-        </button>
-        <div class="dual-btn-row">
-          <button class="btn-sheikah btn-sub-control active" id="mute-toggle-btn">
-            <svg class="svg-icon" id="svg-sound" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-            <span id="label-sound-state">SOUND: ON</span>
-          </button>
-          <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">
-            <svg class="svg-icon" id="svg-wake" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>
-            </svg>
-            <span id="label-wake-state">WAKE LOCK: ON</span>
-          </button>
-        </div>
-        <button class="btn-sheikah" id="open-keywords-btn">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-          <span id="label-compendium-btn">到達済みリスト (図鑑)</span>
-        </button>
-      </div>
-
-      <div class="app-version-footer">
-        <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
-        <span><span class="app-build-ver-span"></span></span>
-      </div>
-    </div>
-
-    <!-- 画面：チャレンジ一覧 -->
-    <div class="slide-page pos-left" id="page-challenge">
+    <!-- 第1画面：チャレンジ一覧画面 -->
+    <div class="slide-page" id="page-challenges">
       <div class="page-header header-flex">
-        <div class="page-title-text" id="title-page-challenge">チャレンジ</div>
+        <div class="page-title-text" id="title-page-challenges">チャレンジ一覧</div>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
           <input type="text" id="challenge-filter" placeholder="チャレンジ絞り込み...">
           <button class="btn-input-clear" id="btn-challenge-filter-clear">✕</button>
         </div>
-        <select class="sheikah-select-box" id="sort-challenge">
-          <option value="default">標準順</option>
-        </select>
       </div>
-      <div class="list-scroll" id="challenge-list-container">
-        <!-- 仮置きのデータ -->
-        <div class="list-item">
+      <div class="list-scroll" id="challenges-list-container">
+        <!-- 仮コンテンツ -->
+        <div class="list-item" id="dummy-challenge-item">
           <div class="list-item-row">
             <div class="list-item-left">
-              <span class="list-item-title">チャレンジA</span>
+              <span class="list-item-title">試練の祠・探索チャレンジ（仮）</span>
+              <div class="list-item-sub">タップしてチャレンジ図鑑一覧へ</div>
             </div>
-            <div class="item-right-actions">
-              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-            </div>
-          </div>
-        </div>
-        <div class="list-item">
-          <div class="list-item-row">
-            <div class="list-item-left">
-              <span class="list-item-title">チャレンジB</span>
-            </div>
-            <div class="item-right-actions">
-              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-            </div>
-          </div>
-        </div>
-        <div class="list-item">
-          <div class="list-item-row">
-            <div class="list-item-left">
-              <span class="list-item-title">チャレンジC</span>
-            </div>
-            <div class="item-right-actions">
-              <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-            </div>
+            <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 画面：チャレンジ図鑑一覧 (子画面) -->
-    <div class="slide-page pos-left" id="page-challenge-history">
+    <!-- チャレンジ小画面：チャレンジ図鑑一覧（仮） -->
+    <div class="slide-page" id="page-challenge-keywords">
       <div class="page-header header-flex">
         <div class="header-left-group">
-          <button class="back-btn-mono" id="back-to-challenge">
-            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+          <button class="back-btn" id="back-to-challenges">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>チャレンジ一覧
           </button>
         </div>
-        <div class="page-title-text" id="challenge-history-header-title">チャレンジ名</div>
+        <div class="page-title-text">チャレンジ図鑑一覧</div>
+        <div style="width: 40px;"></div>
       </div>
-      <div class="list-scroll" id="challenge-history-list-container">
-        <!-- JSで動的に差し込み -->
+      <div class="list-scroll">
+        <div class="list-item" id="dummy-challenge-keyword-item">
+          <div class="list-item-left">
+            <span class="list-item-title">指定ターゲットA（仮）</span>
+            <div class="list-item-sub">タップして図鑑詳細へ</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 画面：探索履歴一覧 -->
-    <div class="slide-page pos-right" id="page-keywords">
+    <!-- 第2画面（メイン画面） -->
+    <div id="page-main-wrap" style="width: 100%; height: 100%; position: relative; display: flex; flex-direction: column;">
+      <!-- 上部：正円マップ -->
+      <div class="top-section">
+        <div class="relic-circuit"></div>
+        <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
+          <div id="map-container">
+            <div id="map"></div>
+            <div class="player-pointer" id="player-pointer">
+              <svg viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path id="pointer-path" d="M12 2L2 24L12 18.5L22 24L12 2Z" fill="#ffee33" />
+              </svg>
+            </div>
+            <div class="radar-pulse-ring" id="radar-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 立体ゴールドモールドライン -->
+      <div class="sheikah-divider-bar"></div>
+
+      <!-- 下部：操作パネル -->
+      <div class="bottom-section" id="main-bottom-panel">
+        <div class="input-row">
+          <div class="keyword-input-wrap">
+            <input type="text" id="keyword-input" value="" placeholder="探す対象を入力...">
+            <button class="btn-input-clear" id="btn-input-clear">✕</button>
+          </div>
+
+          <div class="dial-lock" id="dial-btn">
+            <div class="dial-label">RADIUS</div>
+            <div class="dial-value" id="radius-val">3km</div>
+            <select class="dial-select-overlay" id="radius-select">
+              <option value="0">100m</option>
+              <option value="1">1km</option>
+              <option value="2" selected>3km</option>
+              <option value="3">10km</option>
+              <option value="4">50km</option>
+              <option value="5">100km</option>
+            </select>
+          </div>
+
+          <button class="btn-set" id="set-btn">SET</button>
+        </div>
+
+        <div class="status-panel">
+          <div>
+            <div class="target-meta-info" id="target-meta-info">[対象: 未設定 / 範囲: 3km]</div>
+            <div class="unknown-badge">
+              <span id="label-unvisited" style="font-size: 0.8rem; color: #889;">未踏:</span>
+              <span class="unknown-count" id="unknown-count">--</span>
+              <span id="label-detecting" style="font-size: 0.85rem; color: #bbb;">件探知中</span>
+            </div>
+          </div>
+          <div class="search-status-badge">
+            <div class="status-indicator paused" id="status-indicator">STANDBY</div>
+            <div id="distance-info" style="font-size: 0.8rem; color: var(--sheikah-cyan); word-break: break-all;">
+              --
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-sheikah btn-pause-toggle paused" id="pause-toggle-btn" style="display: none;">
+            <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <span id="label-sensor-state">SENSOR: STANDBY</span>
+          </button>
+          <div class="dual-btn-row">
+            <button class="btn-sheikah btn-sub-control active" id="mute-toggle-btn">
+              <svg class="svg-icon" id="svg-sound" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              <span id="label-sound-state">SOUND: ON</span>
+            </button>
+            <button class="btn-sheikah btn-sub-control active" id="wakelock-toggle-btn">
+              <svg class="svg-icon" id="svg-wake" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
+              <span id="label-wake-state">WAKE LOCK: ON</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="app-version-footer">
+          <span id="label-footer-tip" style="color: #c5a059;">※消音時も円周の光とフラッシュで反応</span>
+          <span><span class="app-build-ver-span"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第3画面：探索履歴一覧（旧 図鑑キーワード） -->
+    <div class="slide-page" id="page-keywords">
       <div class="page-header header-flex">
-        <div class="page-title-text" id="title-page-keywords">探索履歴</div>
+        <div class="page-title-text" id="title-page-keywords">探索履歴一覧</div>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -294,15 +274,34 @@
       <div class="list-scroll" id="keywords-list-container"></div>
     </div>
 
-    <!-- 画面：履歴図鑑一覧 (探索履歴一覧の子画面) -->
-    <div class="slide-page pos-right" id="page-history">
+    <!-- 第4画面：図鑑一覧（旧 全スポット一覧） -->
+    <div class="slide-page" id="page-all-history">
+      <div class="page-header header-flex">
+        <div class="page-title-text" id="all-header-title">図鑑一覧</div>
+      </div>
+      <div class="filter-bar">
+        <div class="sheikah-input-wrap">
+          <input type="text" id="all-history-filter" placeholder="全スポット絞り込み...">
+          <button class="btn-input-clear" id="btn-all-history-filter-clear">✕</button>
+        </div>
+        <select class="sheikah-select-box" id="sort-all-history">
+          <option value="near_asc" id="opt-asort-near">現在地から近い順</option>
+          <option value="date_desc" id="opt-asort-desc">到達日時が新しい順</option>
+          <option value="date_asc" id="opt-asort-asc">到達日時が古い順</option>
+          <option value="name_asc" id="opt-asort-name">名称あいうえお順</option>
+        </select>
+      </div>
+      <div class="list-scroll" id="all-history-list-container"></div>
+    </div>
+
+    <!-- サブ画面：履歴図鑑一覧（個別キーワード） -->
+    <div class="slide-page" id="page-history" style="z-index: 120;">
       <div class="page-header header-flex">
         <div class="header-left-group">
-          <button class="back-btn-mono" id="back-to-keywords">
-            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
-          </button>
+          <button class="back-btn" id="back-to-keywords"><svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>探索履歴一覧</button>
         </div>
-        <div class="page-title-text" id="history-header-title">到達履歴</div>
+        <div class="page-title-text" id="history-header-title" style="width: auto;">履歴図鑑一覧</div>
+        <div style="width: 40px;"></div>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -322,35 +321,14 @@
       <div class="list-scroll" id="history-list-container"></div>
     </div>
 
-    <!-- 画面：図鑑一覧 -->
-    <div class="slide-page pos-right" id="page-all-history">
-      <div class="page-header header-flex">
-        <div class="page-title-text" id="all-header-title">図鑑</div>
-      </div>
-      <div class="filter-bar">
-        <div class="sheikah-input-wrap">
-          <input type="text" id="all-history-filter" placeholder="全スポット絞り込み...">
-          <button class="btn-input-clear" id="btn-all-history-filter-clear">✕</button>
-        </div>
-        <select class="sheikah-select-box" id="sort-all-history">
-          <option value="near_asc" id="opt-asort-near">現在地から近い順</option>
-          <option value="date_desc" id="opt-asort-desc">到達日時が新しい順</option>
-          <option value="date_asc" id="opt-asort-asc">到達日時が古い順</option>
-          <option value="name_asc" id="opt-asort-name">名称あいうえお順</option>
-        </select>
-      </div>
-      <div class="list-scroll" id="all-history-list-container"></div>
-    </div>
-
-    <!-- 画面：図鑑詳細 (各所から再利用) -->
-    <div class="slide-page pos-right" id="page-spot-detail">
+    <!-- サブ画面：図鑑詳細 -->
+    <div class="slide-page" id="page-spot-detail" style="z-index: 150;">
       <div class="page-header header-flex">
         <div class="header-left-group">
-          <button class="back-btn-mono" id="back-to-history-list">
-            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
-          </button>
+          <button class="back-btn" id="back-to-history-list"><svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>戻る</button>
         </div>
-        <div class="page-title-text" id="detail-header-title">図鑑詳細</div>
+        <div class="page-title-text" id="detail-header-title" style="width: auto;">図鑑詳細</div>
+        <div style="width: 40px;"></div>
       </div>
       <div class="spot-detail-content">
         <div class="detail-card-panel">
@@ -383,26 +361,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 位置固定 ボトムナビゲーション -->
-    <nav class="bottom-nav-bar" id="bottom-nav-bar">
-      <!-- 1. チャレンジ -->
-      <button class="nav-item" id="nav-challenge">
-        <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
-      </button>
-      <!-- 2. メイン -->
-      <button class="nav-item active" id="nav-main">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-      </button>
-      <!-- 3. 図鑑キーワード -->
-      <button class="nav-item" id="nav-keywords">
-        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-      </button>
-      <!-- 4. 全スポット -->
-      <button class="nav-item" id="nav-all">
-        <svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
-      </button>
-    </nav>
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
