@@ -588,77 +588,44 @@ mapContrastBtn.addEventListener('click', () => {
 
 let audioCtx = null;
 let silentAudioElement = null;
-let audioDebugDetectionLogged = false;
-
-// 一時テスト用：Web AudioではなくHTMLAudioElementでビープ音を再生
-function playHtmlAudioTestBeep(freq = 2200, duration = 0.15) {
-  if (appState.isMuted) return;
-
-  const sampleRate = 44100;
-  const sampleCount = Math.floor(sampleRate * duration);
-  const buffer = new ArrayBuffer(44 + sampleCount * 2);
-  const view = new DataView(buffer);
-
-  function writeString(offset, text) {
-    for (let i = 0; i < text.length; i++) {
-      view.setUint8(offset + i, text.charCodeAt(i));
-    }
-  }
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + sampleCount * 2, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeString(36, 'data');
-  view.setUint32(40, sampleCount * 2, true);
-
-  for (let i = 0; i < sampleCount; i++) {
-    const fade = 1 - (i / sampleCount);
-    const sample = Math.sin(2 * Math.PI * freq * i / sampleRate);
-    view.setInt16(44 + i * 2, sample * fade * 24000, true);
-  }
-
-  const blob = new Blob([buffer], { type: 'audio/wav' });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.volume = 0.8;
-
-  const cleanup = () => URL.revokeObjectURL(url);
-  audio.addEventListener('ended', cleanup, { once: true });
-  audio.addEventListener('error', cleanup, { once: true });
-
-  audio.play().catch((err) => {
-    console.warn('HTMLAudioElement test beep failed:', err);
-    cleanup();
-  });
-}
 
 function initAudio() {
+  appState.isMuted = appState.soundMode === 'muted';
+
+  // MUTEDでは音声系を起動しない。
+  // playback状態から切り替わった場合もtransientへ戻す。
+  if (appState.isMuted) {
+    if (navigator.audioSession) {
+      navigator.audioSession.type = 'transient';
+    }
+    return;
+  }
+
+  // HEADPHONE = transient
+  // SPEAKER   = playback
+  if (navigator.audioSession) {
+    navigator.audioSession.type =
+      appState.soundMode === 'speaker' ? 'playback' : 'transient';
+  }
+
   if (!silentAudioElement) {
     silentAudioElement = new Audio();
     silentAudioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
     silentAudioElement.loop = true;
   }
+
   try {
     silentAudioElement.play().catch(() => {});
   } catch (e) {}
-  
+
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (navigator.audioSession) {
-    navigator.audioSession.type = 'transient';
-  }
+
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
+
   try {
     const buffer = audioCtx.createBuffer(1, 1, 22050);
     const source = audioCtx.createBufferSource();
