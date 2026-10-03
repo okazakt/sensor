@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "06";
+  --css-rev: "07";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -467,7 +467,7 @@ body {
 
 .bottom-section {
   width: 100%;
-  height: 48vh;
+  height: calc(48vh - 54px);
   background: var(--sheikah-panel);
   padding: 10px 16px 8px 16px;
   display: flex;
@@ -732,6 +732,51 @@ body {
   margin-top: 2px;
 }
 
+/* 固定フッターナビゲーション */
+.app-footer-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: calc(54px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #0d1114;
+  border-top: 1.5px solid var(--sheikah-gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 200;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.85);
+}
+
+.footer-nav-btn {
+  background: transparent;
+  border: none;
+  color: #556677;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.footer-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+}
+.footer-nav-btn.active {
+  color: var(--sheikah-cyan);
+}
+.footer-nav-btn.active svg {
+  filter: drop-shadow(0 0 8px var(--sheikah-cyan));
+}
+.footer-nav-btn:active {
+  transform: scale(0.9);
+}
+
 /* 全スライドページ共通 */
 .slide-page {
   position: absolute;
@@ -807,20 +852,6 @@ body {
   white-space: nowrap;
   flex: 1;
 }
-.btn-all-history {
-  background: rgba(255, 170, 0, 0.12);
-  border: 1.5px solid #ffaa00;
-  color: #ffbb33;
-  padding: 5px 10px;
-  font-size: 0.76rem;
-  border-radius: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.btn-all-history:active {
-  background: #ffaa00;
-  color: #000;
-}
 
 .back-btn {
   color: var(--sheikah-cyan);
@@ -839,30 +870,6 @@ body {
 .back-btn:active {
   background: var(--sheikah-cyan);
   color: #000;
-}
-
-.btn-home-shortcut {
-  color: var(--sheikah-gold);
-  background: rgba(197, 160, 89, 0.12);
-  border: 1.5px solid var(--sheikah-gold);
-  cursor: pointer;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-  padding: 0;
-}
-.btn-home-shortcut:active {
-  background: var(--sheikah-gold);
-  color: #000;
-}
-.btn-home-shortcut .svg-icon {
-  width: 16px;
-  height: 16px;
 }
 
 .filter-bar {
@@ -936,7 +943,7 @@ body {
 .list-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 14px;
+  padding: 12px 14px calc(64px + env(safe-area-inset-bottom)) 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1060,7 +1067,7 @@ body {
 .spot-detail-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 16px 16px calc(64px + env(safe-area-inset-bottom)) 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
