@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.032132";
+const BASE_JS_VERSION = "v0.26.101.032220";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -97,8 +97,18 @@ if (!lastCacheTime) {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    // バックグラウンドでは方角センサーの更新が保証されないため、
+    // 古い方角判定のまま探知音を鳴らし続けないよう停止する。
+    if (radarTimer) {
+      clearTimeout(radarTimer);
+      radarTimer = null;
+    }
+    scheduledInterval = null;
+    return;
+  }
+
   if (document.visibilityState === 'visible') {
-    
     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
     if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
       localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
@@ -110,6 +120,12 @@ document.addEventListener('visibilitychange', () => {
         }).catch(() => {});
       }
       window.location.reload(true);
+      return;
+    }
+
+    // 復帰後は現在の位置・方角情報から探知状態を再判定する。
+    if (appState.isTracking && !appState.isPaused) {
+      evaluateSensorCycle();
     }
   }
 });
