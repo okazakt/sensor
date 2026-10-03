@@ -4,15 +4,15 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.020845";
+const BASE_JS_VERSION = "v0.26.103.103600";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "02";
+  if (!cssRev) cssRev = "06";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
   
@@ -23,11 +23,11 @@ const BASE_JS_VERSION = "v0.26.101.020845";
 
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "04";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "02";
+  if (!cssRev) cssRev = "06";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.textContent = fullVersion;
   });
 
-  setupDataTransferEasterEgg();
+  setupSwipeSystem();
 });
 
 window.addEventListener('error', function(event) {
@@ -119,9 +119,8 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→EN",
-    compendiumBtn: "到達済みリスト (図鑑)",
     footerTip: "※消音時も円周の光とフラッシュで反応",
-    keywordsTitle: "図鑑キーワード",
+    keywordsTitle: "探索履歴一覧",
     filterKeywordsPlaceholder: "キーワード絞り込み...",
     filterHistoryPlaceholder: "到達スポット絞り込み...",
     sortSearch: "検索日時順",
@@ -129,8 +128,10 @@ const I18N = {
     sortCount: "到達件数降順",
     cleanZeroBtn: "到達0件の履歴を一括削除",
     deleteCurrentKeyBtn: "このキーワードの履歴を一括削除",
-    spotDetailTitle: "スポット詳細",
-    allHistoryTitle: "全スポット一覧",
+    backToKeywords: "◀探索履歴一覧",
+    backToHistory: "◀履歴図鑑一覧",
+    spotDetailTitle: "図鑑詳細",
+    allHistoryTitle: "図鑑一覧",
     deleteBtn: "削除",
     sortHNear: "現在地から近い順",
     sortHDesc: "到達日時が新しい順",
@@ -170,7 +171,8 @@ const I18N = {
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
     confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
-    noZeroKeywords: "削除対象となる到達0件の履歴はありません。"
+    noZeroKeywords: "削除対象となる到達0件の履歴はありません。",
+    confirmEndSearch: "探索を終了しますか？"
   },
   en: {
     inputPlaceholder: "Enter search keyword...",
@@ -188,9 +190,8 @@ const I18N = {
     wakeLockOn: "WAKE LOCK: ON",
     wakeLockOff: "WAKE LOCK: OFF",
     langSwitchLabel: "→JP",
-    compendiumBtn: "Discovered List (Atlas)",
     footerTip: "Visual ring pulses even in mute mode",
-    keywordsTitle: "Atlas Keywords",
+    keywordsTitle: "Search History",
     filterKeywordsPlaceholder: "Filter keywords...",
     filterHistoryPlaceholder: "Filter places...",
     sortSearch: "By Search Date",
@@ -198,8 +199,10 @@ const I18N = {
     sortCount: "By Discovery Count",
     cleanZeroBtn: "Delete Zero-Hit Records",
     deleteCurrentKeyBtn: "Delete This Keyword's History",
-    spotDetailTitle: "Place Details",
-    allHistoryTitle: "All Discovered Spots",
+    backToKeywords: "◀History",
+    backToHistory: "◀Places",
+    spotDetailTitle: "Spot Detail",
+    allHistoryTitle: "Compendium",
     deleteBtn: "Delete",
     sortHNear: "By Distance (Nearest)",
     sortHDesc: "Newest First",
@@ -239,7 +242,8 @@ const I18N = {
     confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
     confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
     confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
-    noZeroKeywords: "No zero-discovery keywords found."
+    noZeroKeywords: "No zero-discovery keywords found.",
+    confirmEndSearch: "End the current search?"
   }
 };
 
@@ -399,9 +403,11 @@ function applyLanguage(lang) {
   const t = I18N[lang];
 
   document.getElementById('keyword-input').placeholder = t.inputPlaceholder;
+  if (!appState.isTracking) {
+    document.getElementById('set-btn').textContent = t.btnSet;
+  }
   document.getElementById('label-unvisited').textContent = t.unvisited;
   document.getElementById('label-detecting').textContent = t.detecting;
-  document.getElementById('label-compendium-btn').textContent = t.compendiumBtn;
   document.getElementById('label-footer-tip').textContent = t.footerTip;
   document.getElementById('title-page-keywords').textContent = t.keywordsTitle;
   document.getElementById('keyword-filter').placeholder = t.filterKeywordsPlaceholder;
@@ -411,6 +417,8 @@ function applyLanguage(lang) {
   document.getElementById('opt-sort-count').textContent = t.sortCount;
   document.getElementById('btn-delete-zero-keywords').textContent = t.cleanZeroBtn;
   document.getElementById('btn-delete-current-keyword').textContent = t.deleteCurrentKeyBtn;
+  document.getElementById('back-to-keywords').textContent = t.backToKeywords;
+  document.getElementById('back-to-history-list').textContent = t.backToHistory;
   document.getElementById('detail-header-title').textContent = t.spotDetailTitle;
   document.getElementById('all-header-title').textContent = t.allHistoryTitle;
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
@@ -476,9 +484,9 @@ function triggerDataTransferPrompt() {
   const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
 
   const choice = prompt(
-    "【Sheikah Slate Data Transfer】\n" +
-    "1: 引き継ぎコードを発行（コピーしてPWA側へ移す）\n" +
-    "2: 引き継ぎコードを読み込む（データを復元する）\n" +
+    "【Data Transfer】\n" +
+    "1: 引き継ぎコードを発行\n" +
+    "2: 引き継ぎコードを読み込む\n" +
     "半角数字「1」または「2」を入力してください:",
     "1"
   );
@@ -486,15 +494,15 @@ function triggerDataTransferPrompt() {
   if (choice === "1") {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(base64Code).then(() => {
-        alert("引き継ぎコードをクリップボードにコピーしました！\nホーム画面のPWAを開き、裏コマンドから「2」で貼り付けてください。");
+        alert("引き継ぎコードをコピーしました！");
       }).catch(() => {
-        prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+        prompt("引き継ぎコード:", base64Code);
       });
     } else {
-      prompt("以下の引き継ぎコードを全選択してコピーしてください:", base64Code);
+      prompt("引き継ぎコード:", base64Code);
     }
   } else if (choice === "2") {
-    const inputCode = prompt("コピーした引き継ぎコードを貼り付けてください:");
+    const inputCode = prompt("コードを貼り付けてください:");
     if (inputCode && inputCode.trim()) {
       try {
         const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
@@ -502,12 +510,12 @@ function triggerDataTransferPrompt() {
         if (restoredDb && restoredDb.arrivals) {
           saveAppData(restoredDb);
           renderKeywordsList();
-          alert("データの引き継ぎが完了しました！");
+          alert("復元完了しました！");
         } else {
-          alert("無効な引き継ぎコードです。");
+          alert("無効なコードです。");
         }
       } catch (e) {
-        alert("引き継ぎコードの解析に失敗しました。正しいコードを入力してください。");
+        alert("コード解析に失敗しました。");
       }
     }
   }
@@ -678,7 +686,6 @@ function playTreasureFanfare() {
 }
 
 const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
-
 let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
 let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
 
@@ -708,6 +715,7 @@ let appState = {
   selectedKeywordForHistory: null,
   selectedSpotForDetail: null,
   fromAllHistory: false,
+  fromChallenge: false,
   places: [],
   pinpointTarget: null
 };
@@ -718,7 +726,6 @@ let compassActive = false;
 let placesService = null;
 let isSearchInProgress = false;
 let detailMinimapInstance = null;
-let lastSearchTimestamp = 0; // 高速移動時のスロットル用
 
 function loadSavedData() {
   const data = localStorage.getItem('sheikah_db_v1');
@@ -1118,8 +1125,7 @@ function onPositionUpdate(pos) {
   }
 
   if (map) {
-    // 高速移動時の追従を滑らかにするため panTo に変更
-    map.panTo(newPos);
+    map.setCenter(newPos);
   }
 
   if (!appState.pinpointTarget) {
@@ -1143,13 +1149,8 @@ function onPositionUpdate(pos) {
 }
 
 function executeSearch() {
-  const now = Date.now();
-  // 連続探索によるメインスレッドブロックを防止（5秒間のスロットル）
-  if (now - lastSearchTimestamp < 5000) return;
-
   if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
   isSearchInProgress = true;
-  lastSearchTimestamp = now;
   appState.lastSearchedPos = { ...appState.currentPos };
   const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
@@ -1209,13 +1210,11 @@ document.getElementById('radius-select').addEventListener('change', (e) => {
   document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
   localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
   if (appState.isTracking) {
-    lastSearchTimestamp = 0; // 手動変更時は即時反映
     executeSearch();
   }
 });
 
 function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
-  if(!inputEl || !clearBtnEl) return;
   function check() {
     if (inputEl.value.trim().length > 0) {
       clearBtnEl.classList.add('show');
@@ -1235,10 +1234,46 @@ function setupInputClear(inputEl, clearBtnEl, onClearCallback) {
   });
 }
 
-setupInputClear(
-  document.getElementById('keyword-input'),
-  document.getElementById('btn-input-clear')
-);
+const keywordInputEl = document.getElementById('keyword-input');
+const btnInputClearEl = document.getElementById('btn-input-clear');
+
+function checkMainInputClearState() {
+  if (keywordInputEl.value.trim().length > 0) {
+    btnInputClearEl.classList.add('show');
+  } else {
+    btnInputClearEl.classList.remove('show');
+  }
+}
+keywordInputEl.addEventListener('input', checkMainInputClearState);
+checkMainInputClearState();
+
+btnInputClearEl.addEventListener('click', (e) => {
+  e.preventDefault();
+  const t = I18N[currentLang];
+  if (appState.isTracking) {
+    if (!confirm(t.confirmEndSearch)) {
+      return;
+    }
+    stopSearchAndReset();
+  }
+  keywordInputEl.value = '';
+  checkMainInputClearState();
+  keywordInputEl.focus();
+});
+
+keywordInputEl.addEventListener('focus', () => {
+  if (appState.isTracking && keywordInputEl.value.trim() !== "") {
+    const t = I18N[currentLang];
+    if (confirm(t.confirmEndSearch)) {
+      stopSearchAndReset();
+      keywordInputEl.value = '';
+      checkMainInputClearState();
+    } else {
+      keywordInputEl.blur();
+    }
+  }
+});
+
 setupInputClear(
   document.getElementById('keyword-filter'),
   document.getElementById('btn-keyword-filter-clear'),
@@ -1258,27 +1293,26 @@ setupInputClear(
 function updateButtonStateUI() {
   const t = I18N[currentLang];
   const indicator = document.getElementById('status-indicator');
-  const pauseBtn = document.getElementById('pause-toggle-btn');
-  const svgSensor = document.getElementById('svg-sensor');
+  const setBtn = document.getElementById('set-btn');
   const labelSensor = document.getElementById('label-sensor-state');
 
   if (!appState.isTracking) {
     indicator.textContent = t.standby;
     indicator.className = "status-indicator paused";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    setBtn.className = "btn-set";
+    setBtn.innerHTML = t.btnSet;
     labelSensor.textContent = t.sensorStandby;
   } else if (appState.isPaused) {
     indicator.textContent = t.paused;
     indicator.className = "status-indicator paused";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle paused";
-    svgSensor.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    setBtn.className = "btn-set paused";
+    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>`;
     labelSensor.textContent = t.sensorPaused;
   } else {
     indicator.textContent = t.searching;
     indicator.className = "status-indicator active";
-    pauseBtn.className = "btn-sheikah btn-pause-toggle";
-    svgSensor.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    setBtn.className = "btn-set active";
+    setBtn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
     labelSensor.textContent = t.sensorActive;
   }
 
@@ -1349,6 +1383,19 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
   updateButtonStateUI();
 });
 
+function stopSearchAndReset() {
+  appState.isTracking = false;
+  appState.isPaused = false;
+  appState.activeKeyword = "";
+  if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+  scheduledInterval = null;
+  updateVisualRing('idle');
+  document.getElementById('unknown-count').textContent = "--";
+  document.getElementById('distance-info').textContent = "--";
+  document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta("", getRadiusText(RADIUS_OPTIONS[radiusIndex]));
+  updateButtonStateUI();
+}
+
 async function startSearchFromSet() {
   initAudio();
   playBeep(2200);
@@ -1364,7 +1411,6 @@ async function startSearchFromSet() {
   appState.pinpointTarget = null;
   appState.isTracking = true;
   appState.isPaused = false;
-  lastSearchTimestamp = 0; // 手動操作時はスロットルをリセット
 
   const db = loadSavedData();
   const now = new Date().toISOString();
@@ -1390,147 +1436,158 @@ async function startSearchFromSet() {
   }
 }
 
-document.getElementById('set-btn').addEventListener('click', startSearchFromSet);
+document.getElementById('set-btn').addEventListener('click', () => {
+  initAudio();
+  if (!appState.isTracking) {
+    startSearchFromSet();
+  } else {
+    appState.isPaused = !appState.isPaused;
+    if (appState.isPaused) {
+      if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+      scheduledInterval = null;
+    }
+    updateButtonStateUI();
+    evaluateSensorCycle();
+  }
+});
+
 document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
 
-document.getElementById('pause-toggle-btn').addEventListener('click', () => {
-  initAudio();
-  if (!appState.isTracking) {
-    startSearchFromSet();
-    return;
-  }
+// ============================================================
+// 画面遷移 & スワイプ制御システム
+// ============================================================
 
-  appState.isPaused = !appState.isPaused;
-  if (appState.isPaused) {
-    if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
-    scheduledInterval = null;
-  }
-  updateButtonStateUI();
-  evaluateSensorCycle();
-});
-
+const pageChallenges = document.getElementById('page-challenges');
+const pageChallengeKeywords = document.getElementById('page-challenge-keywords');
+const pageMainWrap = document.getElementById('page-main-wrap');
 const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
 const pageSpotDetail = document.getElementById('page-spot-detail');
 const pageAllHistory = document.getElementById('page-all-history');
-const pageChallenge = document.getElementById('page-challenge');
 
-// --- ページ管理とスワイプ処理 (アニメーション方向制御) ---
-const MAIN_PAGES = [
-  { id: 'challenge', el: pageChallenge },
-  { id: 'main', el: null },
-  { id: 'keywords', el: pageKeywords },
-  { id: 'all', el: pageAllHistory }
-];
-let currentMainPageIndex = 1;
+function navigateToMain() {
+  pageAllHistory.classList.remove('open');
+  pageSpotDetail.classList.remove('open');
+  pageHistory.classList.remove('open');
+  pageKeywords.classList.remove('open');
+  pageChallengeKeywords.classList.remove('open');
+  pageChallenges.classList.remove('open');
+  evaluateSensorCycle();
+}
 
-function switchMainPage(newIndex) {
-  if (newIndex < 0) newIndex = MAIN_PAGES.length - 1;
-  if (newIndex >= MAIN_PAGES.length) newIndex = 0;
-  
-  const navItems = [
-    document.getElementById('nav-challenge'),
-    document.getElementById('nav-main'),
-    document.getElementById('nav-keywords'),
-    document.getElementById('nav-all')
-  ];
-  
-  navItems.forEach((el, idx) => {
-    if (el) {
-      if (idx === newIndex) el.classList.add('active');
-      else el.classList.remove('active');
-    }
-  });
+function bindSwipe(el, onSwipeLeft, onSwipeRight) {
+  if (!el) return;
+  let startX = 0;
+  let startY = 0;
 
-  MAIN_PAGES.forEach((page, idx) => {
-    if (page.el) {
-      // クラスをリセット
-      page.el.classList.remove('pos-left', 'pos-right', 'open');
+  el.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
 
-      if (idx < newIndex) {
-        // 現在より左にあるページは左に待機
-        page.el.classList.add('pos-left');
-      } else if (idx > newIndex) {
-        // 現在より右にあるページは右に待機
-        page.el.classList.add('pos-right');
-      } else {
-        // 表示するページ
-        page.el.classList.add('open');
+  el.addEventListener('touchend', (e) => {
+    const diffX = e.changedTouches[0].clientX - startX;
+    const diffY = e.changedTouches[0].clientY - startY;
+
+    if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+      if (diffX < 0 && onSwipeLeft) {
+        onSwipeLeft();
+      } else if (diffX > 0 && onSwipeRight) {
+        onSwipeRight();
       }
     }
+  }, { passive: true });
+}
+
+function setupSwipeSystem() {
+  // 仮コンテンツタップ挙動
+  document.getElementById('dummy-challenge-item')?.addEventListener('click', () => {
+    pageChallengeKeywords.classList.add('open');
+  });
+  document.getElementById('dummy-challenge-keyword-item')?.addEventListener('click', () => {
+    appState.fromChallenge = true;
+    appState.fromAllHistory = false;
+    document.getElementById('detail-spot-name').textContent = "チャレンジターゲットA（仮）";
+    document.getElementById('detail-spot-address').textContent = "仮のコンテンツです";
+    pageSpotDetail.classList.add('open');
+  });
+  document.getElementById('back-to-challenges')?.addEventListener('click', () => {
+    pageChallengeKeywords.classList.remove('open');
+  });
+  document.getElementById('back-to-keywords')?.addEventListener('click', () => {
+    pageHistory.classList.remove('open');
+  });
+  document.getElementById('back-to-history-list')?.addEventListener('click', () => {
+    pageSpotDetail.classList.remove('open');
   });
 
-  if (MAIN_PAGES[newIndex].id === 'keywords') renderKeywordsList();
-  if (MAIN_PAGES[newIndex].id === 'all') renderAllHistoryList();
-  if (MAIN_PAGES[newIndex].id === 'main') evaluateSensorCycle();
+  // 1. チャレンジ一覧：左スワイプ時メインへ／右スワイプ不可
+  bindSwipe(pageChallenges, () => {
+    pageChallenges.classList.remove('open');
+  }, null);
 
-  // 子画面も閉じる
-  document.getElementById('page-history').classList.remove('open');
-  document.getElementById('page-spot-detail').classList.remove('open');
+  // 1-1. チャレンジ図鑑一覧：左スワイプ時メインへ／右スワイプ時チャレンジ一覧へ戻る
+  bindSwipe(pageChallengeKeywords, () => {
+    pageChallengeKeywords.classList.remove('open');
+    pageChallenges.classList.remove('open');
+  }, () => {
+    pageChallengeKeywords.classList.remove('open');
+  });
 
-  currentMainPageIndex = newIndex;
-}
+  // 2. メイン：左スワイプ時探索履歴一覧へ／右スワイプ時チャレンジ一覧へ
+  bindSwipe(pageMainWrap, () => {
+    renderKeywordsList();
+    pageKeywords.classList.add('open');
+  }, () => {
+    pageChallenges.classList.add('open');
+  });
 
-if (document.getElementById('nav-challenge')) {
-  document.getElementById('nav-challenge').addEventListener('click', () => switchMainPage(0));
-  document.getElementById('nav-main').addEventListener('click', () => switchMainPage(1));
-  document.getElementById('nav-keywords').addEventListener('click', () => switchMainPage(2));
-  document.getElementById('nav-all').addEventListener('click', () => switchMainPage(3));
-}
-
-let globalTouchStartX = 0;
-let globalTouchStartY = 0;
-document.getElementById('app-container').addEventListener('touchstart', (e) => {
-  if (e.target.closest('.photo-gallery-scroll') || e.target.closest('.list-scroll') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select') return;
-  globalTouchStartX = e.touches[0].clientX;
-  globalTouchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-document.getElementById('app-container').addEventListener('touchend', (e) => {
-  if (e.target.closest('.photo-gallery-scroll') || e.target.closest('.list-scroll') || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select') return;
-  const diffX = e.changedTouches[0].clientX - globalTouchStartX;
-  const diffY = e.changedTouches[0].clientY - globalTouchStartY;
-  
-  if (Math.abs(diffY) > Math.abs(diffX) * 1.5) return;
-
-  if (diffX > 75) { 
-    // 右スワイプ（指を右へ動かす）：左画面へ戻る/移動
-    if (document.getElementById('page-spot-detail').classList.contains('open')) {
-      document.getElementById('back-to-history-list').click();
-      return;
-    }
-    if (document.getElementById('page-history').classList.contains('open')) {
-      document.getElementById('back-to-keywords').click();
-      return;
-    }
-    switchMainPage(currentMainPageIndex - 1);
-  } else if (diffX < -75) {
-    // 左スワイプ（指を左へ動かす）：右画面へ進む/移動
-    // 子画面が開いていても、親の「右」へ移動する
-    switchMainPage(currentMainPageIndex + 1);
-  }
-}, { passive: true });
-// ----------------------------------------
-
-document.getElementById('open-keywords-btn').addEventListener('click', () => {
-  switchMainPage(2);
-});
-
-document.getElementById('back-to-keywords').addEventListener('click', () => {
-  pageHistory.classList.remove('open');
-  renderKeywordsList();
-});
-
-document.getElementById('back-to-history-list').addEventListener('click', () => {
-  pageSpotDetail.classList.remove('open');
-  if (appState.fromAllHistory) {
+  // 3. 探索履歴一覧：左スワイプ時図鑑一覧へ／右スワイプ時メインへ
+  bindSwipe(pageKeywords, () => {
+    renderAllHistoryList();
     pageAllHistory.classList.add('open');
-  } else {
-    renderHistoryList();
-  }
-});
+  }, () => {
+    pageKeywords.classList.remove('open');
+  });
+
+  // 3-1. 履歴図鑑一覧：左スワイプ時図鑑一覧へ／右スワイプ時探索履歴一覧へもどる
+  bindSwipe(pageHistory, () => {
+    renderAllHistoryList();
+    pageAllHistory.classList.add('open');
+  }, () => {
+    pageHistory.classList.remove('open');
+  });
+
+  // 4. 図鑑一覧：左スワイプ不可／右スワイプ時探索履歴一覧へ
+  bindSwipe(pageAllHistory, null, () => {
+    pageAllHistory.classList.remove('open');
+  });
+
+  // 5. 図鑑詳細
+  bindSwipe(pageSpotDetail, () => {
+    // 左スワイプ時
+    if (appState.fromChallenge) {
+      navigateToMain();
+    } else if (appState.fromAllHistory) {
+      // 図鑑一覧配下：左スワイプ不可
+    } else {
+      // 履歴配下：図鑑一覧へ進む
+      renderAllHistoryList();
+      pageAllHistory.classList.add('open');
+    }
+  }, () => {
+    // 右スワイプ時（親画面に戻る）
+    if (appState.fromChallenge) {
+      pageSpotDetail.classList.remove('open');
+    } else if (appState.fromAllHistory) {
+      pageSpotDetail.classList.remove('open');
+    } else {
+      pageSpotDetail.classList.remove('open');
+    }
+  });
+}
 
 function renderKeywordsList() {
   const db = loadSavedData();
@@ -1589,7 +1646,7 @@ function renderKeywordsList() {
       e.stopPropagation();
       document.getElementById('keyword-input').value = k;
       document.getElementById('btn-input-clear').classList.add('show');
-      switchMainPage(1); // 検索のためにメイン画面へ戻る
+      pageKeywords.classList.remove('open');
       startSearchFromSet();
     });
 
@@ -1704,6 +1761,7 @@ function renderHistoryList() {
       div.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') return;
         appState.fromAllHistory = false;
+        appState.fromChallenge = false;
         openSpotDetailModal(item);
       });
 
@@ -1813,6 +1871,7 @@ function renderAllHistoryList() {
       div.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') return;
         appState.fromAllHistory = true;
+        appState.fromChallenge = false;
         openSpotDetailModal(item);
       });
 
@@ -1872,11 +1931,10 @@ function setPinpointTargetAndStart(item) {
   document.getElementById('btn-input-clear').classList.add('show');
   document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
-  switchMainPage(1); // メイン画面へ
+  navigateToMain();
 
   appState.isTracking = true;
   appState.isPaused = false;
-  lastSearchTimestamp = 0; // 手動設定時はスロットルリセット
   updateButtonStateUI();
   evaluateSensorCycle();
 }
@@ -1885,6 +1943,15 @@ function openSpotDetailModal(item) {
   appState.selectedSpotForDetail = item;
   const t = I18N[currentLang];
   const db = loadSavedData();
+
+  const backBtn = document.getElementById('back-to-history-list');
+  if (appState.fromAllHistory) {
+    backBtn.textContent = currentLang === 'ja' ? '◀図鑑一覧' : '◀Compendium';
+  } else if (appState.fromChallenge) {
+    backBtn.textContent = currentLang === 'ja' ? '◀チャレンジ' : '◀Challenge';
+  } else {
+    backBtn.textContent = currentLang === 'ja' ? '◀履歴図鑑' : '◀Places';
+  }
 
   document.getElementById('detail-spot-name').textContent = item.name;
   document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
