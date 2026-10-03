@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "07";
+  --css-rev: "08";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -814,8 +814,9 @@ body {
   transform: translateX(-100%);
   z-index: 125;
 }
-#page-challenge-keywords.open {
-  transform: translateX(0);
+#page-challenge-keywords {
+  transform: translateX(100%);
+  z-index: 125;
 }
 
 /* ページヘッダー（ノッチ・セーフエリア完全対応） */
@@ -942,6 +943,7 @@ body {
 
 .list-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px 14px calc(64px + env(safe-area-inset-bottom)) 14px;
   display: flex;
