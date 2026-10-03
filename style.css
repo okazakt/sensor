@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "22";
+  --css-rev: "23";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -665,6 +665,12 @@ body {
 .dual-btn-row {
   display: flex;
   gap: 8px;
+  min-width: 0;
+}
+
+.dual-btn-row > .btn-sub-control {
+  flex: 0 0 calc(50% - 4px);
+  width: calc(50% - 4px);
   min-width: 0;
 }
 
