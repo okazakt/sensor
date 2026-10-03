@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "07";
+  --css-rev: "06";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -53,62 +53,6 @@ body {
   border-right: 2px solid var(--sheikah-border);
   display: flex;
   flex-direction: column;
-}
-
-/* モノクロ戻るボタン */
-.back-btn-mono {
-  background: transparent;
-  border: none;
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-}
-.back-btn-mono svg {
-  width: 28px;
-  height: 28px;
-  fill: currentColor;
-}
-
-/* ボトムナビゲーション (固定フッター / PWAセーフエリア対応) */
-.bottom-nav-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--sheikah-panel);
-  border-top: 1px solid var(--sheikah-border);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 200;
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: #667788;
-  height: 100%;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.nav-item.active {
-  color: #fff;
-}
-.nav-item svg {
-  width: 26px;
-  height: 26px;
-  fill: currentColor;
 }
 
 .overlay-modal {
@@ -339,7 +283,7 @@ body {
 
 .top-section {
   width: 100%;
-  height: calc(52vh - 29px);
+  height: 52vh;
   position: relative;
   background: radial-gradient(circle at center, #262c33 0%, #111417 100%);
   display: flex;
@@ -523,7 +467,7 @@ body {
 
 .bottom-section {
   width: 100%;
-  height: calc(48vh - 27px);
+  height: 48vh;
   background: var(--sheikah-panel);
   padding: 10px 16px 8px 16px;
   display: flex;
@@ -638,6 +582,16 @@ body {
 .btn-set:active {
   background: var(--sheikah-cyan);
   color: #000;
+}
+.btn-set.active {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: var(--sheikah-cyan);
+  color: var(--sheikah-cyan);
+}
+.btn-set.paused {
+  background: rgba(197, 160, 89, 0.12);
+  border-color: #8899aa;
+  color: #8899aa;
 }
 
 .status-panel {
@@ -778,29 +732,22 @@ body {
   margin-top: 2px;
 }
 
-/* スライドページ（フッターの高さ分を引く） */
+/* 全スライドページ共通 */
 .slide-page {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - (56px + env(safe-area-inset-bottom, 0px)));
+  height: 100%;
   background: var(--sheikah-bg);
   z-index: 100;
   display: flex;
   flex-direction: column;
+  transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
   pointer-events: none;
   visibility: hidden;
   box-shadow: -6px 0 25px rgba(0,0,0,0.85);
-}
-
-/* 移動方向用のクラス群 */
-.slide-page.pos-left {
-  transform: translateX(-100%);
-}
-.slide-page.pos-right {
-  transform: translateX(100%);
 }
 .slide-page.open {
   transform: translateX(0);
@@ -808,6 +755,25 @@ body {
   visibility: visible;
 }
 
+/* チャレンジ画面（左側からのスライドイン配置） */
+#page-challenges {
+  transform: translateX(-100%);
+  box-shadow: 6px 0 25px rgba(0,0,0,0.85);
+  z-index: 110;
+}
+#page-challenges.open {
+  transform: translateX(0);
+}
+
+#page-challenge-keywords {
+  transform: translateX(-100%);
+  z-index: 125;
+}
+#page-challenge-keywords.open {
+  transform: translateX(0);
+}
+
+/* ページヘッダー（ノッチ・セーフエリア完全対応） */
 .page-header {
   padding-top: calc(max(env(safe-area-inset-top), 24px) + 10px);
   padding-bottom: 12px;
@@ -840,6 +806,63 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+.btn-all-history {
+  background: rgba(255, 170, 0, 0.12);
+  border: 1.5px solid #ffaa00;
+  color: #ffbb33;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  border-radius: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-all-history:active {
+  background: #ffaa00;
+  color: #000;
+}
+
+.back-btn {
+  color: var(--sheikah-cyan);
+  background: rgba(0, 243, 255, 0.1);
+  border: 1.5px solid var(--sheikah-cyan);
+  font-size: 0.82rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.back-btn:active {
+  background: var(--sheikah-cyan);
+  color: #000;
+}
+
+.btn-home-shortcut {
+  color: var(--sheikah-gold);
+  background: rgba(197, 160, 89, 0.12);
+  border: 1.5px solid var(--sheikah-gold);
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  padding: 0;
+}
+.btn-home-shortcut:active {
+  background: var(--sheikah-gold);
+  color: #000;
+}
+.btn-home-shortcut .svg-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .filter-bar {
