@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "21";
+  --css-rev: "22";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -855,6 +855,101 @@ body {
 }
 
 #label-wake-state {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* 10段階・音量調整 */
+.volume-control {
+  position: relative;
+  white-space: nowrap;
+  gap: 4px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.volume-step-btn {
+  align-self: stretch;
+  width: 36px;
+  flex: 0 0 36px;
+  border: none;
+  background: transparent;
+  color: var(--sheikah-cyan);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.volume-step-btn:active {
+  background: rgba(0, 243, 255, 0.22);
+}
+
+.volume-label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.volume-control.disabled {
+  border-color: #556677;
+  color: #667788;
+  background: rgba(20, 25, 30, 0.6);
+  box-shadow: none;
+}
+
+.volume-control.disabled .volume-step-btn {
+  color: #4d5965;
+  cursor: default;
+  pointer-events: none;
+}
+
+.volume-control.disabled .volume-label {
+  color: #667788;
+}
+
+/* 2モード・到達後探索切替 */
+.continuous-mode-btn {
+  position: relative;
+  white-space: nowrap;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+.continuous-mode-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.continuous-mode-icon {
+  width: 16px;
+  height: 16px;
+  fill: #667788;
+  transition: fill 0.2s, filter 0.2s;
+  flex-shrink: 0;
+}
+
+.continuous-mode-btn .continuous-mode-icon.active {
+  fill: var(--sheikah-cyan);
+  filter: drop-shadow(0 0 3px rgba(0, 243, 255, 0.7));
+}
+
+.continuous-mode-separator {
+  color: #667788;
+  flex-shrink: 0;
+}
+
+#label-continuous-state {
   flex: 1;
   min-width: 0;
   white-space: nowrap;
