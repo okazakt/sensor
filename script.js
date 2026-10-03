@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.103.104800";
+const BASE_JS_VERSION = "v0.26.103.104900";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -21,7 +21,7 @@ const BASE_JS_VERSION = "v0.26.103.104800";
   });
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
+function initializeNavigationSystem() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
   const htmlRev = metaTag ? metaTag.getAttribute('content') : "11";
 
@@ -37,7 +37,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupDataTransferEasterEgg();
   setupSwipeAndNavigationSystem();
-});
+}
+
+// script.js は index.html から動的に読み込まれるため、
+// DOMContentLoaded が既に発生した後でも初期化処理を実行できるようにする。
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeNavigationSystem, { once: true });
+} else {
+  initializeNavigationSystem();
+}
 
 window.addEventListener('error', function(event) {
   if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
