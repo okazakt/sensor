@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.103.104900";
+const BASE_JS_VERSION = "v0.26.101.031728";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -1558,6 +1558,19 @@ function setupSwipeAndNavigationSystem() {
     renderKeywordsList();
     pageKeywords.classList.add('open');
     updateFooterActive(2);
+
+    setTimeout(() => {
+      const debugEl = document.getElementById('keywords-list-container');
+      if (debugEl) {
+        alert(
+          'スクロール領域の確認\n\n' +
+          'clientHeight: ' + debugEl.clientHeight + 'px\n' +
+          'scrollHeight: ' + debugEl.scrollHeight + 'px\n' +
+          'overflowY: ' + getComputedStyle(debugEl).overflowY
+        );
+      }
+    }, 100);
+    
   });
 
   fnavBtnAll?.addEventListener('click', () => {
@@ -1620,6 +1633,19 @@ function setupSwipeAndNavigationSystem() {
     renderKeywordsList();
     pageKeywords.classList.add('open');
     updateFooterActive(2);
+
+    setTimeout(() => {
+      const debugEl = document.getElementById('keywords-list-container');
+      if (debugEl) {
+        alert(
+          'スクロール領域の確認\n\n' +
+          'clientHeight: ' + debugEl.clientHeight + 'px\n' +
+          'scrollHeight: ' + debugEl.scrollHeight + 'px\n' +
+          'overflowY: ' + getComputedStyle(debugEl).overflowY
+        );
+      }
+    }, 100);
+    
   }, () => {
     pageChallenges.classList.add('open');
     updateFooterActive(0);
