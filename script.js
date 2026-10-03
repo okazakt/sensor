@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040815";
+const BASE_JS_VERSION = "v0.26.101.040825";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -1499,9 +1499,29 @@ document.addEventListener('visibilitychange', async () => {
 
 let wakeModeToastTimer = null;
 
+function hideOtherSettingToasts(activeToastId) {
+  const toastIds = [
+    'sound-mode-toast',
+    'volume-mode-toast',
+    'continuous-mode-toast',
+    'wake-mode-toast'
+  ];
+
+  toastIds.forEach((toastId) => {
+    if (toastId === activeToastId) return;
+
+    const toast = document.getElementById(toastId);
+    if (toast) {
+      toast.classList.remove('show');
+    }
+  });
+}
+
 function showWakeModeToast() {
   const toast = document.getElementById('wake-mode-toast');
   if (!toast) return;
+
+  hideOtherSettingToasts('wake-mode-toast');
 
   const t = I18N[currentLang];
   toast.textContent = appState.wakeLockActive
@@ -1539,6 +1559,8 @@ let soundModeToastTimer = null;
 function showSoundModeToast() {
   const toast = document.getElementById('sound-mode-toast');
   if (!toast) return;
+
+  hideOtherSettingToasts('sound-mode-toast');
 
   const t = I18N[currentLang];
   if (appState.soundMode === 'headphone') {
@@ -1589,6 +1611,8 @@ function showVolumeModeToast() {
   const toast = document.getElementById('volume-mode-toast');
   if (!toast) return;
 
+  hideOtherSettingToasts('volume-mode-toast');
+
   const bars = '■'.repeat(appState.soundVolume) + '□'.repeat(10 - appState.soundVolume);
   toast.textContent = `SOUND VOLUME　${bars}　${appState.soundVolume * 10}%`;
   toast.classList.add('show');
@@ -1632,6 +1656,8 @@ let continuousModeToastTimer = null;
 function showContinuousModeToast() {
   const toast = document.getElementById('continuous-mode-toast');
   if (!toast) return;
+
+  hideOtherSettingToasts('continuous-mode-toast');
 
   const t = I18N[currentLang];
   toast.textContent = appState.continuousSearch
