@@ -779,10 +779,17 @@ try {
   if (cached) lastKnownPos = JSON.parse(cached);
 } catch(e) {}
 
+const SOUND_MODES = ['headphone', 'speaker', 'muted'];
+let savedSoundMode = localStorage.getItem('sheikah_sound_mode') || 'headphone';
+if (!SOUND_MODES.includes(savedSoundMode)) {
+  savedSoundMode = 'headphone';
+}
+
 let appState = {
   isTracking: false,
   isPaused: false,
-  isMuted: false,
+  soundMode: savedSoundMode,
+  isMuted: savedSoundMode === 'muted',
   wakeLockActive: true,
   currentPos: null,
   lastSearchedPos: null,
