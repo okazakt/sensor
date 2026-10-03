@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "09";
+  --css-rev: "10";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -784,6 +784,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
   background: var(--sheikah-bg);
   z-index: 100;
   display: flex;
@@ -942,9 +944,11 @@ body {
 }
 
 .list-scroll {
-  flex: 1;
+  flex: 1 1 0;
+  height: 0;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 12px 14px calc(64px + env(safe-area-inset-bottom)) 14px;
   display: flex;
   flex-direction: column;
