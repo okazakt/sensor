@@ -814,10 +814,6 @@ body {
   transform: translateX(-100%);
   z-index: 125;
 }
-#page-challenge-keywords {
-  transform: translateX(100%);
-  z-index: 125;
-}
 
 /* ページヘッダー（ノッチ・セーフエリア完全対応） */
 .page-header {
