@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="14">
+  <meta name="html-rev" content="15">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -232,6 +232,28 @@
             <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             <span id="label-sensor-state">SENSOR: STANDBY</span>
           </button>
+          <div class="dual-btn-row">
+            <div class="volume-control btn-sheikah btn-sub-control active" id="volume-control">
+              <button class="volume-step-btn" id="volume-down-btn" type="button" aria-label="Volume down">▼</button>
+              <span class="volume-label">SOUND VOLUME</span>
+              <button class="volume-step-btn" id="volume-up-btn" type="button" aria-label="Volume up">▲</button>
+            </div>
+            <div class="sound-mode-toast" id="volume-mode-toast" role="status" aria-live="polite"></div>
+          
+            <button class="btn-sheikah btn-sub-control active continuous-mode-btn" id="continuous-toggle-btn">
+              <span class="continuous-mode-icons" aria-hidden="true">
+                <svg class="continuous-mode-icon active" id="continuous-icon-loop" viewBox="0 0 24 24">
+                  <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+                <svg class="continuous-mode-icon" id="continuous-icon-flag" viewBox="0 0 24 24">
+                  <path d="M5 3v18h2v-7h10l2-4-2-4H7V3H5z"/>
+                </svg>
+              </span>
+              <span class="continuous-mode-separator" aria-hidden="true">｜</span>
+              <span id="label-continuous-state">CONTINUOUS</span>
+            </button>
+            <div class="sound-mode-toast" id="continuous-mode-toast" role="status" aria-live="polite"></div>
+          </div>
           <div class="dual-btn-row">
             <button class="btn-sheikah btn-sub-control active sound-mode-btn" id="mute-toggle-btn">
               <span class="sound-mode-icons" aria-hidden="true">
