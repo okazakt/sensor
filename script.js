@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040713";
+const BASE_JS_VERSION = "v0.26.101.040758";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -152,6 +152,10 @@ const I18N = {
     wakeLockOff: "KEEP SCREEN OFF",
     wakeLockOnDesc: "画面ON：使用中は画面が自動で消えないようにします。",
     wakeLockOffDesc: "画面OFF：端末の設定に従って画面が自動で消えます。",
+    continuousSearch: "CONTINUOUS",
+    stopOnArrival: "STOP ON ARRIVAL",
+    continuousSearchDesc: "連続探索：到達後も探索を継続し、次の未踏スポットを探します。",
+    stopOnArrivalDesc: "到達時終了：スポットに到達すると探索を終了します。",
     langSwitchLabel: "→EN",
     footerTip: "※消音時も円周の光とフラッシュで反応",
     keywordsTitle: "探索履歴一覧",
@@ -229,7 +233,11 @@ const I18N = {
     wakeLockOff: "KEEP SCREEN OFF",
     wakeLockOnDesc: "Keep screen on: Prevents the screen from turning off automatically while in use.",
     wakeLockOffDesc: "Keep screen off: Allows the screen to turn off according to your device settings.",
-    langSwitchLabel: "→JP",
+    continuousSearch: "CONTINUOUS",
+    stopOnArrival: "STOP ON ARRIVAL",
+    continuousSearchDesc: "Continuous search: Keeps searching for the next undiscovered spot after arrival.",
+    stopOnArrivalDesc: "Stop on arrival: Ends the search when you reach a spot.",
+    langSwitchLabel: "→JA",
     footerTip: "Visual ring pulses even in mute mode",
     keywordsTitle: "Search History",
     filterKeywordsPlaceholder: "Filter keywords...",
@@ -766,12 +774,19 @@ if (!SOUND_MODES.includes(savedSoundMode)) {
   savedSoundMode = 'headphone';
 }
 
+let savedSoundVolume = parseInt(localStorage.getItem('sheikah_sound_volume') || '10', 10);
+if (isNaN(savedSoundVolume) || savedSoundVolume < 1 || savedSoundVolume > 10) {
+  savedSoundVolume = 10;
+}
+
 let appState = {
   isTracking: false,
   isPaused: false,
   soundMode: savedSoundMode,
   isMuted: savedSoundMode === 'muted',
   wakeLockActive: true,
+  soundVolume: savedSoundVolume,
+  continuousSearch: true,
   currentPos: null,
   lastSearchedPos: null,
 
@@ -1407,6 +1422,30 @@ function updateButtonStateUI() {
     labelSound.textContent = t.soundModeHeadphone;
   }
 
+  const volumeControl = document.getElementById('volume-control');
+  const volumeDownBtn = document.getElementById('volume-down-btn');
+  const volumeUpBtn = document.getElementById('volume-up-btn');
+
+  if (appState.isMuted) {
+    volumeControl.classList.add('disabled');
+    volumeDownBtn.disabled = true;
+    volumeUpBtn.disabled = true;
+  } else {
+    volumeControl.classList.remove('disabled');
+    volumeDownBtn.disabled = false;
+    volumeUpBtn.disabled = false;
+  }
+
+  const continuousIconLoop = document.getElementById('continuous-icon-loop');
+  const continuousIconFlag = document.getElementById('continuous-icon-flag');
+  const labelContinuous = document.getElementById('label-continuous-state');
+
+  continuousIconLoop.classList.toggle('active', appState.continuousSearch);
+  continuousIconFlag.classList.toggle('active', !appState.continuousSearch);
+  labelContinuous.textContent = appState.continuousSearch
+    ? t.continuousSearch
+    : t.stopOnArrival;
+
   const wakeBtn = document.getElementById('wakelock-toggle-btn');
   const wakeIconOn = document.getElementById('wake-icon-on');
   const wakeIconOff = document.getElementById('wake-icon-off');
@@ -1528,6 +1567,79 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
 
   updateButtonStateUI();
   showSoundModeToast();
+});
+
+let volumeModeToastTimer = null;
+
+function showVolumeModeToast() {
+  const toast = document.getElementById('volume-mode-toast');
+  if (!toast) return;
+
+  const bars = '■'.repeat(appState.soundVolume) + '□'.repeat(10 - appState.soundVolume);
+  toast.textContent = `SOUND VOLUME　${bars}　${appState.soundVolume * 10}%`;
+  toast.classList.add('show');
+
+  if (volumeModeToastTimer) {
+    clearTimeout(volumeModeToastTimer);
+  }
+
+  volumeModeToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    volumeModeToastTimer = null;
+  }, 2800);
+}
+
+function changeSoundVolume(step) {
+  if (appState.isMuted) return;
+
+  const nextVolume = Math.max(1, Math.min(10, appState.soundVolume + step));
+  if (nextVolume === appState.soundVolume) {
+    showVolumeModeToast();
+    return;
+  }
+
+  appState.soundVolume = nextVolume;
+  localStorage.setItem('sheikah_sound_volume', String(appState.soundVolume));
+
+  playBeep(2000, 0.08);
+  showVolumeModeToast();
+}
+
+document.getElementById('volume-down-btn').addEventListener('click', () => {
+  changeSoundVolume(-1);
+});
+
+document.getElementById('volume-up-btn').addEventListener('click', () => {
+  changeSoundVolume(1);
+});
+
+let continuousModeToastTimer = null;
+
+function showContinuousModeToast() {
+  const toast = document.getElementById('continuous-mode-toast');
+  if (!toast) return;
+
+  const t = I18N[currentLang];
+  toast.textContent = appState.continuousSearch
+    ? t.continuousSearchDesc
+    : t.stopOnArrivalDesc;
+
+  toast.classList.add('show');
+
+  if (continuousModeToastTimer) {
+    clearTimeout(continuousModeToastTimer);
+  }
+
+  continuousModeToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    continuousModeToastTimer = null;
+  }, 2800);
+}
+
+document.getElementById('continuous-toggle-btn').addEventListener('click', () => {
+  appState.continuousSearch = !appState.continuousSearch;
+  updateButtonStateUI();
+  showContinuousModeToast();
 });
 
 function stopSearchAndReset() {
