@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.031938";
+const BASE_JS_VERSION = "v0.26.101.032101";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -589,6 +589,56 @@ mapContrastBtn.addEventListener('click', () => {
 let audioCtx = null;
 let silentAudioElement = null;
 let audioDebugDetectionLogged = false;
+
+// 一時テスト用：Web AudioではなくHTMLAudioElementでビープ音を再生
+function playHtmlAudioTestBeep(freq = 2200, duration = 0.15) {
+  if (appState.isMuted) return;
+
+  const sampleRate = 44100;
+  const sampleCount = Math.floor(sampleRate * duration);
+  const buffer = new ArrayBuffer(44 + sampleCount * 2);
+  const view = new DataView(buffer);
+
+  function writeString(offset, text) {
+    for (let i = 0; i < text.length; i++) {
+      view.setUint8(offset + i, text.charCodeAt(i));
+    }
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + sampleCount * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, sampleCount * 2, true);
+
+  for (let i = 0; i < sampleCount; i++) {
+    const fade = 1 - (i / sampleCount);
+    const sample = Math.sin(2 * Math.PI * freq * i / sampleRate);
+    view.setInt16(44 + i * 2, sample * fade * 24000, true);
+  }
+
+  const blob = new Blob([buffer], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.volume = 0.8;
+
+  const cleanup = () => URL.revokeObjectURL(url);
+  audio.addEventListener('ended', cleanup, { once: true });
+  audio.addEventListener('error', cleanup, { once: true });
+
+  audio.play().catch((err) => {
+    console.warn('HTMLAudioElement test beep failed:', err);
+    cleanup();
+  });
+}
 
 function initAudio() {
   if (!silentAudioElement) {
@@ -1430,7 +1480,7 @@ function stopSearchAndReset() {
 
 async function startSearchFromSet() {
   initAudio();
-  playBeep(2200);
+  playHtmlAudioTestBeep(2200, 0.15);
   if (appState.wakeLockActive) requestWakeLock();
 
   const inputVal = document.getElementById('keyword-input').value.trim();
