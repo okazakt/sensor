@@ -775,7 +775,7 @@ body {
 .sound-mode-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(240px + env(safe-area-inset-bottom));
+  bottom: calc(320px + env(safe-area-inset-bottom));
   z-index: 1000;
   width: min(calc(100vw - 32px), 420px);
   height: 58px;
