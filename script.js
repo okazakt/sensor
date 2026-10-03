@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.031800";
+const BASE_JS_VERSION = "v0.26.101.031822";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -98,6 +98,8 @@ if (!lastCacheTime) {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
+    audioDebugDetectionLogged = false;
+    
     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
     if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
       localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
@@ -586,6 +588,7 @@ mapContrastBtn.addEventListener('click', () => {
 
 let audioCtx = null;
 let silentAudioElement = null;
+let audioDebugDetectionLogged = false;
 
 function initAudio() {
   if (!silentAudioElement) {
@@ -643,6 +646,17 @@ function playBeep(freq = 1800, duration = 0.12) {
   if (!audioCtx) initAudio();
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  // 一時的な音声診断：SET後の最初の検出音だけ状態を表示
+  if (appState.isTracking && !audioDebugDetectionLogged) {
+    audioDebugDetectionLogged = true;
+    alert(
+      "【音声診断】\n" +
+      "AudioContext.state = " + audioCtx.state + "\n" +
+      "currentTime = " + audioCtx.currentTime.toFixed(3) + "\n" +
+      "visibility = " + document.visibilityState
+    );
+  }
 
   try {
     const osc = audioCtx.createOscillator();
