@@ -42,9 +42,11 @@ function initializeNavigationSystem() {
 // script.js は index.html から動的に読み込まれるため、
 // DOMContentLoaded が既に発生した後でも初期化処理を実行できるようにする。
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeNavigationSystem, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initializeNavigationSystem, 0);
+  }, { once: true });
 } else {
-  initializeNavigationSystem();
+  setTimeout(initializeNavigationSystem, 0);
 }
 
 window.addEventListener('error', function(event) {
