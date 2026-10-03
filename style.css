@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "15";
+  --css-rev: "16";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -778,14 +778,19 @@ body {
   bottom: calc(180px + env(safe-area-inset-bottom));
   z-index: 1000;
   width: min(calc(100vw - 32px), 420px);
-  padding: 9px 12px;
+  height: 58px;
+  padding: 8px 12px;
+  box-sizing: border-box;
   border: 1px solid var(--sheikah-cyan);
   border-radius: 6px;
   background: rgba(10, 17, 22, 0.96);
   color: #d9faff;
-  font-size: 0.72rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.35;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
   opacity: 0;
   visibility: hidden;
