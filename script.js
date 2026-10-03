@@ -98,7 +98,6 @@ if (!lastCacheTime) {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    audioDebugDetectionLogged = false;
     
     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
     if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
@@ -667,19 +666,6 @@ function playBeep(freq = 1800, duration = 0.12) {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
 
-  // 一時的な音声診断：SET後の最初の検出音だけ状態を表示
-  if (appState.isTracking && !audioDebugDetectionLogged) {
-    audioDebugDetectionLogged = true;
-    alert(
-      "【音声診断】\n" +
-      "AudioContext.state = " + audioCtx.state + "\n" +
-      "currentTime = " + audioCtx.currentTime.toFixed(3) + "\n" +
-      "visibility = " + document.visibilityState + "\n" +
-      "audioSession.type = " +
-      (navigator.audioSession ? navigator.audioSession.type : "not supported")
-    );
-  }
-
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -718,7 +704,7 @@ function playTreasureFanfare() {
   const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
   notes.forEach((freq, idx) => {
     setTimeout(() => {
-      if (!audioCtx) return;
+      if (appState.isMuted || !audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
