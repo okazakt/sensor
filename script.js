@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.032324";
+const BASE_JS_VERSION = "v0.26.101.040713";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -148,8 +148,10 @@ const I18N = {
     soundModeHeadphoneDesc: "イヤホンモード：音楽と探知音を同時に再生できます。消音モードではイヤホンをご利用ください。",
     soundModeSpeakerDesc: "スピーカーモード：消音モードでも探知音を再生します。音楽などは停止する場合があります。",
     soundModeMutedDesc: "サウンドOFF：探知音を再生しません。",
-    wakeLockOn: "WAKE LOCK: ON",
-    wakeLockOff: "WAKE LOCK: OFF",
+    wakeLockOn: "KEEP SCREEN ON",
+    wakeLockOff: "KEEP SCREEN OFF",
+    wakeLockOnDesc: "画面ON：使用中は画面が自動で消えないようにします。",
+    wakeLockOffDesc: "画面OFF：端末の設定に従って画面が自動で消えます。",
     langSwitchLabel: "→EN",
     footerTip: "※消音時も円周の光とフラッシュで反応",
     keywordsTitle: "探索履歴一覧",
@@ -223,8 +225,10 @@ const I18N = {
     soundModeHeadphoneDesc: "Headphone mode: Music and detection sounds can play together. Use headphones when Silent Mode is on.",
     soundModeSpeakerDesc: "Speaker mode: Detection sounds play even in Silent Mode. Music or other audio may stop.",
     soundModeMutedDesc: "Sound off: Detection sounds will not play.",
-    wakeLockOn: "WAKE LOCK: ON",
-    wakeLockOff: "WAKE LOCK: OFF",
+    wakeLockOn: "KEEP SCREEN ON",
+    wakeLockOff: "KEEP SCREEN OFF",
+    wakeLockOnDesc: "Keep screen on: Prevents the screen from turning off automatically while in use.",
+    wakeLockOffDesc: "Keep screen off: Allows the screen to turn off according to your device settings.",
     langSwitchLabel: "→JP",
     footerTip: "Visual ring pulses even in mute mode",
     keywordsTitle: "Search History",
@@ -1404,15 +1408,18 @@ function updateButtonStateUI() {
   }
 
   const wakeBtn = document.getElementById('wakelock-toggle-btn');
-  const svgWake = document.getElementById('svg-wake');
+  const wakeIconOn = document.getElementById('wake-icon-on');
+  const wakeIconOff = document.getElementById('wake-icon-off');
   const labelWake = document.getElementById('label-wake-state');
+  
+  wakeIconOn.classList.toggle('active', appState.wakeLockActive);
+  wakeIconOff.classList.toggle('active', !appState.wakeLockActive);
+  
   if (appState.wakeLockActive) {
-    wakeBtn.className = "btn-sheikah btn-sub-control active";
-    svgWake.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/>';
+    wakeBtn.className = "btn-sheikah btn-sub-control active wake-mode-btn";
     labelWake.textContent = t.wakeLockOn;
   } else {
-    wakeBtn.className = "btn-sheikah btn-sub-control";
-    svgWake.innerHTML = '<path d="M12.3 2a10 10 0 0 0-1.9 19.8 10 10 0 0 0 11.4-11.4A10 10 0 0 0 12.3 2z"/>';
+    wakeBtn.className = "btn-sheikah btn-sub-control wake-mode-btn";
     labelWake.textContent = t.wakeLockOff;
   }
 }
@@ -1438,14 +1445,40 @@ document.addEventListener('visibilitychange', async () => {
   }
 });
 
+let wakeModeToastTimer = null;
+
+function showWakeModeToast() {
+  const toast = document.getElementById('wake-mode-toast');
+  if (!toast) return;
+
+  const t = I18N[currentLang];
+  toast.textContent = appState.wakeLockActive
+    ? t.wakeLockOnDesc
+    : t.wakeLockOffDesc;
+
+  toast.classList.add('show');
+
+  if (wakeModeToastTimer) {
+    clearTimeout(wakeModeToastTimer);
+  }
+
+  wakeModeToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    wakeModeToastTimer = null;
+  }, 2800);
+}
+
 document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
   appState.wakeLockActive = !appState.wakeLockActive;
+
   if (appState.wakeLockActive) {
     await requestWakeLock();
   } else {
     releaseWakeLock();
   }
+
   updateButtonStateUI();
+  showWakeModeToast();
 });
 
 let soundModeToastTimer = null;
