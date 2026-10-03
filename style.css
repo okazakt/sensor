@@ -807,6 +807,60 @@ body {
   transform: translate(-50%, 0);
 }
 
+/* 2モード・画面点灯切替 */
+.wake-mode-btn {
+  position: relative;
+  white-space: nowrap;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+.wake-mode-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wake-mode-icon {
+  width: 16px;
+  height: 16px;
+  fill: #667788;
+  stroke: #667788;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transition: fill 0.2s, stroke 0.2s, filter 0.2s;
+  flex-shrink: 0;
+}
+
+.wake-mode-btn.active .wake-mode-icon.active {
+  fill: var(--sheikah-cyan);
+  stroke: var(--sheikah-cyan);
+  filter: drop-shadow(0 0 3px rgba(0, 243, 255, 0.7));
+}
+
+.wake-mode-btn:not(.active) .wake-mode-icon {
+  fill: #4d5965;
+  stroke: #4d5965;
+}
+
+.wake-mode-btn:not(.active) .wake-mode-icon.active {
+  fill: #9aa7b3;
+  stroke: #9aa7b3;
+}
+
+.wake-mode-separator {
+  color: #667788;
+  flex-shrink: 0;
+}
+
+#label-wake-state {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: center;
+}
+
 .app-version-footer {
   display: flex;
   justify-content: space-between;
