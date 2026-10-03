@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040758";
+const BASE_JS_VERSION = "v0.26.101.040807";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -774,9 +774,16 @@ if (!SOUND_MODES.includes(savedSoundMode)) {
   savedSoundMode = 'headphone';
 }
 
-let savedSoundVolume = parseInt(localStorage.getItem('sheikah_sound_volume') || '10', 10);
+let savedSoundVolume = parseInt(localStorage.getItem('sheikah_sound_volume') || '7', 10);
 if (isNaN(savedSoundVolume) || savedSoundVolume < 1 || savedSoundVolume > 10) {
-  savedSoundVolume = 10;
+  savedSoundVolume = 7;
+}
+
+let savedWakeLockActive = localStorage.getItem('sheikah_wake_lock');
+if (savedWakeLockActive === null) {
+  savedWakeLockActive = true;
+} else {
+  savedWakeLockActive = savedWakeLockActive === 'true';
 }
 
 let appState = {
@@ -784,7 +791,7 @@ let appState = {
   isPaused: false,
   soundMode: savedSoundMode,
   isMuted: savedSoundMode === 'muted',
-  wakeLockActive: true,
+  wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
   continuousSearch: true,
   currentPos: null,
@@ -1509,6 +1516,7 @@ function showWakeModeToast() {
 
 document.getElementById('wakelock-toggle-btn').addEventListener('click', async () => {
   appState.wakeLockActive = !appState.wakeLockActive;
+  localStorage.setItem('sheikah_wake_lock', String(appState.wakeLockActive));
 
   if (appState.wakeLockActive) {
     await requestWakeLock();
