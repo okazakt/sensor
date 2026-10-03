@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.031743";
+const BASE_JS_VERSION = "v0.26.101.031800";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -778,18 +778,16 @@ function bootstrapMapAndLocation() {
   updateMapStyleUI();
 
   if ('geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        appState.currentPos = p;
-        lastKnownPos = p;
-        localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
-        if (map) map.setCenter(p);
-      },
+    watchId = navigator.geolocation.watchPosition(
+      onPositionUpdate,
       (err) => {
-        console.warn("初期位置測位:", err.message);
+        console.warn("位置情報監視エラー:", err.message);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      }
     );
   }
 }
@@ -1443,7 +1441,7 @@ async function startSearchFromSet() {
       document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
     }, { 
       enableHighAccuracy: true,
-      maximumAge: 1000,
+      maximumAge: 0,
       timeout: 10000
     });
   } else {
