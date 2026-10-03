@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.031932";
+const BASE_JS_VERSION = "v0.26.101.031938";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -604,7 +604,7 @@ function initAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   if (navigator.audioSession) {
-    navigator.audioSession.type = 'playback';
+    navigator.audioSession.type = 'transient';
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
