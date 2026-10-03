@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "11";
+  --css-rev: "12";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -967,6 +967,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 .list-item:active {
   background: rgba(45, 55, 65, 0.95);
