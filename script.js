@@ -4,15 +4,15 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.103.103600";
+const BASE_JS_VERSION = "v0.26.103.104800";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "11";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "06";
+  if (!cssRev) cssRev = "07";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
   
@@ -23,11 +23,11 @@ const BASE_JS_VERSION = "v0.26.103.103600";
 
 document.addEventListener("DOMContentLoaded", () => {
   const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "10";
+  const htmlRev = metaTag ? metaTag.getAttribute('content') : "11";
 
   const computedStyle = getComputedStyle(document.documentElement);
   let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "06";
+  if (!cssRev) cssRev = "07";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
 
@@ -35,7 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     el.textContent = fullVersion;
   });
 
-  setupSwipeSystem();
+  setupDataTransferEasterEgg();
+  setupSwipeAndNavigationSystem();
 });
 
 window.addEventListener('error', function(event) {
@@ -462,21 +463,25 @@ document.getElementById('pwa-lang-btn').addEventListener('click', () => {
 let safetyClickCount = 0;
 let safetyResetTimer = null;
 
-document.getElementById('safety-lang-btn').addEventListener('click', () => {
-  applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
-  safetyClickCount++;
-  if (safetyResetTimer) clearTimeout(safetyResetTimer);
+function setupDataTransferEasterEgg() {
+  const safetyBtn = document.getElementById('safety-lang-btn');
+  if (!safetyBtn) return;
+  safetyBtn.addEventListener('click', () => {
+    applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+    safetyClickCount++;
+    if (safetyResetTimer) clearTimeout(safetyResetTimer);
 
-  if (safetyClickCount >= 6) {
-    safetyClickCount = 0;
-    triggerDataTransferPrompt();
-    return;
-  }
+    if (safetyClickCount >= 6) {
+      safetyClickCount = 0;
+      triggerDataTransferPrompt();
+      return;
+    }
 
-  safetyResetTimer = setTimeout(() => {
-    safetyClickCount = 0;
-  }, 2500);
-});
+    safetyResetTimer = setTimeout(() => {
+      safetyClickCount = 0;
+    }, 2500);
+  });
+}
 
 function triggerDataTransferPrompt() {
   const db = loadSavedData();
@@ -1456,7 +1461,7 @@ document.getElementById('keyword-input').addEventListener('keypress', (e) => {
 });
 
 // ============================================================
-// 画面遷移 & スワイプ制御システム
+// 画面遷移 & スワイプ & フッターナビゲーション
 // ============================================================
 
 const pageChallenges = document.getElementById('page-challenges');
@@ -1467,6 +1472,23 @@ const pageHistory = document.getElementById('page-history');
 const pageSpotDetail = document.getElementById('page-spot-detail');
 const pageAllHistory = document.getElementById('page-all-history');
 
+const fnavBtnChallenges = document.getElementById('fnav-btn-challenges');
+const fnavBtnMain = document.getElementById('fnav-btn-main');
+const fnavBtnHistory = document.getElementById('fnav-btn-history');
+const fnavBtnAll = document.getElementById('fnav-btn-all');
+
+function updateFooterActive(tabIndex) {
+  [fnavBtnChallenges, fnavBtnMain, fnavBtnHistory, fnavBtnAll].forEach((btn, idx) => {
+    if (btn) {
+      if (idx === tabIndex) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  });
+}
+
 function navigateToMain() {
   pageAllHistory.classList.remove('open');
   pageSpotDetail.classList.remove('open');
@@ -1474,6 +1496,7 @@ function navigateToMain() {
   pageKeywords.classList.remove('open');
   pageChallengeKeywords.classList.remove('open');
   pageChallenges.classList.remove('open');
+  updateFooterActive(1);
   evaluateSensorCycle();
 }
 
@@ -1501,7 +1524,42 @@ function bindSwipe(el, onSwipeLeft, onSwipeRight) {
   }, { passive: true });
 }
 
-function setupSwipeSystem() {
+function setupSwipeAndNavigationSystem() {
+  // フッタータップ時の切り替え
+  fnavBtnChallenges?.addEventListener('click', () => {
+    pageAllHistory.classList.remove('open');
+    pageSpotDetail.classList.remove('open');
+    pageHistory.classList.remove('open');
+    pageKeywords.classList.remove('open');
+    pageChallenges.classList.add('open');
+    updateFooterActive(0);
+  });
+
+  fnavBtnMain?.addEventListener('click', () => {
+    navigateToMain();
+  });
+
+  fnavBtnHistory?.addEventListener('click', () => {
+    pageChallenges.classList.remove('open');
+    pageChallengeKeywords.classList.remove('open');
+    pageAllHistory.classList.remove('open');
+    pageSpotDetail.classList.remove('open');
+    pageHistory.classList.remove('open');
+    renderKeywordsList();
+    pageKeywords.classList.add('open');
+    updateFooterActive(2);
+  });
+
+  fnavBtnAll?.addEventListener('click', () => {
+    pageChallenges.classList.remove('open');
+    pageChallengeKeywords.classList.remove('open');
+    pageSpotDetail.classList.remove('open');
+    pageHistory.classList.remove('open');
+    renderAllHistoryList();
+    pageAllHistory.classList.add('open');
+    updateFooterActive(3);
+  });
+
   // 仮コンテンツタップ挙動
   document.getElementById('dummy-challenge-item')?.addEventListener('click', () => {
     pageChallengeKeywords.classList.add('open');
@@ -1518,51 +1576,69 @@ function setupSwipeSystem() {
   });
   document.getElementById('back-to-keywords')?.addEventListener('click', () => {
     pageHistory.classList.remove('open');
+    updateFooterActive(2);
   });
   document.getElementById('back-to-history-list')?.addEventListener('click', () => {
     pageSpotDetail.classList.remove('open');
+    if (appState.fromAllHistory) {
+      updateFooterActive(3);
+    } else if (appState.fromChallenge) {
+      updateFooterActive(0);
+    } else {
+      updateFooterActive(2);
+    }
   });
 
   // 1. チャレンジ一覧：左スワイプ時メインへ／右スワイプ不可
   bindSwipe(pageChallenges, () => {
     pageChallenges.classList.remove('open');
+    updateFooterActive(1);
   }, null);
 
   // 1-1. チャレンジ図鑑一覧：左スワイプ時メインへ／右スワイプ時チャレンジ一覧へ戻る
   bindSwipe(pageChallengeKeywords, () => {
     pageChallengeKeywords.classList.remove('open');
     pageChallenges.classList.remove('open');
+    updateFooterActive(1);
   }, () => {
     pageChallengeKeywords.classList.remove('open');
+    updateFooterActive(0);
   });
 
   // 2. メイン：左スワイプ時探索履歴一覧へ／右スワイプ時チャレンジ一覧へ
   bindSwipe(pageMainWrap, () => {
     renderKeywordsList();
     pageKeywords.classList.add('open');
+    updateFooterActive(2);
   }, () => {
     pageChallenges.classList.add('open');
+    updateFooterActive(0);
   });
 
   // 3. 探索履歴一覧：左スワイプ時図鑑一覧へ／右スワイプ時メインへ
   bindSwipe(pageKeywords, () => {
     renderAllHistoryList();
     pageAllHistory.classList.add('open');
+    updateFooterActive(3);
   }, () => {
     pageKeywords.classList.remove('open');
+    updateFooterActive(1);
   });
 
   // 3-1. 履歴図鑑一覧：左スワイプ時図鑑一覧へ／右スワイプ時探索履歴一覧へもどる
   bindSwipe(pageHistory, () => {
     renderAllHistoryList();
     pageAllHistory.classList.add('open');
+    updateFooterActive(3);
   }, () => {
     pageHistory.classList.remove('open');
+    updateFooterActive(2);
   });
 
   // 4. 図鑑一覧：左スワイプ不可／右スワイプ時探索履歴一覧へ
   bindSwipe(pageAllHistory, null, () => {
     pageAllHistory.classList.remove('open');
+    updateFooterActive(2);
   });
 
   // 5. 図鑑詳細
@@ -1576,15 +1652,19 @@ function setupSwipeSystem() {
       // 履歴配下：図鑑一覧へ進む
       renderAllHistoryList();
       pageAllHistory.classList.add('open');
+      updateFooterActive(3);
     }
   }, () => {
-    // 右スワイプ時（親画面に戻る）
+    // 右スワイプ時
     if (appState.fromChallenge) {
       pageSpotDetail.classList.remove('open');
+      updateFooterActive(0);
     } else if (appState.fromAllHistory) {
       pageSpotDetail.classList.remove('open');
+      updateFooterActive(3);
     } else {
       pageSpotDetail.classList.remove('open');
+      updateFooterActive(2);
     }
   });
 }
@@ -1647,6 +1727,7 @@ function renderKeywordsList() {
       document.getElementById('keyword-input').value = k;
       document.getElementById('btn-input-clear').classList.add('show');
       pageKeywords.classList.remove('open');
+      updateFooterActive(1);
       startSearchFromSet();
     });
 
