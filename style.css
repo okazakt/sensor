@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "13";
+  --css-rev: "14";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -315,8 +315,8 @@ body {
 
 .circle-map-wrapper {
   position: relative;
-  width: min(86vw, 330px);
-  height: min(86vw, 330px);
+  width: min(92vw, 380px);
+  height: min(92vw, 380px);
   border-radius: 50%;
   padding: 6px;
   background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
