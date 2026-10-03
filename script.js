@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040807";
+const BASE_JS_VERSION = "v0.26.101.040811";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -709,7 +709,7 @@ function playBeep(freq = 1800, duration = 0.12) {
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
 
-    gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
     osc.connect(gain);
@@ -747,7 +747,7 @@ function playTreasureFanfare() {
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
       const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
-      gain.gain.setValueAtTime(0.55, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
 
       osc.connect(gain);
@@ -1087,6 +1087,12 @@ function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, pho
   document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 5000);
+
+  if (!appState.continuousSearch) {
+    appState.pinpointTarget = null;
+    stopSearchAndReset();
+    return;
+  }
 
   if (appState.pinpointTarget) {
     appState.pinpointTarget = null;
