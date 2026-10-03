@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="10">
+  <meta name="html-rev" content="11">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -132,7 +132,6 @@
         </div>
       </div>
       <div class="list-scroll" id="challenges-list-container">
-        <!-- 仮コンテンツ -->
         <div class="list-item" id="dummy-challenge-item">
           <div class="list-item-row">
             <div class="list-item-left">
@@ -361,6 +360,26 @@
         </div>
       </div>
     </div>
+
+    <!-- 最下部固定フッターナビゲーション -->
+    <nav class="app-footer-nav">
+      <!-- 1. チャレンジ画面 -->
+      <button class="footer-nav-btn" id="fnav-btn-challenges" title="Challenges">
+        <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/></svg>
+      </button>
+      <!-- 2. メイン画面 -->
+      <button class="footer-nav-btn active" id="fnav-btn-main" title="Main Map">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </button>
+      <!-- 3. 探索履歴一覧 -->
+      <button class="footer-nav-btn" id="fnav-btn-history" title="Keywords">
+        <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+      </button>
+      <!-- 4. 図鑑一覧 -->
+      <button class="footer-nav-btn" id="fnav-btn-all" title="All Spots">
+        <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+      </button>
+    </nav>
   </div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
