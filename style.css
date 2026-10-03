@@ -815,6 +815,10 @@ body {
   z-index: 125;
 }
 
+#page-challenge-keywords.open {
+  transform: translateX(0);
+}
+
 /* ページヘッダー（ノッチ・セーフエリア完全対応） */
 .page-header {
   padding-top: calc(max(env(safe-area-inset-top), 24px) + 10px);
