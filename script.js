@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041806";
+const BASE_JS_VERSION = "v0.26.101.041820";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1752,7 +1752,7 @@ btnInputClearEl.addEventListener('click', (e) => {
   }
   keywordInputEl.value = '';
   checkMainInputClearState();
-  keywordInputEl.focus();
+  keywordInputEl.blur();
 });
 
 keywordInputEl.addEventListener('focus', () => {
@@ -1760,7 +1760,6 @@ keywordInputEl.addEventListener('focus', () => {
     const t = I18N[currentLang];
     if (confirm(t.confirmEndSearch)) {
       stopSearchAndReset();
-      keywordInputEl.value = '';
       checkMainInputClearState();
     } else {
       keywordInputEl.blur();
