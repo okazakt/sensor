@@ -6,10 +6,12 @@
  * ============================================================
  */
 :root {
-  --css-rev: "33";
+  --css-rev: "34";
   --top-control-size: 40px;
   --setting-control-height: 48px;
-  --main-controls-height: max(330px, calc(48vh - 54px - env(safe-area-inset-bottom)));
+  --footer-bottom-space: env(safe-area-inset-bottom, 0px);
+  --footer-height: calc(54px + var(--footer-bottom-space));
+  --main-controls-height: clamp(326px, calc((100vh - env(safe-area-inset-top) - var(--footer-height)) * 0.46), 420px);
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -299,8 +301,8 @@ body {
 
 .top-section {
   width: 100%;
-  height: calc(100vh - 6px - 54px - env(safe-area-inset-bottom) - var(--main-controls-height));
-  height: calc(100dvh - 6px - 54px - env(safe-area-inset-bottom) - var(--main-controls-height));
+  height: calc(100vh - 6px - var(--footer-height) - var(--main-controls-height));
+  height: calc(100dvh - 6px - var(--footer-height) - var(--main-controls-height));
   flex-shrink: 0;
   container-type: size;
   position: relative;
@@ -309,7 +311,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: calc(max(env(safe-area-inset-top), 24px) + 60px) 12px 12px;
+  padding: calc(max(env(safe-area-inset-top), 24px) + 48px) 10px 8px;
 }
 
 .sheikah-divider-bar {
@@ -334,8 +336,8 @@ body {
 
 .circle-map-wrapper {
   position: relative;
-  width: min(100cqw, 100cqh, 380px);
-  height: min(100cqw, 100cqh, 380px);
+  width: min(100cqw, 100cqh, 420px);
+  height: min(100cqw, 100cqh, 420px);
   flex-shrink: 0;
   border-radius: 50%;
   padding: 6px;
@@ -1021,8 +1023,8 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: calc(54px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  height: var(--footer-height);
+  padding-bottom: var(--footer-bottom-space);
   background: #0d1114;
   border-top: 1.5px solid var(--sheikah-gold);
   display: flex;
@@ -1066,7 +1068,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - calc(54px + env(safe-area-inset-bottom)));
+  height: calc(100% - var(--footer-height));
   min-height: 0;
   overflow: hidden;
   background: var(--sheikah-bg);
@@ -1497,6 +1499,7 @@ body {
   overflow-y: auto;
   gap: 8px;
 }
+.bottom-section > * { flex-shrink: 0; }
 .bottom-section .btn-sub-control {
   font-size: clamp(10px, 3.1cqw, 12.5px);
   letter-spacing: 0;
@@ -1537,14 +1540,14 @@ body {
 }
 @supports (height: 100dvh) {
   :root {
-    --main-controls-height: max(330px, calc(48dvh - 54px - env(safe-area-inset-bottom)));
+    --main-controls-height: clamp(326px, calc((100dvh - env(safe-area-inset-top) - var(--footer-height)) * 0.46), 420px);
   }
 }
 /* Short windows retain a useful map and allow the controls to scroll. */
 @media (max-height: 650px) {
   #page-main-wrap {
     overflow-y: auto;
-    padding-bottom: calc(54px + env(safe-area-inset-bottom));
+    padding-bottom: var(--footer-height);
   }
   .top-section {
     min-height: 260px;
@@ -1552,7 +1555,7 @@ body {
 }
 
 .bottom-section {
-  --setting-control-height: clamp(32px, 8.5cqw, 38px);
+  --setting-control-height: clamp(44px, calc(var(--main-controls-height) * 0.145), 56px);
   --setting-icon-size: clamp(12px, 3.8cqw, 16px);
 }
 .sound-mode-icon, .wake-mode-icon, .continuous-mode-icon,
@@ -1577,7 +1580,7 @@ body {
   #page-main-wrap {
     flex-direction: row !important;
     overflow: hidden;
-    padding-bottom: calc(54px + env(safe-area-inset-bottom));
+    padding-bottom: var(--footer-height);
   }
   .top-section {
     width: 45%;
@@ -1606,3 +1609,13 @@ body {
     width: min(calc(100vw - 32px), 420px);
   }
 }
+
+/* Standalone windows need a small thumb margin above the home indicator. */
+@media (display-mode: standalone) {
+  :root { --footer-bottom-space: clamp(12px, env(safe-area-inset-bottom), 20px); }
+}
+:root.is-standalone {
+  --footer-bottom-space: clamp(12px, env(safe-area-inset-bottom), 20px);
+}
+.footer-nav-btn { min-width: 44px; min-height: 44px; }
+.volume-step-btn { height: 100%; }

@@ -1,5 +1,11 @@
 // Fit text to the actual space remaining after icons, padding and separators.
 (() => {
+  const standalone = window.matchMedia('(display-mode: standalone)');
+  function updateDisplayMode() {
+    document.documentElement.classList.toggle('is-standalone', standalone.matches || navigator.standalone === true);
+  }
+  standalone.addEventListener('change', updateDisplayMode);
+  updateDisplayMode();
   const labels = [...document.querySelectorAll(
     '#label-sound-state, #label-wake-state, #label-continuous-state, .volume-label, .condition-label'
   )];
