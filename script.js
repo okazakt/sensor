@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041503";
+const BASE_JS_VERSION = "v0.26.101.041520";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -804,6 +804,9 @@ let appState = {
   locationHistory: [],
   isWalking: false,
   lastWalkTimestamp: 0,
+  movementCandidate: null,
+  compassSamples: [],
+  compassCandidate: null,
 
   activeKeyword: "",
   selectedKeywordForHistory: null,
@@ -1121,64 +1124,140 @@ function rotateMapSmoothly(targetBearing) {
   mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
 }
 
-function calculateSmoothedHeading(newPos) {
-  appState.locationHistory.push({ lat: newPos.lat, lng: newPos.lng, time: Date.now() });
-  if (appState.locationHistory.length > 5) {
-    appState.locationHistory.shift();
+// Compare angles across north without treating 359° → 1° as a full turn.
+function headingDelta(target, current) {
+  return ((target - current + 540) % 360) - 180;
+}
+
+function updateStoppedState(now) {
+  if (appState.movementCandidate && now - appState.movementCandidate.lastTime > 4000) {
+    appState.movementCandidate = null;
   }
+  if (appState.isWalking && now - appState.lastWalkTimestamp >= 5000) {
+    appState.isWalking = false;
+    appState.movementCandidate = null;
+    appState.locationHistory = [];
+    appState.compassSamples = [];
+    appState.compassCandidate = null;
+  }
+}
 
-  if (appState.locationHistory.length < 2) return null;
-
+function calculateSmoothedHeading(newPos, accuracy, now) {
+  appState.locationHistory = appState.locationHistory.filter(p => now - p.time <= 12000);
+  appState.locationHistory.push({ ...newPos, accuracy, time: now });
   const oldest = appState.locationHistory[0];
-  const totalMoved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
-  if (totalMoved < 2.5) {
+  const elapsed = (now - oldest.time) / 1000;
+  if (elapsed < 2) return null;
+
+  const moved = getDistance(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
+  // Require displacement beyond both fixes' uncertainty, not GPS jitter.
+  if (moved < Math.max(6, oldest.accuracy + accuracy) || moved / elapsed < 0.8) return null;
+  return getBearing(oldest.lat, oldest.lng, newPos.lat, newPos.lng);
+}
+
+function determineMovementHeading(coords, newPos, now) {
+  updateStoppedState(now);
+  const accuracy = coords.accuracy;
+  if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 25) {
+    appState.locationHistory = [];
+    appState.movementCandidate = null;
     return null;
   }
 
-  let sinSum = 0;
-  let cosSum = 0;
-  for (let i = 1; i < appState.locationHistory.length; i++) {
-    const p1 = appState.locationHistory[i - 1];
-    const p2 = appState.locationHistory[i];
-    const d = getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
-    if (d > 0.5) {
-      const b = getBearing(p1.lat, p1.lng, p2.lat, p2.lng);
-      const rad = b * Math.PI / 180;
-      const weight = i;
-      sinSum += Math.sin(rad) * weight;
-      cosSum += Math.cos(rad) * weight;
+  const inferredHeading = calculateSmoothedHeading(newPos, accuracy, now);
+  const speed = coords.speed;
+  const minSpeed = appState.isWalking ? 0.8 : 1.2;
+  let heading = null;
+  if (Number.isFinite(speed)) {
+    if (speed >= minSpeed) {
+      heading = Number.isFinite(coords.heading) ? coords.heading : inferredHeading;
+    } else {
+      // A reported stop must not be overridden by positional drift.
+      appState.locationHistory = [];
     }
+  } else {
+    heading = inferredHeading;
   }
 
-  if (sinSum === 0 && cosSum === 0) return null;
-  return (Math.atan2(sinSum, cosSum) * 180 / Math.PI + 360) % 360;
+  if (heading === null) {
+    appState.movementCandidate = null;
+    return null;
+  }
+  heading = (heading % 360 + 360) % 360;
+  if (!appState.isWalking) {
+    const candidate = appState.movementCandidate;
+    if (!candidate || now - candidate.lastTime > 4000 ||
+        Math.abs(headingDelta(heading, candidate.heading)) > 45) {
+      appState.movementCandidate = { heading, since: now, lastTime: now };
+      return null;
+    }
+    candidate.lastTime = now;
+    if (now - candidate.since < 2000) return null;
+    appState.isWalking = true;
+    appState.compassSamples = [];
+    appState.compassCandidate = null;
+  }
+  appState.lastWalkTimestamp = now;
+  return heading;
 }
 
 function onDeviceOrientation(e) {
   let compassHeading = null;
-  if (e.webkitCompassHeading !== undefined) {
+  if (Number.isFinite(e.webkitCompassHeading)) {
+    if (Number.isFinite(e.webkitCompassAccuracy) &&
+        (e.webkitCompassAccuracy < 0 || e.webkitCompassAccuracy > 25)) {
+      appState.compassSamples = [];
+      appState.compassCandidate = null;
+      return;
+    }
     compassHeading = e.webkitCompassHeading;
-  } else if (e.alpha !== null) {
+  } else if (Number.isFinite(e.alpha)) {
     compassHeading = (360 - e.alpha) % 360;
   }
-
-  if (compassHeading === null || isNaN(compassHeading)) return;
+  if (compassHeading === null) return;
 
   const now = Date.now();
-  const isCompletelyStopped = (!appState.isWalking && (now - appState.lastWalkTimestamp > 5000));
-
-  if (isCompletelyStopped) {
-    if (appState.lastCompassHeading !== null) {
-      let cDiff = Math.abs(compassHeading - appState.lastCompassHeading);
-      if (cDiff > 180) cDiff = 360 - cDiff;
-      if (cDiff < 6.0) return;
-    }
-
-    appState.lastCompassHeading = compassHeading;
-    appState.currentHeading = compassHeading;
-    rotateMapSmoothly(compassHeading);
-    evaluateSensorCycle();
+  updateStoppedState(now);
+  if (appState.isWalking || appState.movementCandidate) {
+    appState.compassSamples = [];
+    appState.compassCandidate = null;
+    return;
   }
+
+  const samples = appState.compassSamples.filter(s => now - s.time <= 600);
+  samples.push({ heading: compassHeading, time: now });
+  appState.compassSamples = samples;
+  if (samples.length < 3 || now - samples[0].time < 400) return;
+
+  let sin = 0, cos = 0;
+  for (const sample of samples) {
+    const rad = sample.heading * Math.PI / 180;
+    sin += Math.sin(rad);
+    cos += Math.cos(rad);
+  }
+  if (Math.hypot(sin, cos) / samples.length < 0.98) {
+    appState.compassCandidate = null;
+    return;
+  }
+  const smoothed = (Math.atan2(sin, cos) * 180 / Math.PI + 360) % 360;
+  if (Math.abs(headingDelta(smoothed, appState.currentHeading)) < 8) {
+    appState.compassCandidate = null;
+    return;
+  }
+  const candidate = appState.compassCandidate;
+  if (!candidate || now - candidate.lastTime > 1000 ||
+      Math.abs(headingDelta(smoothed, candidate.heading)) > 8) {
+    appState.compassCandidate = { heading: smoothed, since: now, lastTime: now };
+    return;
+  }
+  candidate.lastTime = now;
+  if (now - candidate.since < 500) return;
+
+  appState.lastCompassHeading = smoothed;
+  appState.currentHeading = smoothed;
+  appState.compassCandidate = null;
+  rotateMapSmoothly(smoothed);
+  evaluateSensorCycle();
 }
 
 function onPositionUpdate(pos) {
@@ -1190,35 +1269,12 @@ function onPositionUpdate(pos) {
   if (!map) initMap(newPos.lat, newPos.lng);
 
   const now = Date.now();
-  const speed = pos.coords.speed;
-  const gpsHeading = pos.coords.heading;
-
-  let determinedHeading = null;
-
-  if (gpsHeading !== null && !isNaN(gpsHeading) && speed !== null && speed >= 1.2) {
-    determinedHeading = gpsHeading;
-    appState.isWalking = true;
-    appState.lastWalkTimestamp = now;
-  } else {
-    const smoothed = calculateSmoothedHeading(newPos);
-    if (smoothed !== null) {
-      determinedHeading = smoothed;
-      appState.isWalking = true;
-      appState.lastWalkTimestamp = now;
-    }
-  }
-
+  const determinedHeading = determineMovementHeading(pos.coords, newPos, now);
   if (determinedHeading !== null) {
-    let diffFromCurrent = Math.abs(determinedHeading - appState.currentHeading);
-    if (diffFromCurrent > 180) diffFromCurrent = 360 - diffFromCurrent;
-
-    if (diffFromCurrent >= 7.0 || appState.currentHeading === 0) {
+    const diff = Math.abs(headingDelta(determinedHeading, appState.currentHeading));
+    if (diff >= 7 || appState.currentHeading === 0) {
       appState.currentHeading = determinedHeading;
       rotateMapSmoothly(determinedHeading);
-    }
-  } else {
-    if (now - appState.lastWalkTimestamp > 5000) {
-      appState.isWalking = false;
     }
   }
 
