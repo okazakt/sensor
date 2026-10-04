@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041802";
+const BASE_JS_VERSION = "v0.26.101.041806";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1053,7 +1053,22 @@ function updateVisualRing(level) {
   ring.className = `circle-map-wrapper signal-${level}`;
 }
 
+const CANDIDATE_REFRESH_MS = 5 * 60 * 1000;
+let candidateRefreshTimer = null;
+
+function scheduleCandidateRefresh() {
+  clearTimeout(candidateRefreshTimer);
+  candidateRefreshTimer = setTimeout(() => {
+    candidateRefreshTimer = null;
+    if (!appState.isTracking || appState.pinpointTarget) return;
+    scheduleCandidateRefresh();
+    executeSearch(true);
+  }, CANDIDATE_REFRESH_MS);
+}
+
 function resetKeywordSearch() {
+  clearTimeout(candidateRefreshTimer);
+  candidateRefreshTimer = null;
   searchGeneration++;
   isSearchInProgress = false;
   arrivalInProgressId = null;
@@ -1156,9 +1171,8 @@ function maintainRandomTarget() {
   const target = appState.randomTarget;
   const distance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
   if (distance > RADIUS_OPTIONS[radiusIndex]) {
-    // Do not reuse old candidates after the fixed target leaves the radius.
-    resetKeywordSearch();
-    executeSearch();
+    // Reuse eligible cached candidates until the next timed refresh.
+    chooseRandomTarget();
     return;
   }
   const record = loadSavedData().arrivals.find(item => item.id === target.id);
@@ -1180,7 +1194,7 @@ function evaluateSensorCycle() {
   }
 
   if (!appState.pinpointTarget) maintainRandomTarget();
-  if (!appState.pinpointTarget && isSearchInProgress) {
+  if (!appState.pinpointTarget && !appState.randomTarget && isSearchInProgress) {
     countEl.textContent = "--";
     distInfoEl.textContent = t.searching;
     if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
@@ -1593,29 +1607,18 @@ function onPositionUpdate(pos) {
 
   updateMapPositionSmoothly(pos.coords, now);
 
-  if (appState.isTracking && !appState.isPaused && !appState.pinpointTarget && !appState.randomTarget) {
-    const currentRadius = RADIUS_OPTIONS[radiusIndex];
-    const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
-
-    if (appState.lastSearchedPos) {
-      const movedSinceSearch = getDistance(
-        appState.lastSearchedPos.lat, appState.lastSearchedPos.lng,
-        newPos.lat, newPos.lng
-      );
-      if (movedSinceSearch >= refreshThreshold) {
-        executeSearch();
-      }
-    } else {
-      executeSearch();
-    }
+  if (appState.isTracking && !appState.isPaused && !appState.pinpointTarget &&
+      !appState.lastSearchedPos) {
+    executeSearch();
   }
 
   evaluateSensorCycle();
 }
 
-function executeSearch() {
-  if (!appState.isTracking || !appState.currentPos || isSearchInProgress ||
-      appState.pinpointTarget || appState.randomTarget || !appState.activeKeyword) return;
+function executeSearch(refreshCandidates = false) {
+  if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
+      appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return;
+  scheduleCandidateRefresh();
   const generation = searchGeneration;
   isSearchInProgress = true;
   appState.lastSearchedPos = { ...appState.currentPos };
@@ -1637,6 +1640,14 @@ function executeSearch() {
     placesService.textSearch(request, async (results, status) => {
       // Ignore responses from stopped searches or superseded keywords/radii.
       if (generation !== searchGeneration || !appState.isTracking) return;
+      if (refreshCandidates && status !== google.maps.places.PlacesServiceStatus.OK &&
+          status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+        // A transient refresh error must not discard a working target or cached count.
+        isSearchInProgress = false;
+        console.warn("Places API refresh status:", status);
+        evaluateSensorCycle();
+        return;
+      }
       if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
         const filtered = results.filter(place => {
           if (!place.geometry || !place.geometry.location) return false;
@@ -1664,7 +1675,14 @@ function executeSearch() {
       if (appState.hoursFilter !== 0) await loadSearchHours(appState.places, generation);
       if (generation !== searchGeneration || !appState.isTracking) return;
       isSearchInProgress = false;
-      chooseRandomTarget();
+      const fixedTarget = refreshCandidates ? appState.randomTarget : null;
+      if (fixedTarget && !appState.places.some(place => place.id === fixedTarget.id)) {
+        // Text search can omit a previously found place; keep the fixed target eligible.
+        appState.places.push(fixedTarget);
+      }
+      const retainedTarget = fixedTarget && getSearchCandidates().find(place => place.id === fixedTarget.id);
+      if (retainedTarget) appState.randomTarget = retainedTarget;
+      else chooseRandomTarget();
       evaluateSensorCycle();
     });
   } else {

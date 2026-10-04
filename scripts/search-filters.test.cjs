@@ -95,3 +95,58 @@ test('検索中は0件と断定せず、指定スポットは1件として表示
   c.evaluateSensorCycle();
   assert.equal(elements['unknown-count'].textContent, 1);
 });
+
+test('5分タイマーで候補を更新し、固定対象を保持する。停止中はAPIを呼ばない', async () => {
+  const { context: c, elements } = sensorFixture();
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  const timers = [];
+  let callback;
+  let requests = 0;
+  c.setTimeout = (fn, delay) => { timers.push({ fn, delay }); return timers.length; };
+  c.searchGeneration = 0;
+  c.appState.activeKeyword = 'ラーメン';
+  elements['target-meta-info'] = { textContent: '' };
+  c.I18N.ja.targetMeta = () => 'ラーメン / 3km';
+  c.google = { maps: {
+    LatLng: function () {},
+    places: { PlacesServiceStatus: { OK: 'OK', ZERO_RESULTS: 'ZERO_RESULTS' } }
+  } };
+  c.placesService = { textSearch: (_request, done) => { requests++; callback = done; } };
+  c.loadSearchHours = async () => {};
+  c.console = { warn() {} };
+  vm.runInContext(source.slice(source.indexOf('const CANDIDATE_REFRESH_MS'),
+    source.indexOf('function readConditionSetting')), c);
+  vm.runInContext(source.slice(source.indexOf('function executeSearch('),
+    source.indexOf('function getRadiusText')), c);
+  const result = (id, lat = 100) => ({
+    place_id: id, name: id, rating: 4.5,
+    geometry: { location: { lat: () => lat, lng: () => 0 } }
+  });
+  c.executeSearch();
+  await callback([result('fixed')], 'OK');
+  assert.equal(requests, 1);
+  assert.equal(c.appState.randomTarget.id, 'fixed');
+  assert.equal(timers.at(-1).delay, 300000);
+
+  timers.at(-1).fn();
+  assert.equal(requests, 2);
+  c.evaluateSensorCycle();
+  assert.equal(elements['unknown-count'].textContent, 1); // Detection continues during refresh.
+  await callback([result('fixed'), result('new')], 'OK');
+  assert.equal(elements['unknown-count'].textContent, 2);
+  assert.equal(c.appState.randomTarget.id, 'fixed');
+
+  timers.at(-1).fn();
+  await callback([], 'REQUEST_DENIED');
+  assert.equal(elements['unknown-count'].textContent, 2);
+  assert.equal(c.appState.randomTarget.id, 'fixed');
+
+  const previous = requests;
+  c.appState.isPaused = true;
+  timers.at(-1).fn();
+  assert.equal(requests, previous);
+  c.appState.isPaused = false;
+  c.appState.isTracking = false;
+  timers.at(-1).fn();
+  assert.equal(requests, previous);
+});
