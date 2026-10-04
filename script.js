@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041555";
+const BASE_JS_VERSION = "v0.26.101.041557";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -1189,14 +1189,9 @@ function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, pho
     return;
   }
 
-  if (appState.pinpointTarget) {
-    appState.pinpointTarget = null;
-    resetKeywordSearch();
-    executeSearch();
-  } else {
-    chooseRandomTarget();
-    if (!appState.randomTarget) executeSearch();
-  }
+  appState.pinpointTarget = null;
+  resetKeywordSearch();
+  executeSearch();
   evaluateSensorCycle();
 
   setTimeout(() => {
