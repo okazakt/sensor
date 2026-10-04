@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041543";
+const BASE_JS_VERSION = "v0.26.101.041555";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -882,6 +882,7 @@ let appState = {
   fromAllHistory: false,
   fromChallenge: false,
   places: [],
+  randomTarget: null,
   pinpointTarget: null
 };
 
@@ -891,6 +892,8 @@ let compassActive = false;
 let compassPermissionPending = false;
 let placesService = null;
 let isSearchInProgress = false;
+let searchGeneration = 0;
+let arrivalInProgressId = null;
 let detailMinimapInstance = null;
 
 function loadSavedData() {
@@ -967,6 +970,38 @@ function updateVisualRing(level) {
   ring.className = `circle-map-wrapper signal-${level}`;
 }
 
+function resetKeywordSearch() {
+  searchGeneration++;
+  isSearchInProgress = false;
+  arrivalInProgressId = null;
+  appState.randomTarget = null;
+  appState.places = [];
+  appState.lastSearchedPos = null;
+}
+
+function chooseRandomTarget() {
+  const db = loadSavedData();
+  const radius = RADIUS_OPTIONS[radiusIndex];
+  const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
+  const candidates = appState.places.filter(place => !mutedIds.has(place.id) &&
+    getDistance(appState.currentPos.lat, appState.currentPos.lng, place.lat, place.lng) <= radius);
+  appState.randomTarget = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+}
+
+function maintainRandomTarget() {
+  if (!appState.randomTarget) return;
+  const target = appState.randomTarget;
+  const distance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
+  if (distance > RADIUS_OPTIONS[radiusIndex]) {
+    // Do not reuse old candidates after the fixed target leaves the radius.
+    resetKeywordSearch();
+    executeSearch();
+    return;
+  }
+  const record = loadSavedData().arrivals.find(item => item.id === target.id);
+  if (record && record.muted) chooseRandomTarget();
+}
+
 function evaluateSensorCycle() {
   const countEl = document.getElementById('unknown-count');
   const distInfoEl = document.getElementById('distance-info');
@@ -981,16 +1016,9 @@ function evaluateSensorCycle() {
     return;
   }
 
-  let activeTargets = [];
-  if (appState.pinpointTarget) {
-    activeTargets = [appState.pinpointTarget];
-  } else {
-    const db = loadSavedData();
-    activeTargets = appState.places.filter(p => {
-      const item = db.arrivals.find(a => a.id === p.id);
-      return !item || !item.muted;
-    });
-  }
+  if (!appState.pinpointTarget) maintainRandomTarget();
+  const target = appState.pinpointTarget || appState.randomTarget;
+  const activeTargets = target ? [target] : [];
 
   countEl.textContent = activeTargets.length;
 
@@ -1004,24 +1032,13 @@ function evaluateSensorCycle() {
     return;
   }
 
-  let closestTarget = null;
-  let minDistance = Infinity;
-  let targetBearingDiff = 0;
-
-  activeTargets.forEach(tItem => {
-    const d = getDistance(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
-    if (d < minDistance) {
-      minDistance = d;
-      closestTarget = tItem;
-      const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, tItem.lat, tItem.lng);
-      let diff = Math.abs(appState.currentHeading - bearing);
-      if (diff > 180) diff = 360 - diff;
-      targetBearingDiff = diff;
-    }
-  });
+  const minDistance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
+  const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
+  const targetBearingDiff = Math.abs(headingDelta(appState.currentHeading, bearing));
 
   if (minDistance <= 20) {
-    handleArrival(closestTarget);
+    if (arrivalInProgressId === target.id) return;
+    handleArrival(target);
     return;
   }
 
@@ -1093,6 +1110,9 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
 }
 
 function handleArrival(target) {
+  if (arrivalInProgressId !== null) return;
+  arrivalInProgressId = target.id;
+  const generation = searchGeneration;
   const flash = document.getElementById('arrival-flash-overlay');
   if (flash) {
     flash.classList.remove('flash-anim');
@@ -1112,6 +1132,7 @@ function handleArrival(target) {
     updateArrivalRecord(db, target, now, existing.rating, existing.ratingCachedAt);
   } else if (placesService && target.id) {
     placesService.getDetails({ placeId: target.id, fields: ['rating', 'photos', 'formatted_address'] }, (place, status) => {
+      if (generation !== searchGeneration || !appState.isTracking) return;
       const ratingVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) ? place.rating : null;
       const addrVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.formatted_address) ? place.formatted_address : null;
       const photosVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.photos) ? place.photos.map(p => p.getUrl({ maxWidth: 800, maxHeight: 600 })) : [];
@@ -1123,6 +1144,7 @@ function handleArrival(target) {
 }
 
 function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, photosVal, cachedTime) {
+  arrivalInProgressId = null;
   const existing = db.arrivals.find(a => a.id === target.id);
   if (!existing) {
     db.arrivals.push({
@@ -1139,6 +1161,7 @@ function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, pho
       ratingCachedAt: cachedTime
     });
   } else {
+    existing.muted = true;
     if (ratingVal !== null) existing.rating = ratingVal;
     if (addrVal) existing.formatted_address = addrVal;
     if (photosVal && photosVal.length > 0) existing.cachedPhotos = photosVal;
@@ -1168,8 +1191,13 @@ function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, pho
 
   if (appState.pinpointTarget) {
     appState.pinpointTarget = null;
+    resetKeywordSearch();
     executeSearch();
+  } else {
+    chooseRandomTarget();
+    if (!appState.randomTarget) executeSearch();
   }
+  evaluateSensorCycle();
 
   setTimeout(() => {
     evaluateSensorCycle();
@@ -1400,7 +1428,7 @@ function onPositionUpdate(pos) {
     map.setCenter(newPos);
   }
 
-  if (!appState.pinpointTarget) {
+  if (appState.isTracking && !appState.isPaused && !appState.pinpointTarget && !appState.randomTarget) {
     const currentRadius = RADIUS_OPTIONS[radiusIndex];
     const refreshThreshold = Math.max(30, Math.min(300, currentRadius * 0.05));
 
@@ -1421,7 +1449,9 @@ function onPositionUpdate(pos) {
 }
 
 function executeSearch() {
-  if (!appState.currentPos || isSearchInProgress || appState.pinpointTarget || !appState.activeKeyword) return;
+  if (!appState.isTracking || !appState.currentPos || isSearchInProgress ||
+      appState.pinpointTarget || appState.randomTarget || !appState.activeKeyword) return;
+  const generation = searchGeneration;
   isSearchInProgress = true;
   appState.lastSearchedPos = { ...appState.currentPos };
   const currentRadius = RADIUS_OPTIONS[radiusIndex];
@@ -1440,9 +1470,12 @@ function executeSearch() {
     };
 
     placesService.textSearch(request, (results, status) => {
+      // Ignore responses from stopped searches or superseded keywords/radii.
+      if (generation !== searchGeneration || !appState.isTracking) return;
       isSearchInProgress = false;
       if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
         const filtered = results.filter(place => {
+          if (!place.geometry || !place.geometry.location) return false;
           const d = getDistance(
             appState.currentPos.lat, appState.currentPos.lng,
             place.geometry.location.lat(), place.geometry.location.lng()
@@ -1463,6 +1496,7 @@ function executeSearch() {
           document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
         }
       }
+      chooseRandomTarget();
       evaluateSensorCycle();
     });
   } else {
@@ -1481,8 +1515,10 @@ document.getElementById('radius-select').addEventListener('change', (e) => {
   radiusIndex = parseInt(e.target.value, 10);
   document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
   localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
-  if (appState.isTracking) {
+  if (appState.isTracking && !appState.pinpointTarget) {
+    resetKeywordSearch();
     executeSearch();
+    evaluateSensorCycle();
   }
 });
 
@@ -1857,6 +1893,8 @@ document.getElementById('continuous-toggle-btn').addEventListener('click', () =>
 });
 
 function stopSearchAndReset() {
+  resetKeywordSearch();
+  appState.pinpointTarget = null;
   appState.isTracking = false;
   appState.isPaused = false;
   appState.activeKeyword = "";
@@ -1880,6 +1918,7 @@ async function startSearchFromSet() {
     return;
   }
 
+  resetKeywordSearch();
   appState.activeKeyword = inputVal;
   appState.pinpointTarget = null;
   appState.isTracking = true;
@@ -1895,6 +1934,7 @@ async function startSearchFromSet() {
   saveAppData(db);
 
   updateButtonStateUI();
+  evaluateSensorCycle();
 
   if (!watchId && 'geolocation' in navigator) {
     watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
@@ -2468,6 +2508,7 @@ function showToast(msg) {
 }
 
 function setPinpointTargetAndStart(item) {
+  resetKeywordSearch();
   const t = I18N[currentLang];
   appState.pinpointTarget = {
     id: item.id,
