@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041532";
+const BASE_JS_VERSION = "v0.26.101.041543";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -206,6 +206,13 @@ const I18N = {
     safetyTitle: "安全にお楽しみいただくために",
     safetyDesc: "「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。",
     safetyOk: "OK",
+    compassAllow: "方位を許可 · タップ",
+    compassDenied: "方位の許可なし · タップして再確認",
+    compassUnavailable: "方位を取得できません · タップして再確認",
+    compassCalibrate: "方位を調整中 · スマホをゆっくり動かしてください",
+    compassReady: (h) => `コンパス ${h}°`,
+    compassLowAccuracy: (h) => `コンパス ${h}° · 精度低下`,
+    compassMoving: (h) => `移動方向 ${h}°`,
     confirmCleanZero: (n) => `到達数0件の履歴（${n}件）をすべて削除しますか？`,
     confirmDeleteKeyword: (k) => `キーワード「${k}」の履歴と到達データをすべて削除しますか？`,
     confirmDeleteSingle: (name) => `「${name}」の到達履歴を削除しますか？`,
@@ -287,6 +294,13 @@ const I18N = {
     safetyTitle: "For Safe Enjoyment",
     safetyDesc: "When playing 'Sensor Challenge', please obey traffic rules and pay close attention to your surroundings.",
     safetyOk: "OK",
+    compassAllow: "Enable compass · Tap",
+    compassDenied: "Compass permission denied · Tap to retry",
+    compassUnavailable: "Compass unavailable · Tap to retry",
+    compassCalibrate: "Calibrating compass · Move phone slowly",
+    compassReady: (h) => `Compass ${h}°`,
+    compassLowAccuracy: (h) => `Compass ${h}° · Low accuracy`,
+    compassMoving: (h) => `Travel direction ${h}°`,
     confirmCleanZero: (n) => `Delete all ${n} keywords with 0 discoveries?`,
     confirmDeleteKeyword: (k) => `Delete keyword "${k}" and its recorded places?`,
     confirmDeleteSingle: (name) => `Delete discovery record for "${name}"?`,
@@ -496,6 +510,7 @@ function applyLanguage(lang) {
   document.getElementById('safety-prompt-desc').textContent = t.safetyDesc;
   document.getElementById('btn-safety-ok').textContent = t.safetyOk;
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
+  updateCompassStatus();
 
   updateButtonStateUI();
   renderKeywordsList();
@@ -676,21 +691,62 @@ function startCompassListening() {
 }
 
 async function requestCompassPermissionIfNeeded() {
-  if (compassActive) return;
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
+  if (compassPermissionPending) return;
+  if (compassActive) {
+    startCompassListening();
+    updateCompassStatus();
+    return;
+  }
+  compassPermissionPending = true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // Invoke synchronously from the user's tap, before awaiting wake lock,
+      // audio or any other operation that may consume transient activation.
       const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission === 'granted') {
-        startCompassListening();
-        compassActive = true;
-      }
-    } catch (e) {
-      console.warn("コンパス権限エラー:", e);
+      appState.compassPermission = permission;
+      if (permission !== 'granted') return;
+    } else {
+      appState.compassPermission = 'granted';
     }
-  } else {
     startCompassListening();
     compassActive = true;
+  } catch (e) {
+    appState.compassPermission = 'error';
+    console.warn("コンパス権限エラー:", e);
+  } finally {
+    compassPermissionPending = false;
+    updateCompassStatus();
   }
+}
+
+function updateCompassStatus() {
+  const button = document.getElementById('compass-status-btn');
+  if (!button) return;
+  const t = I18N[currentLang];
+  const now = Date.now();
+  let text;
+  let available = false;
+  if (appState.isWalking) {
+    text = t.compassMoving(Math.round(appState.currentHeading) % 360);
+    available = true;
+  } else if (appState.compassPermission === 'denied') {
+    text = t.compassDenied;
+  } else if (appState.compassPermission === 'prompt' || appState.compassPermission === 'error') {
+    text = t.compassAllow;
+  } else if (appState.compassNeedsCalibration) {
+    text = t.compassCalibrate;
+  } else if (appState.lastCompassTimestamp !== null &&
+      now - appState.lastCompassTimestamp <= 2500) {
+    const heading = Math.round(appState.currentHeading) % 360;
+    const lowAccuracy = Number.isFinite(appState.compassAccuracy) && appState.compassAccuracy > 25;
+    text = lowAccuracy ? t.compassLowAccuracy(heading) : t.compassReady(heading);
+    available = true;
+  } else {
+    text = t.compassUnavailable;
+  }
+  if (button.textContent !== text) button.textContent = text;
+  button.dataset.available = String(available);
 }
 
 window.addEventListener('touchstart', () => { 
@@ -816,6 +872,9 @@ let appState = {
   compassJumpCandidate: null,
   lastAbsoluteCompassTimestamp: null,
   compassSource: null,
+  compassPermission: 'prompt',
+  compassNeedsCalibration: false,
+  compassAccuracy: null,
 
   activeKeyword: "",
   selectedKeywordForHistory: null,
@@ -829,6 +888,7 @@ let appState = {
 let wakeLockSentinel = null;
 let watchId = null;
 let compassActive = false;
+let compassPermissionPending = false;
 let placesService = null;
 let isSearchInProgress = false;
 let detailMinimapInstance = null;
@@ -1255,18 +1315,25 @@ function onDeviceOrientation(e) {
   const now = Date.now();
   const absolute = e.type === 'deviceorientationabsolute' || e.absolute === true ||
     Number.isFinite(e.webkitCompassHeading);
-  // Avoid alternating relative alpha with earth-referenced compass values.
-  if (!absolute && appState.lastAbsoluteCompassTimestamp !== null &&
-      now - appState.lastAbsoluteCompassTimestamp < 1500) return;
+  // Relative alpha has an arbitrary origin and cannot identify geographic
+  // north. Only earth-referenced events may drive the map or sensor direction.
+  if (!absolute) return;
 
   let compassHeading = null;
   if (Number.isFinite(e.webkitCompassHeading)) {
-    if (Number.isFinite(e.webkitCompassAccuracy) && e.webkitCompassAccuracy < 0) return;
+    appState.compassAccuracy = Number.isFinite(e.webkitCompassAccuracy) ? e.webkitCompassAccuracy : null;
+    if (appState.compassAccuracy !== null && appState.compassAccuracy < 0) {
+      appState.compassNeedsCalibration = true;
+      updateCompassStatus();
+      return;
+    }
     compassHeading = e.webkitCompassHeading;
   } else if (Number.isFinite(e.alpha)) {
     compassHeading = (360 - e.alpha) % 360;
   }
   if (compassHeading === null) return;
+  appState.compassNeedsCalibration = false;
+  if (!Number.isFinite(e.webkitCompassHeading)) appState.compassAccuracy = null;
   if (absolute) appState.lastAbsoluteCompassTimestamp = now;
   const screenAngle = window.screen?.orientation?.angle ?? window.orientation ?? 0;
   compassHeading = (compassHeading + screenAngle + 360) % 360;
@@ -2607,7 +2674,12 @@ document.getElementById('btn-pwa-skip').addEventListener('click', () => {
   document.getElementById('safety-prompt-overlay').classList.add('show');
 });
 
+document.getElementById('compass-status-btn').addEventListener('click', () => {
+  requestCompassPermissionIfNeeded();
+});
+
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
+  const compassPermission = requestCompassPermissionIfNeeded();
   document.getElementById('safety-prompt-overlay').classList.remove('show');
   initAudio();
 
@@ -2628,22 +2700,10 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
       { enableHighAccuracy: true, timeout: 10000 }
     );
   }
-
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission === 'granted') {
-        startCompassListening();
-        compassActive = true;
-      }
-    } catch (e) {
-      console.warn("コンパス権限エラー:", e);
-    }
-  } else {
-    startCompassListening();
-    compassActive = true;
-  }
+  await compassPermission;
 });
+
+setInterval(updateCompassStatus, 500);
 
 applyLanguage(currentLang);
 window.addEventListener('load', () => {

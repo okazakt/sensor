@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "23";
+  --css-rev: "24";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -398,6 +398,30 @@ body {
 
 .gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] {
   display: none !important;
+}
+
+#compass-status-btn {
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  max-width: 82%;
+  padding: 7px 12px;
+  border: 1px solid var(--sheikah-gold);
+  border-radius: 16px;
+  background: rgba(3, 8, 14, 0.85);
+  color: var(--sheikah-gold);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+
+#compass-status-btn[data-available="true"] {
+  color: var(--sheikah-cyan);
+  border-color: var(--sheikah-cyan);
 }
 
 .player-pointer {
