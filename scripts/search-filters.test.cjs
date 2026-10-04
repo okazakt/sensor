@@ -150,3 +150,44 @@ test('5分タイマーで候補を更新し、固定対象を保持する。停�
   timers.at(-1).fn();
   assert.equal(requests, previous);
 });
+
+test('検索半径に応じた探知段階の距離境界と方向条件を守る', () => {
+  const { context: c } = sensorFixture();
+  let observed;
+  c.updateVisualRing = level => { observed = { level }; };
+  c.scheduleRadarSound = (interval, double) => { Object.assign(observed, { interval, double }); };
+  c.handleArrival = () => { observed = { level: 'arrival' }; };
+  function detect(radius, distance, angle = 0) {
+    c.RADIUS_OPTIONS[0] = radius;
+    c.appState.pinpointTarget = { id: 'target', lat: distance, lng: 0 };
+    c.headingDelta = () => angle;
+    c.evaluateSensorCycle();
+    return observed;
+  }
+  for (const [radius, strong, medium] of [
+    [200, 100, 150], [1000, 100, 300], [3000, 300, 900],
+    [10000, 1000, 3000], [50000, 5000, 15000], [100000, 10000, 30000]
+  ]) {
+    assert.equal(detect(radius, 20, 180).level, 'arrival');
+    assert.deepEqual(detect(radius, 50, 20), { level: 'level4', interval: 450, double: true });
+    assert.deepEqual(detect(radius, 50, 55), { level: 'level3', interval: 800, double: false });
+    assert.deepEqual(detect(radius, strong, 35), { level: 'level3', interval: 800, double: false });
+    assert.equal(detect(radius, strong + 0.01, 35).level, 'level2');
+    assert.deepEqual(detect(radius, medium, 55), { level: 'level2', interval: 1500, double: false });
+    assert.equal(detect(radius, medium + 0.01, 55).level, 'level1');
+    assert.equal(detect(radius, strong, 35.01).level, 'level2');
+    assert.equal(detect(radius, medium, 55.01).level, 'level1');
+    assert.equal(detect(radius, medium, 85).level, 'idle');
+    assert.equal(detect(radius, 50, 90).level, 'idle');
+  }
+});
+
+test('最小半径は画面の選択肢と検索処理ともに200m', () => {
+  const script = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
+  const c = {};
+  vm.createContext(c);
+  vm.runInContext(script.match(/^const RADIUS_OPTIONS = .*;$/m)[0] + '\nthis.minimumRadius = RADIUS_OPTIONS[0];', c);
+  assert.equal(c.minimumRadius, 200);
+  assert.match(html, /<option value="0">200m<\/option>/);
+});

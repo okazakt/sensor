@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041820";
+const BASE_JS_VERSION = "v0.26.101.041848";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -825,7 +825,7 @@ function playTreasureFanfare() {
   });
 }
 
-const RADIUS_OPTIONS = [100, 1000, 3000, 10000, 50000, 100000];
+const RADIUS_OPTIONS = [200, 1000, 3000, 10000, 50000, 100000];
 let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
 let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
 
@@ -1230,6 +1230,9 @@ function evaluateSensorCycle() {
 
   let interval = null;
   let level = 'idle';
+  const searchRadius = RADIUS_OPTIONS[radiusIndex];
+  const strongDistance = Math.max(100, searchRadius * 0.1);
+  const mediumDistance = Math.max(150, searchRadius * 0.3);
 
   if (targetBearingDiff >= 90) {
     level = 'idle';
@@ -1237,10 +1240,10 @@ function evaluateSensorCycle() {
   } else if (minDistance <= 50 && targetBearingDiff <= 20) {
     level = 'level4';
     interval = 450;
-  } else if ((minDistance <= 120 && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
+  } else if ((minDistance <= strongDistance && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
     level = 'level3';
     interval = 800;
-  } else if (minDistance <= 300 && targetBearingDiff <= 55) {
+  } else if (minDistance <= mediumDistance && targetBearingDiff <= 55) {
     level = 'level2';
     interval = 1500;
   } else if (targetBearingDiff < 85) {
