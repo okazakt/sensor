@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "31";
+  --css-rev: "32";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --main-controls-height: max(330px, calc(48vh - 54px - env(safe-area-inset-bottom)));
@@ -1509,8 +1509,8 @@ body {
 #label-continuous-state,
 .volume-label,
 .condition-label {
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .sound-mode-icons,
 .wake-mode-icons,
@@ -1540,25 +1540,6 @@ body {
     --main-controls-height: max(330px, calc(48dvh - 54px - env(safe-area-inset-bottom)));
   }
 }
-@container (max-width: 300px) {
-  .sound-mode-btn,
-  .wake-mode-btn,
-  .continuous-mode-btn {
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-  }
-  .sound-mode-separator,
-  .wake-mode-separator,
-  .continuous-mode-separator {
-    display: none;
-  }
-  #label-sound-state,
-  #label-wake-state,
-  #label-continuous-state {
-    flex: 0 1 auto;
-  }
-}
 /* Short windows retain a useful map and allow the controls to scroll. */
 @media (max-height: 650px) {
   #page-main-wrap {
@@ -1567,5 +1548,58 @@ body {
   }
   .top-section {
     min-height: 260px;
+  }
+}
+
+.bottom-section {
+  --setting-control-height: clamp(32px, 9cqw, 40px);
+}
+.sound-mode-icon, .wake-mode-icon, .continuous-mode-icon,
+.condition-icon, #rating-filter-btn .condition-star {
+  width: clamp(8px, 2.8cqw, 12px);
+  height: clamp(10px, 3.2cqw, 14px);
+}
+.bottom-section .btn-sub-control { overflow: hidden; padding-block: 4px; }
+.sound-mode-toast {
+  width: min(calc(100vw - 32px), 420px);
+  overflow: hidden;
+}
+.overlay-modal { overflow-y: auto; }
+@media (orientation: landscape) {
+  #app-container {
+    max-width: 960px;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  #page-main-wrap {
+    flex-direction: row !important;
+    overflow: hidden;
+    padding-bottom: calc(54px + env(safe-area-inset-bottom));
+  }
+  .top-section {
+    width: 45%;
+    height: 100%;
+    min-height: 0;
+    padding: calc(env(safe-area-inset-top) + 60px) 12px 12px;
+  }
+  .top-left-ctrl, .top-right-ctrl { top: calc(env(safe-area-inset-top) + 8px); }
+  .sheikah-divider-bar { width: 6px; height: 100%; }
+  .bottom-section {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .bottom-section > * { flex-shrink: 0; }
+  .slide-page .page-header {
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .slide-page .list-scroll { padding-bottom: 16px; }
+  .overlay-modal { justify-content: flex-start; padding-block: 16px; }
+  .sound-mode-toast {
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    width: min(calc(100vw - 32px), 420px);
   }
 }
