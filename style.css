@@ -6,7 +6,8 @@
  * ============================================================
  */
 :root {
-  --css-rev: "28";
+  --css-rev: "29";
+  --top-control-size: 40px;
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -246,8 +247,8 @@ body {
 }
 
 .top-icon-btn {
-  width: 40px;
-  height: 40px;
+  width: var(--top-control-size);
+  height: var(--top-control-size);
   background: rgba(3, 8, 14, 0.85);
   border: 2px solid var(--sheikah-gold);
   border-radius: 50%;
@@ -265,18 +266,26 @@ body {
 }
 
 .lang-toggle-btn {
+  height: var(--top-control-size);
+  min-width: 80px;
   background: rgba(3, 8, 14, 0.85);
-  border: 1.5px solid var(--sheikah-gold);
+  border: 2px solid var(--sheikah-gold);
   color: var(--sheikah-gold);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  padding: 6px 12px;
-  border-radius: 18px;
+  padding: 0 12px;
+  border-radius: calc(var(--top-control-size) / 2);
   cursor: pointer;
   box-shadow: 0 0 10px rgba(0,0,0,0.9);
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
+}
+.lang-toggle-btn .svg-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 .lang-toggle-btn:active {
   background: var(--sheikah-gold);
