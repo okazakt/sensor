@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041749";
+const BASE_JS_VERSION = "v0.26.101.041802";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1137,12 +1137,17 @@ async function loadSearchHours(places, generation) {
   }));
 }
 
-function chooseRandomTarget() {
+function getSearchCandidates() {
+  if (!appState.currentPos) return [];
   const db = loadSavedData();
   const radius = RADIUS_OPTIONS[radiusIndex];
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
-  const candidates = appState.places.filter(place => !mutedIds.has(place.id) && matchesSearchConditions(place) &&
+  return appState.places.filter(place => !mutedIds.has(place.id) && matchesSearchConditions(place) &&
     getDistance(appState.currentPos.lat, appState.currentPos.lng, place.lat, place.lng) <= radius);
+}
+
+function chooseRandomTarget() {
+  const candidates = getSearchCandidates();
   appState.randomTarget = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
 }
 
@@ -1175,10 +1180,19 @@ function evaluateSensorCycle() {
   }
 
   if (!appState.pinpointTarget) maintainRandomTarget();
+  if (!appState.pinpointTarget && isSearchInProgress) {
+    countEl.textContent = "--";
+    distInfoEl.textContent = t.searching;
+    if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+    scheduledInterval = null;
+    updateVisualRing('idle');
+    return;
+  }
   const target = appState.pinpointTarget || appState.randomTarget;
   const activeTargets = target ? [target] : [];
 
-  countEl.textContent = activeTargets.length;
+  // The sensor follows one fixed target, but the count represents all eligible places.
+  countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
 
   if (activeTargets.length === 0) {
     if (!distInfoEl.textContent.includes("API")) {
