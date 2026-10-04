@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041848";
+const BASE_JS_VERSION = "v0.26.101.041936";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -825,9 +825,12 @@ function playTreasureFanfare() {
   });
 }
 
-const RADIUS_OPTIONS = [200, 1000, 3000, 10000, 50000, 100000];
+const RADIUS_OPTIONS = [200, 1000, 3000, 10000, 50000];
 let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
-let radiusIndex = isNaN(savedRadiusIdx) ? 2 : savedRadiusIdx;
+let radiusIndex = isNaN(savedRadiusIdx) ? 2 : Math.max(0, Math.min(savedRadiusIdx, RADIUS_OPTIONS.length - 1));
+if (radiusIndex !== savedRadiusIdx) {
+  localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
+}
 
 let lastKnownPos = { lat: 35.681236, lng: 139.767125 };
 try {
