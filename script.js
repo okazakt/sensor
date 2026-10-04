@@ -2,9 +2,11 @@
  * ============================================================
  * [JavaScript Version Management Specification]
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
+ * - 日時: 日本時間（Asia/Tokyo、UTC+09:00）。Yearは西暦下2桁、Monthはゼロ埋めなし。
+ * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040822";
+const BASE_JS_VERSION = "v0.26.101.041736";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
