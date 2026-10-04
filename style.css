@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "25";
+  --css-rev: "26";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -1449,14 +1449,13 @@ body {
 
 /* Search conditions share the same two-column widths as the controls below. */
 .condition-row { position: relative; }
-.condition-btn { gap: 3px; padding: 10px 4px; letter-spacing: 0; white-space: nowrap; }
-.condition-symbols { display: flex; align-items: center; gap: 3px; }
+.condition-btn { justify-content: flex-start; gap: 4px; padding: 10px; white-space: nowrap; }
+.condition-symbols { display: inline-flex; align-items: center; gap: 1px; flex-shrink: 0; font-size: 9px; letter-spacing: 0; }
 .condition-symbols > span { color: #778899; }
 .condition-symbols > span.selected { color: var(--sheikah-cyan); }
-.condition-separator { color: #778899; }
-.condition-label { font-size: clamp(8px, 2.2vw, 11px); }
-.condition-filter-icon { width: 10px; height: 12px; flex-shrink: 0; fill: currentColor; }
+.condition-label { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: center; gap: 2px; }
+.condition-filter-icon { width: 12px; height: 12px; flex-shrink: 0; fill: currentColor; }
 @media (max-width: 360px) {
-  .condition-btn { gap: 2px; font-size: 9px; }
-  .condition-symbols { gap: 1px; }
+  .condition-btn { gap: 1px; padding-right: 2px; }
+  .condition-symbols { font-size: 7.5px; gap: 0; }
 }

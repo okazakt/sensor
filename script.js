@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041736";
+const BASE_JS_VERSION = "v0.26.101.041749";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2081,7 +2081,9 @@ for (const kind of ['hours', 'rating']) {
     updateConditionButtons();
     hideOtherSettingToasts('condition-mode-toast');
     const toast = document.getElementById('condition-mode-toast');
-    toast.textContent = conditionDescription(kind);
+    toast.textContent = conditionDescription(kind) + (kind === 'hours'
+      ? (currentLang === 'ja' ? '（△：閉店まで1時間未満／○：1時間以上）'
+        : ' (△: closes in under 1h / ○: open for at least 1h)') : '');
     toast.classList.add('show');
     clearTimeout(conditionToastTimer);
     conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
