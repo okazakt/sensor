@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "32";
+  --css-rev: "33";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --main-controls-height: max(330px, calc(48vh - 54px - env(safe-area-inset-bottom)));
@@ -514,7 +514,7 @@ body {
   height: var(--main-controls-height);
   flex-shrink: 0;
   background: var(--sheikah-panel);
-  padding: 10px 16px 8px 16px;
+  padding: 10px 10px 8px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -702,18 +702,18 @@ body {
 .btn-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .dual-btn-row {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   min-width: 0;
 }
 
 .dual-btn-row > .btn-sub-control {
-  flex: 0 0 calc(50% - 4px);
-  width: calc(50% - 4px);
+  flex: 0 0 calc(50% - 2.5px);
+  width: calc(50% - 2.5px);
   min-width: 0;
   height: var(--setting-control-height);
 }
@@ -1552,12 +1552,15 @@ body {
 }
 
 .bottom-section {
-  --setting-control-height: clamp(32px, 9cqw, 40px);
+  --setting-control-height: clamp(32px, 8.5cqw, 38px);
+  --setting-icon-size: clamp(12px, 3.8cqw, 16px);
 }
 .sound-mode-icon, .wake-mode-icon, .continuous-mode-icon,
-.condition-icon, #rating-filter-btn .condition-star {
-  width: clamp(8px, 2.8cqw, 12px);
-  height: clamp(10px, 3.2cqw, 14px);
+.condition-icon, #rating-filter-btn .condition-star,
+#hours-filter-btn .condition-question, #rating-filter-btn .condition-question,
+.condition-filter-icon {
+  width: var(--setting-icon-size);
+  height: var(--setting-icon-size);
 }
 .bottom-section .btn-sub-control { overflow: hidden; padding-block: 4px; }
 .sound-mode-toast {

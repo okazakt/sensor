@@ -16,13 +16,18 @@
           (!heightLimit || element.scrollHeight <= heightLimit)) low = size;
       else high = size;
     }
-    element.style.fontSize = `${Math.floor(low * 10) / 10}px`;
+    const fitted = Math.floor(low * 10) / 10;
+    element.style.fontSize = `${fitted}px`;
+    return fitted;
   }
   function update() {
     pending = false;
     const panel = document.querySelector('.bottom-section');
-    const panelWidth = panel.clientWidth - 32;
-    labels.forEach(label => fit(label, Math.min(12.5, panelWidth * 0.033)));
+    const panelStyle = getComputedStyle(panel);
+    const panelWidth = panel.clientWidth - parseFloat(panelStyle.paddingLeft) - parseFloat(panelStyle.paddingRight);
+    const sizes = labels.map(label => fit(label, Math.min(12.5, panelWidth * 0.033))).filter(Number.isFinite);
+    const sharedSize = Math.min(...sizes);
+    if (sizes.length) labels.forEach(label => { label.style.fontSize = `${sharedSize}px`; });
     toasts.forEach(toast => {
       const box = toast.id === 'toast-text' ? toast.parentElement : toast;
       const css = getComputedStyle(box);
