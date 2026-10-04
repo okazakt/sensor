@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041557";
+const BASE_JS_VERSION = "v0.26.101.041604";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -907,6 +907,12 @@ function saveAppData(db) {
 }
 
 let map = null;
+let visualMapCenter = null;
+let mapCenterTarget = null;
+let mapCenterFrame = null;
+let lastMapPositionFix = null;
+let mapPositionJump = null;
+let mapCenterIsMoving = false;
 
 function initMap(lat, lng) {
   if (typeof google === 'undefined' || !google.maps) return;
@@ -925,6 +931,75 @@ function initMap(lat, lng) {
   } else {
     map.setCenter(centerPos);
   }
+  visualMapCenter = { ...centerPos };
+  mapCenterTarget = { ...centerPos };
+}
+
+function updateMapPositionSmoothly(coords, now) {
+  if (!map) return;
+  const position = { lat: coords.latitude, lng: coords.longitude };
+  if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
+  const accuracy = Number.isFinite(coords.accuracy) ? Math.max(0, coords.accuracy) : 10;
+  // Hold the display when the GPS uncertainty becomes too large.
+  if (accuracy > 50) {
+    mapPositionJump = null;
+    return;
+  }
+  if (!lastMapPositionFix) {
+    visualMapCenter = { ...position };
+    mapCenterTarget = { ...position };
+    lastMapPositionFix = { accuracy, time: now };
+    map.setCenter(position);
+    return;
+  }
+
+  const speed = coords.speed;
+  const moving = appState.isWalking || (Number.isFinite(speed) && speed > 0.4);
+  mapCenterIsMoving = moving;
+  const distance = getDistance(mapCenterTarget.lat, mapCenterTarget.lng, position.lat, position.lng);
+  const deadZone = Math.max(1.5, Math.min(8, accuracy * 0.35));
+  if (!moving && distance <= deadZone) {
+    mapPositionJump = null;
+    lastMapPositionFix = { accuracy, time: now };
+    return;
+  }
+
+  const elapsed = Math.max(0, (now - lastMapPositionFix.time) / 1000);
+  const expectedTravel = Number.isFinite(speed) ? Math.max(0, speed) * elapsed : (moving ? 2 * elapsed : 0);
+  const jumpThreshold = Math.max(15, accuracy + lastMapPositionFix.accuracy + expectedTravel * 3);
+  if (distance > jumpThreshold) {
+    const candidate = mapPositionJump;
+    const confirmationRadius = Math.max(3, Math.min(10, accuracy * 0.4));
+    if (!candidate || now - candidate.time > 5000 ||
+        getDistance(candidate.lat, candidate.lng, position.lat, position.lng) > confirmationRadius) {
+      mapPositionJump = { ...position, time: now };
+      return;
+    }
+    if (now - candidate.time < 300) return;
+  }
+  mapPositionJump = null;
+  lastMapPositionFix = { accuracy, time: now };
+  mapCenterTarget = position;
+  if (mapCenterFrame !== null) return;
+
+  let lastFrameTime = null;
+  function animateCenter(timestamp) {
+    const elapsed = lastFrameTime === null ? 16 : Math.min(64, timestamp - lastFrameTime);
+    lastFrameTime = timestamp;
+    const distance = getDistance(visualMapCenter.lat, visualMapCenter.lng, mapCenterTarget.lat, mapCenterTarget.lng);
+    if (distance <= 0.1) {
+      visualMapCenter = { ...mapCenterTarget };
+      mapCenterFrame = null;
+    } else {
+      const amount = 1 - Math.exp(-elapsed / (mapCenterIsMoving ? 250 : 650));
+      visualMapCenter.lat += (mapCenterTarget.lat - visualMapCenter.lat) * amount;
+      visualMapCenter.lng = ((visualMapCenter.lng +
+        headingDelta(mapCenterTarget.lng, visualMapCenter.lng) * amount + 540) % 360) - 180;
+      mapCenterFrame = requestAnimationFrame(animateCenter);
+    }
+    map.setCenter(visualMapCenter);
+  }
+  mapCenterFrame = requestAnimationFrame(animateCenter);
 }
 
 function bootstrapMapAndLocation() {
@@ -1419,9 +1494,7 @@ function onPositionUpdate(pos) {
     }
   }
 
-  if (map) {
-    map.setCenter(newPos);
-  }
+  updateMapPositionSmoothly(pos.coords, now);
 
   if (appState.isTracking && !appState.isPaused && !appState.pinpointTarget && !appState.randomTarget) {
     const currentRadius = RADIUS_OPTIONS[radiusIndex];
@@ -2725,13 +2798,7 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
 
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        appState.currentPos = p;
-        lastKnownPos = p;
-        localStorage.setItem('sheikah_last_pos', JSON.stringify(p));
-        if (map) map.setCenter(p);
-      },
+      onPositionUpdate,
       (err) => { console.warn("位置情報許可拒否またはエラー:", err.message); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
