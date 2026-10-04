@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.040825";
+const BASE_JS_VERSION = "v0.26.101.041503";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
