@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "30";
+  --css-rev: "31";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --main-controls-height: max(330px, calc(48vh - 54px - env(safe-area-inset-bottom)));
@@ -40,6 +40,7 @@ body {
   background-color: #080a0d;
   color: #e0f8ff;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -49,7 +50,9 @@ body {
   width: 100%;
   max-width: 480px;
   height: 100vh;
+  height: 100dvh;
   position: relative;
+  container-type: inline-size;
   overflow: hidden;
   background: var(--sheikah-bg);
   border-left: 2px solid var(--sheikah-border);
@@ -297,13 +300,16 @@ body {
 .top-section {
   width: 100%;
   height: calc(100vh - 6px - 54px - env(safe-area-inset-bottom) - var(--main-controls-height));
+  height: calc(100dvh - 6px - 54px - env(safe-area-inset-bottom) - var(--main-controls-height));
+  flex-shrink: 0;
+  container-type: size;
   position: relative;
   background: radial-gradient(circle at center, #262c33 0%, #111417 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding-top: calc(max(env(safe-area-inset-top), 24px) + 36px);
+  padding: calc(max(env(safe-area-inset-top), 24px) + 60px) 12px 12px;
 }
 
 .sheikah-divider-bar {
@@ -328,13 +334,14 @@ body {
 
 .circle-map-wrapper {
   position: relative;
-  width: min(92vw, 380px);
-  height: min(92vw, 380px);
+  width: min(100cqw, 100cqh, 380px);
+  height: min(100cqw, 100cqh, 380px);
+  flex-shrink: 0;
   border-radius: 50%;
   padding: 6px;
   background: linear-gradient(135deg, var(--sheikah-gold) 0%, var(--sheikah-gold-dark) 50%, var(--sheikah-gold) 100%);
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
-  margin-top: 8px;
+  margin-top: 0;
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
@@ -1482,4 +1489,83 @@ body {
   #rating-filter-btn .condition-question { width: 10px; }
   #rating-filter-btn .condition-star { width: 7px; }
   .condition-filter-icon { width: 14px; }
+}
+
+/* Keep the complete setting labels readable within each half-width button. */
+.bottom-section {
+  container-type: inline-size;
+  overflow-y: auto;
+  gap: 8px;
+}
+.bottom-section .btn-sub-control {
+  font-size: clamp(10px, 3.1cqw, 12.5px);
+  letter-spacing: 0;
+  gap: 3px;
+  padding-inline: 6px;
+  line-height: 1.2;
+}
+#label-sound-state,
+#label-wake-state,
+#label-continuous-state,
+.volume-label,
+.condition-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.sound-mode-icons,
+.wake-mode-icons,
+.continuous-mode-icons {
+  gap: 2px;
+}
+.sound-mode-icon,
+.wake-mode-icon,
+.continuous-mode-icon {
+  width: clamp(10px, 3.5cqw, 16px);
+  height: clamp(10px, 3.5cqw, 16px);
+}
+.bottom-section .volume-control {
+  padding-inline: 0;
+  gap: 0;
+}
+.volume-step-btn {
+  width: 28px;
+  flex-basis: 28px;
+}
+.app-version-footer {
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+@supports (height: 100dvh) {
+  :root {
+    --main-controls-height: max(330px, calc(48dvh - 54px - env(safe-area-inset-bottom)));
+  }
+}
+@container (max-width: 300px) {
+  .sound-mode-btn,
+  .wake-mode-btn,
+  .continuous-mode-btn {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  .sound-mode-separator,
+  .wake-mode-separator,
+  .continuous-mode-separator {
+    display: none;
+  }
+  #label-sound-state,
+  #label-wake-state,
+  #label-continuous-state {
+    flex: 0 1 auto;
+  }
+}
+/* Short windows retain a useful map and allow the controls to scroll. */
+@media (max-height: 650px) {
+  #page-main-wrap {
+    overflow-y: auto;
+    padding-bottom: calc(54px + env(safe-area-inset-bottom));
+  }
+  .top-section {
+    min-height: 260px;
+  }
 }
