@@ -4,7 +4,9 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041604";
+const BASE_JS_VERSION = "v0.26.101.041607";
+// Enable only when diagnosing compass acquisition or heading.
+const COMPASS_DEBUG_ENABLED = false;
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -723,6 +725,8 @@ async function requestCompassPermissionIfNeeded() {
 function updateCompassStatus() {
   const button = document.getElementById('compass-status-btn');
   if (!button) return;
+  button.hidden = !COMPASS_DEBUG_ENABLED;
+  if (button.hidden) return;
   const t = I18N[currentLang];
   const now = Date.now();
   let text;
