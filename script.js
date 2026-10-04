@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041520";
+const BASE_JS_VERSION = "v0.26.101.041532";
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
@@ -670,20 +670,25 @@ function initAudio() {
   } catch (e) {}
 }
 
+function startCompassListening() {
+  window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
+  window.addEventListener('deviceorientation', onDeviceOrientation, true);
+}
+
 async function requestCompassPermissionIfNeeded() {
   if (compassActive) return;
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     try {
       const permission = await DeviceOrientationEvent.requestPermission();
       if (permission === 'granted') {
-        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        startCompassListening();
         compassActive = true;
       }
     } catch (e) {
       console.warn("コンパス権限エラー:", e);
     }
   } else {
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+    startCompassListening();
     compassActive = true;
   }
 }
@@ -805,8 +810,12 @@ let appState = {
   isWalking: false,
   lastWalkTimestamp: 0,
   movementCandidate: null,
-  compassSamples: [],
-  compassCandidate: null,
+  stopCandidate: null,
+  filteredCompassHeading: null,
+  lastCompassTimestamp: null,
+  compassJumpCandidate: null,
+  lastAbsoluteCompassTimestamp: null,
+  compassSource: null,
 
   activeKeyword: "",
   selectedKeywordForHistory: null,
@@ -1111,22 +1120,46 @@ function updateArrivalRecord(db, target, now, ratingVal, cachedTime) {
   updateArrivalRecordWithDetails(db, target, now, ratingVal, null, [], cachedTime);
 }
 
+let mapRotationFrame = null;
+let mapRotationTarget = 0;
+let lastCompassEvaluationTime = -Infinity;
+
 function rotateMapSmoothly(targetBearing) {
   const mapDiv = document.getElementById('map');
   if (!mapDiv) return;
+  mapRotationTarget = -targetBearing;
+  // Frame interpolation replaces the CSS transition, which otherwise restarts
+  // on every compass reading and introduces lag during continuous turns.
+  mapDiv.style.transition = 'none';
+  if (mapRotationFrame !== null) return;
 
-  const desiredAngle = -targetBearing;
-  let diff = (desiredAngle - appState.visualMapRotation) % 360;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-
-  appState.visualMapRotation += diff;
-  mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
+  let lastFrameTime = null;
+  function animateRotation(timestamp) {
+    const elapsed = lastFrameTime === null ? 16 : Math.min(64, timestamp - lastFrameTime);
+    lastFrameTime = timestamp;
+    const diff = headingDelta(mapRotationTarget, appState.visualMapRotation);
+    if (Math.abs(diff) <= 0.05) {
+      appState.visualMapRotation += diff;
+      mapRotationFrame = null;
+    } else {
+      appState.visualMapRotation += diff * (1 - Math.exp(-elapsed / 100));
+      mapRotationFrame = requestAnimationFrame(animateRotation);
+    }
+    mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
+  }
+  mapRotationFrame = requestAnimationFrame(animateRotation);
 }
 
 // Compare angles across north without treating 359° → 1° as a full turn.
 function headingDelta(target, current) {
-  return ((target - current + 540) % 360) - 180;
+  return (((target - current + 180) % 360 + 360) % 360) - 180;
+}
+
+function enterStoppedState() {
+  appState.isWalking = false;
+  appState.movementCandidate = null;
+  appState.stopCandidate = null;
+  appState.locationHistory = [];
 }
 
 function updateStoppedState(now) {
@@ -1134,11 +1167,29 @@ function updateStoppedState(now) {
     appState.movementCandidate = null;
   }
   if (appState.isWalking && now - appState.lastWalkTimestamp >= 5000) {
-    appState.isWalking = false;
-    appState.movementCandidate = null;
-    appState.locationHistory = [];
-    appState.compassSamples = [];
-    appState.compassCandidate = null;
+    enterStoppedState();
+  }
+}
+
+function confirmStopped(coords, newPos, now) {
+  if (!appState.isWalking) return;
+  const speed = coords.speed;
+  const candidate = appState.stopCandidate;
+  const stillNearAnchor = candidate &&
+    getDistance(candidate.pos.lat, candidate.pos.lng, newPos.lat, newPos.lng) <= 2;
+  const slow = Number.isFinite(speed) ? speed <= 0.4 : stillNearAnchor;
+  if (Number.isFinite(speed) && !slow) {
+    appState.stopCandidate = null;
+    return;
+  }
+  if (!candidate || !stillNearAnchor || now - candidate.lastTime > 4000) {
+    appState.stopCandidate = { pos: newPos, since: now, lastTime: now };
+    return;
+  }
+  candidate.lastTime = now;
+  // Explicit low speed is stronger evidence than clustered position fixes.
+  if (slow && now - candidate.since >= (Number.isFinite(speed) ? 1000 : 2500)) {
+    enterStoppedState();
   }
 }
 
@@ -1164,6 +1215,7 @@ function determineMovementHeading(coords, newPos, now) {
     return null;
   }
 
+  confirmStopped(coords, newPos, now);
   const inferredHeading = calculateSmoothedHeading(newPos, accuracy, now);
   const speed = coords.speed;
   const minSpeed = appState.isWalking ? 0.8 : 1.2;
@@ -1194,70 +1246,69 @@ function determineMovementHeading(coords, newPos, now) {
     candidate.lastTime = now;
     if (now - candidate.since < 2000) return null;
     appState.isWalking = true;
-    appState.compassSamples = [];
-    appState.compassCandidate = null;
   }
   appState.lastWalkTimestamp = now;
   return heading;
 }
 
 function onDeviceOrientation(e) {
+  const now = Date.now();
+  const absolute = e.type === 'deviceorientationabsolute' || e.absolute === true ||
+    Number.isFinite(e.webkitCompassHeading);
+  // Avoid alternating relative alpha with earth-referenced compass values.
+  if (!absolute && appState.lastAbsoluteCompassTimestamp !== null &&
+      now - appState.lastAbsoluteCompassTimestamp < 1500) return;
+
   let compassHeading = null;
   if (Number.isFinite(e.webkitCompassHeading)) {
-    if (Number.isFinite(e.webkitCompassAccuracy) &&
-        (e.webkitCompassAccuracy < 0 || e.webkitCompassAccuracy > 25)) {
-      appState.compassSamples = [];
-      appState.compassCandidate = null;
-      return;
-    }
+    if (Number.isFinite(e.webkitCompassAccuracy) && e.webkitCompassAccuracy < 0) return;
     compassHeading = e.webkitCompassHeading;
   } else if (Number.isFinite(e.alpha)) {
     compassHeading = (360 - e.alpha) % 360;
   }
   if (compassHeading === null) return;
-
-  const now = Date.now();
+  if (absolute) appState.lastAbsoluteCompassTimestamp = now;
+  const screenAngle = window.screen?.orientation?.angle ?? window.orientation ?? 0;
+  compassHeading = (compassHeading + screenAngle + 360) % 360;
+  const source = absolute ? 'absolute' : 'relative';
+  const previousTime = appState.lastCompassTimestamp;
+  if (appState.filteredCompassHeading === null || previousTime === null ||
+      now - previousTime > 1500 || appState.compassSource !== source) {
+    appState.filteredCompassHeading = compassHeading;
+    appState.compassJumpCandidate = null;
+  } else {
+    const delta = headingDelta(compassHeading, appState.filteredCompassHeading);
+    // Reject isolated large spikes but accept a confirmed turn without waiting
+    // for the phone to stop turning.
+    if (Math.abs(delta) > 60) {
+      const jump = appState.compassJumpCandidate;
+      if (!jump || now - jump.time > 300 ||
+          Math.abs(headingDelta(compassHeading, jump.heading)) > 20) {
+        appState.compassJumpCandidate = { heading: compassHeading, time: now };
+        return;
+      }
+    }
+    appState.compassJumpCandidate = null;
+    const elapsed = Math.max(1, Math.min(250, now - previousTime));
+    const timeConstant = Math.abs(delta) > 5 ? 120 : 350;
+    appState.filteredCompassHeading = (appState.filteredCompassHeading +
+      delta * (1 - Math.exp(-elapsed / timeConstant)) + 360) % 360;
+  }
+  appState.lastCompassTimestamp = now;
+  appState.compassSource = source;
+  appState.lastCompassHeading = appState.filteredCompassHeading;
   updateStoppedState(now);
-  if (appState.isWalking || appState.movementCandidate) {
-    appState.compassSamples = [];
-    appState.compassCandidate = null;
-    return;
-  }
-
-  const samples = appState.compassSamples.filter(s => now - s.time <= 600);
-  samples.push({ heading: compassHeading, time: now });
-  appState.compassSamples = samples;
-  if (samples.length < 3 || now - samples[0].time < 400) return;
-
-  let sin = 0, cos = 0;
-  for (const sample of samples) {
-    const rad = sample.heading * Math.PI / 180;
-    sin += Math.sin(rad);
-    cos += Math.cos(rad);
-  }
-  if (Math.hypot(sin, cos) / samples.length < 0.98) {
-    appState.compassCandidate = null;
-    return;
-  }
-  const smoothed = (Math.atan2(sin, cos) * 180 / Math.PI + 360) % 360;
-  if (Math.abs(headingDelta(smoothed, appState.currentHeading)) < 8) {
-    appState.compassCandidate = null;
-    return;
-  }
-  const candidate = appState.compassCandidate;
-  if (!candidate || now - candidate.lastTime > 1000 ||
-      Math.abs(headingDelta(smoothed, candidate.heading)) > 8) {
-    appState.compassCandidate = { heading: smoothed, since: now, lastTime: now };
-    return;
-  }
-  candidate.lastTime = now;
-  if (now - candidate.since < 500) return;
-
-  appState.lastCompassHeading = smoothed;
+  // Keep the compass filter warm during movement for a quick handoff at stops.
+  if (appState.isWalking) return;
+  const smoothed = appState.filteredCompassHeading;
+  if (Math.abs(headingDelta(smoothed, appState.currentHeading)) < 0.6) return;
   appState.currentHeading = smoothed;
-  appState.compassCandidate = null;
   rotateMapSmoothly(smoothed);
-  evaluateSensorCycle();
+  // Radar and local storage work need not run at the compass event frequency.
+  if (now - lastCompassEvaluationTime >= 100) {
+    lastCompassEvaluationTime = now;
+    evaluateSensorCycle();
+  }
 }
 
 function onPositionUpdate(pos) {
@@ -2582,14 +2633,14 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
     try {
       const permission = await DeviceOrientationEvent.requestPermission();
       if (permission === 'granted') {
-        window.addEventListener('deviceorientation', onDeviceOrientation, true);
+        startCompassListening();
         compassActive = true;
       }
     } catch (e) {
       console.warn("コンパス権限エラー:", e);
     }
   } else {
-    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+    startCompassListening();
     compassActive = true;
   }
 });
