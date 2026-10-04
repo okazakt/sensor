@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "24";
+  --css-rev: "25";
 
   --sheikah-cyan: #00f3ff;
   --sheikah-cyan-glow: rgba(0, 243, 255, 0.7);
@@ -1445,4 +1445,18 @@ body {
 }
 #toast-banner.show {
   transform: translateY(0);
+}
+
+/* Search conditions share the same two-column widths as the controls below. */
+.condition-row { position: relative; }
+.condition-btn { gap: 3px; padding: 10px 4px; letter-spacing: 0; white-space: nowrap; }
+.condition-symbols { display: flex; align-items: center; gap: 3px; }
+.condition-symbols > span { color: #778899; }
+.condition-symbols > span.selected { color: var(--sheikah-cyan); }
+.condition-separator { color: #778899; }
+.condition-label { font-size: clamp(8px, 2.2vw, 11px); }
+.condition-filter-icon { width: 10px; height: 12px; flex-shrink: 0; fill: currentColor; }
+@media (max-width: 360px) {
+  .condition-btn { gap: 2px; font-size: 9px; }
+  .condition-symbols { gap: 1px; }
 }

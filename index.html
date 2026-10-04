@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="17">
+  <meta name="html-rev" content="18">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -233,6 +233,11 @@
             <svg class="svg-icon" id="svg-sensor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             <span id="label-sensor-state">SENSOR: STANDBY</span>
           </button>
+          <div class="dual-btn-row condition-row">
+            <button type="button" id="hours-filter-btn" class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><span data-condition="0">×</span><span data-condition="1">○</span><span data-condition="2">○1h+</span><span data-condition="3">？</span></span><span class="condition-separator" aria-hidden="true">│</span><span class="condition-label">OPEN NOW</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg></button>
+            <button type="button" id="rating-filter-btn" class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><span data-condition="0">★</span><span data-condition="1">★</span><span data-condition="2">★</span><span data-condition="3">★</span><span data-condition="4">★</span><span data-condition="5">？</span></span><span class="condition-separator" aria-hidden="true">│</span><span class="condition-label">RATING</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg></button>
+            <div id="condition-mode-toast" class="sound-mode-toast" role="status" aria-live="polite"></div>
+          </div>
           <div class="dual-btn-row">
             <div class="volume-control btn-sheikah btn-sub-control active" id="volume-control">
               <button class="volume-step-btn" id="volume-down-btn" type="button" aria-label="Volume down">▼</button>

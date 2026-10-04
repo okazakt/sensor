@@ -4,7 +4,7 @@
  * - 採番形式: v0.[Year].[Month]1.[DateHourMinute]
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041607";
+const BASE_JS_VERSION = "v0.26.101.040822";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -859,6 +859,8 @@ let appState = {
   wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
   continuousSearch: true,
+  hoursFilter: readConditionSetting("hours", 5),
+  ratingFilter: readConditionSetting("rating", 11),
   currentPos: null,
   lastSearchedPos: null,
 
@@ -1058,11 +1060,86 @@ function resetKeywordSearch() {
   appState.lastSearchedPos = null;
 }
 
+function readConditionSetting(kind, count) {
+  const value = Number(localStorage.getItem(`sheikah_${kind}_filter`) || 0);
+  return Number.isInteger(value) && value >= 0 && value < count ? value : 0;
+}
+
+// Each star is one band: [1,2), [2,3), [3,4), [4,5), and 5.
+function ratingBand(rating) {
+  return typeof rating === 'number' && Number.isFinite(rating) && rating >= 1 && rating <= 5
+    ? Math.min(4, Math.floor(rating) - 1) : 5;
+}
+
+function ratingMask(mode) {
+  if (mode === 0) return [true, true, true, true, true, true];
+  if (mode <= 5) return [0, 1, 2, 3, 4].map(i => i >= mode - 1).concat(false);
+  return [0, 1, 2, 3, 4].map(i => i < mode - 6).concat(true);
+}
+
+const HOURS_MASKS = [
+  [true, true, true, true], [true, true, true, false],
+  [false, true, true, false], [false, false, true, false],
+  [false, false, false, true]
+];
+
+function openingBand(place, now = new Date()) {
+  const hours = place.openingHours;
+  if (!hours || typeof hours.isOpen !== 'function') return 3;
+  const open = hours.isOpen(now);
+  if (open === false) return 0;
+  if (open !== true) return 3;
+  const periods = hours.periods || [];
+  if (periods.some(period => period.open && !period.close)) return 2;
+  if (!Number.isFinite(place.utcOffsetMinutes)) return null;
+  const local = new Date(now.getTime() + place.utcOffsetMinutes * 60000);
+  const minute = local.getUTCDay() * 1440 + local.getUTCHours() * 60 + local.getUTCMinutes() + local.getUTCSeconds() / 60;
+  for (const period of periods) {
+    if (!period.open || !period.close) continue;
+    const start = period.open.day * 1440 + period.open.hours * 60 + period.open.minutes;
+    let end = period.close.day * 1440 + period.close.hours * 60 + period.close.minutes;
+    if (end <= start) end += 10080;
+    for (const current of [minute, minute + 10080]) {
+      if (current >= start && current < end) return end - current >= 60 ? 2 : 1;
+    }
+  }
+  return null;
+}
+
+function matchesSearchConditions(place) {
+  if (!ratingMask(appState.ratingFilter)[ratingBand(place.rating)]) return false;
+  if (appState.hoursFilter === 0) return true;
+  if (place.hoursLookupFailed) return false;
+  const band = openingBand(place);
+  // Known open with unavailable closing time still qualifies as open.
+  if (band === null) return appState.hoursFilter === 1 || appState.hoursFilter === 2;
+  return HOURS_MASKS[appState.hoursFilter][band];
+}
+
+async function loadSearchHours(places, generation) {
+  let next = 0;
+  // Limit concurrent detail requests; ignore obsolete searches.
+  await Promise.all(Array.from({length: Math.min(3, places.length)}, async () => {
+    while (next < places.length && generation === searchGeneration) {
+      const place = places[next++];
+      await new Promise(resolve => placesService.getDetails({
+        placeId: place.id, fields: ['opening_hours', 'utc_offset_minutes']
+      }, (details, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+          place.openingHours = details.opening_hours;
+          place.utcOffsetMinutes = details.utc_offset_minutes;
+        } else place.hoursLookupFailed = true;
+        resolve();
+      }));
+    }
+  }));
+}
+
 function chooseRandomTarget() {
   const db = loadSavedData();
   const radius = RADIUS_OPTIONS[radiusIndex];
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
-  const candidates = appState.places.filter(place => !mutedIds.has(place.id) &&
+  const candidates = appState.places.filter(place => !mutedIds.has(place.id) && matchesSearchConditions(place) &&
     getDistance(appState.currentPos.lat, appState.currentPos.lng, place.lat, place.lng) <= radius);
   appState.randomTarget = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
 }
@@ -1078,7 +1155,7 @@ function maintainRandomTarget() {
     return;
   }
   const record = loadSavedData().arrivals.find(item => item.id === target.id);
-  if (record && record.muted) chooseRandomTarget();
+  if ((record && record.muted) || !matchesSearchConditions(target)) chooseRandomTarget();
 }
 
 function evaluateSensorCycle() {
@@ -1541,10 +1618,9 @@ function executeSearch() {
       query: queryWord
     };
 
-    placesService.textSearch(request, (results, status) => {
+    placesService.textSearch(request, async (results, status) => {
       // Ignore responses from stopped searches or superseded keywords/radii.
       if (generation !== searchGeneration || !appState.isTracking) return;
-      isSearchInProgress = false;
       if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
         const filtered = results.filter(place => {
           if (!place.geometry || !place.geometry.location) return false;
@@ -1559,7 +1635,8 @@ function executeSearch() {
           id: place.place_id,
           name: place.name,
           lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
+          lng: place.geometry.location.lng(),
+          rating: place.rating
         }));
       } else {
         appState.places = [];
@@ -1568,6 +1645,9 @@ function executeSearch() {
           document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
         }
       }
+      if (appState.hoursFilter !== 0) await loadSearchHours(appState.places, generation);
+      if (generation !== searchGeneration || !appState.isTracking) return;
+      isSearchInProgress = false;
       chooseRandomTarget();
       evaluateSensorCycle();
     });
@@ -1671,6 +1751,7 @@ setupInputClear(
 );
 
 function updateButtonStateUI() {
+  updateConditionButtons();
   const t = I18N[currentLang];
   const indicator = document.getElementById('status-indicator');
   const setBtn = document.getElementById('set-btn');
@@ -1783,6 +1864,7 @@ let wakeModeToastTimer = null;
 
 function hideOtherSettingToasts(activeToastId) {
   const toastIds = [
+    'condition-mode-toast',
     'sound-mode-toast',
     'volume-mode-toast',
     'continuous-mode-toast',
@@ -1963,6 +2045,50 @@ document.getElementById('continuous-toggle-btn').addEventListener('click', () =>
   updateButtonStateUI();
   showContinuousModeToast();
 });
+
+let conditionToastTimer = null;
+
+function conditionDescription(kind) {
+  const ja = currentLang === 'ja';
+  const mode = appState[`${kind}Filter`];
+  if (kind === 'hours') return (ja
+    ? ['営業時間：すべて', '営業時間不明を除外', '営業中のみ', '閉店まで1時間以上', '営業時間不明のみ']
+    : ['Hours: all', 'Exclude unknown hours', 'Open now only', 'Open for at least 1 hour', 'Unknown hours only'])[mode];
+  if (mode === 0) return ja ? '評価：すべて' : 'Rating: all';
+  if (mode === 1) return ja ? '評価不明を除外' : 'Exclude unknown ratings';
+  if (mode <= 5) return ja ? `評価${mode}以上` : `Rating ${mode} or higher`;
+  if (mode === 6) return ja ? '評価不明のみ' : 'Unknown ratings only';
+  return ja ? `評価不明、または${mode - 5}未満` : `Unknown rating or below ${mode - 5}`;
+}
+
+function updateConditionButtons() {
+  for (const kind of ['hours', 'rating']) {
+    const btn = document.getElementById(`${kind}-filter-btn`);
+    const mask = kind === 'hours' ? HOURS_MASKS[appState.hoursFilter] : ratingMask(appState.ratingFilter);
+    btn.querySelectorAll('[data-condition]').forEach((el, i) => el.classList.toggle('selected', mask[i]));
+    btn.setAttribute('aria-label', conditionDescription(kind));
+    btn.title = conditionDescription(kind);
+  }
+}
+
+for (const kind of ['hours', 'rating']) {
+  document.getElementById(`${kind}-filter-btn`).addEventListener('click', () => {
+    const key = `${kind}Filter`;
+    appState[key] = (appState[key] + 1) % (kind === 'hours' ? 5 : 11);
+    localStorage.setItem(`sheikah_${kind}_filter`, String(appState[key]));
+    updateConditionButtons();
+    hideOtherSettingToasts('condition-mode-toast');
+    const toast = document.getElementById('condition-mode-toast');
+    toast.textContent = conditionDescription(kind);
+    toast.classList.add('show');
+    clearTimeout(conditionToastTimer);
+    conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+    resetKeywordSearch();
+    executeSearch();
+    evaluateSensorCycle();
+  });
+}
+updateConditionButtons();
 
 function stopSearchAndReset() {
   resetKeywordSearch();
