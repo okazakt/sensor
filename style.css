@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "35";
+  --css-rev: "36";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -240,17 +240,16 @@ body {
   100% { opacity: 0; }
 }
 
-.top-left-ctrl {
+.map-top-controls {
   position: absolute;
   top: calc(max(env(safe-area-inset-top), 24px) + 12px);
   left: 18px;
-  z-index: 25;
-}
-.top-right-ctrl {
-  position: absolute;
-  top: calc(max(env(safe-area-inset-top), 24px) + 12px);
   right: 18px;
   z-index: 25;
+  display: grid;
+  grid-template-columns: var(--top-control-size) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
 }
 
 .top-icon-btn {
@@ -311,7 +310,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: calc(max(env(safe-area-inset-top), 24px) + 48px) 10px 38px;
+  padding: calc(max(env(safe-area-inset-top), 24px) + 68px) 10px 8px;
 }
 
 .sheikah-divider-bar {
@@ -426,7 +425,9 @@ body {
 }
 .map-attribution a { color: inherit; text-decoration: underline; }
 .map-attribution a:focus-visible { outline: 2px solid var(--sheikah-cyan); }
-.main-map-attribution { position: absolute; left: 8px; bottom: 4px; }
+.main-map-attribution { text-align: center; min-width: 0; }
+.main-map-attribution, .main-map-attribution a { font-family: Arial, sans-serif; }
+.main-map-attribution a { white-space: nowrap; }
 .detail-map-attribution { position: absolute; left: 4px; bottom: 4px; }
 .osm-arrival-marker { width: 28px; height: 28px; pointer-events: none; }
 .map-load-status {
@@ -1609,9 +1610,9 @@ body {
     width: 45%;
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top) + 60px) 12px 38px;
+    padding: calc(env(safe-area-inset-top) + 60px) 12px 12px;
   }
-  .top-left-ctrl, .top-right-ctrl { top: calc(env(safe-area-inset-top) + 8px); }
+  .map-top-controls { top: calc(env(safe-area-inset-top) + 8px); }
   .sheikah-divider-bar { width: 6px; height: 100%; }
   .bottom-section {
     flex: 1;
