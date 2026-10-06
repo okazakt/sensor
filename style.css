@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "36";
+  --css-rev: "37";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -425,7 +425,7 @@ body {
 }
 .map-attribution a { color: inherit; text-decoration: underline; }
 .map-attribution a:focus-visible { outline: 2px solid var(--sheikah-cyan); }
-.main-map-attribution { text-align: center; min-width: 0; }
+.main-map-attribution { text-align: center; min-width: 0; background: transparent; }
 .main-map-attribution, .main-map-attribution a { font-family: Arial, sans-serif; }
 .main-map-attribution a { white-space: nowrap; }
 .detail-map-attribution { position: absolute; left: 4px; bottom: 4px; }

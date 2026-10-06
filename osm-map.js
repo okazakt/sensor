@@ -7,18 +7,22 @@
   function createStyle(mode) {
     const day = mode === 'botw';
     const roadWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
-      5, 0.3, 12, 1.5, 16, 6, 19, 22];
+      5, 0.3, 12, 1.5,
+      16, ['match', ['get', 'class'], 'primary', 8, 'secondary', 7, 'tertiary', 6, 'service', 3, 5],
+      19, ['match', ['get', 'class'], 'primary', 28, 'secondary', 25, 'tertiary', 22, 'service', 10, 18]];
     const majorWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
       5, 0.7, 12, 3, 16, 10, 19, 30];
     const casingWidth = (width, border) => width.map((value, index) =>
-      index >= 4 && index % 2 === 0 ? value + border : value);
+      index >= 4 && index % 2 === 0
+        ? (typeof value === 'number' ? value + border : ['+', value, border]) : value);
     const line = (id, filter, color, width) => ({
       id, type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', filter,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': color, 'line-width': width }
     });
-    const minor = ['all', ['!=', 'class', 'motorway'], ['!=', 'class', 'trunk'],
-      ['!=', 'class', 'rail'], ['!=', 'class', 'transit'], ['!=', 'class', 'ferry']];
+    // Sidewalks and crossings are separate OSM paths, not extra carriageways.
+    // Only road classes belong in these solid, road-width layers.
+    const minor = ['in', 'class', 'primary', 'secondary', 'tertiary', 'minor', 'service'];
     const major = ['in', 'class', 'motorway', 'trunk'];
     return {
       version: 8,
