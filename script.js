@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.041936";
+const BASE_JS_VERSION = "v0.26.101.062243";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -319,119 +319,23 @@ if (!currentLang) {
   currentLang = userSysLang.startsWith('ja') ? 'ja' : 'en';
 }
 
-const mapStyleSheikahDark = [
-  { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { elementType: "geometry", stylers: [{ color: "#081018" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#142433" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#02070d" }] }
-];
-
-const mapStyleBotw = [
-  { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { elementType: "geometry", stylers: [{ color: "#453820" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#483b23" }] },
-  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#3f331c" }] },
-  { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#e4d5a8" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#2c2415" }, { weight: 1.2 }] },
-  { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#f0e3bc" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#221b0e" }, { weight: 1.5 }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#38485c" }] }
-];
-
 let currentMapStyleMode = localStorage.getItem('sheikah_map_style') || 'botw';
 let markersList = [];
 
 function clearAllMarkers() {
-  markersList.forEach(m => m.setMap(null));
+  markersList.forEach(marker => marker.remove());
   markersList = [];
 }
 
 function redrawMarkersWithFade() {
   if (!map) return;
   clearAllMarkers();
-
   const db = loadSavedData();
-  if (!db.arrivals || db.arrivals.length === 0) return;
-
-  const sortedArrivals = [...db.arrivals].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const isDay = (currentMapStyleMode === 'botw');
-
-  sortedArrivals.forEach((item, index) => {
-    if (index >= 10) return;
-
-    const opacity = Math.max(0.15, 1.0 - (index * 0.09));
-
-    let iconObj;
-    if (isDay) {
-      iconObj = {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="${opacity}" />
-            <circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="${opacity * 0.8}" />
-            <circle cx="14" cy="14" r="4.5" fill="#ffee33" opacity="${opacity}" />
-          </svg>
-        `),
-        scaledSize: new google.maps.Size(28, 28),
-        anchor: new google.maps.Point(14, 14)
-      };
-    } else {
-      iconObj = {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#00f3ff",
-        fillOpacity: opacity,
-        strokeWeight: 2,
-        strokeColor: "#ffffff",
-        strokeOpacity: opacity
-      };
-    }
-
-    const marker = new google.maps.Marker({
-      position: { lat: item.lat, lng: item.lng },
-      map: map,
-      title: item.name,
-      icon: iconObj
-    });
-    markersList.push(marker);
+  const sortedArrivals = [...(db.arrivals || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+  sortedArrivals.slice(0, 10).forEach((item, index) => {
+    markersList.push(map.addMarker(item, currentMapStyleMode === 'botw',
+      Math.max(0.15, 1.0 - index * 0.09), item.name));
   });
-}
-
-function getMarkerIcon(isDayMode) {
-  return getMarkerIconDynamic(isDayMode, 1.0);
-}
-
-function getMarkerIconDynamic(isDayMode, opacity) {
-  if (isDayMode) {
-    return {
-      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-          <circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="${opacity}" />
-          <circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="${opacity * 0.8}" />
-          <circle cx="14" cy="14" r="4.5" fill="#ffee33" opacity="${opacity}" />
-        </svg>
-      `),
-      scaledSize: new google.maps.Size(28, 28),
-      anchor: new google.maps.Point(14, 14)
-    };
-  } else {
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: "#00f3ff",
-      fillOpacity: opacity,
-      strokeWeight: 2,
-      strokeColor: "#ffffff",
-      strokeOpacity: opacity
-    };
-  }
 }
 
 function formatStarRating(rating) {
@@ -635,8 +539,9 @@ mapContrastBtn.addEventListener('click', () => {
   currentMapStyleMode = (currentMapStyleMode === 'sheikah') ? 'botw' : 'sheikah';
   localStorage.setItem('sheikah_map_style', currentMapStyleMode);
   if (map) {
-    map.setOptions({ styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark });
+    map.setStyle(currentMapStyleMode);
   }
+  if (detailMinimapInstance) detailMinimapInstance.setStyle(currentMapStyleMode);
   updateMapStyleUI();
 });
 
@@ -925,20 +830,29 @@ let lastMapPositionFix = null;
 let mapPositionJump = null;
 let mapCenterIsMoving = false;
 
-function initMap(lat, lng) {
-  if (typeof google === 'undefined' || !google.maps) return;
-  const centerPos = { lat, lng };
+function initPlacesService() {
+  if (!placesService && typeof google !== 'undefined' && google.maps && google.maps.places) {
+    // Places works with a detached container; it no longer needs a Google map.
+    placesService = new google.maps.places.PlacesService(document.createElement('div'));
+  }
+}
 
+function initMap(lat, lng) {
+  if (typeof maplibregl === 'undefined' || typeof SensorMap === 'undefined') {
+    document.getElementById('map-load-status').hidden = false;
+    return;
+  }
+  const centerPos = { lat, lng };
   if (!map) {
-    map = new google.maps.Map(document.getElementById('map'), {
-      center: centerPos,
-      zoom: 17,
-      disableDefaultUI: true,
-      styles: currentMapStyleMode === 'botw' ? mapStyleBotw : mapStyleSheikahDark,
-      gestureHandling: 'none'
-    });
-    placesService = new google.maps.places.PlacesService(map);
-    redrawMarkersWithFade();
+    try {
+      map = SensorMap.createMap('map', centerPos, currentMapStyleMode,
+        document.getElementById('map-load-status'));
+      redrawMarkersWithFade();
+    } catch (error) {
+      document.getElementById('map-load-status').hidden = false;
+      console.warn('OSM map initialization failed:', error);
+      return;
+    }
   } else {
     map.setCenter(centerPos);
   }
@@ -1014,6 +928,7 @@ function updateMapPositionSmoothly(coords, now) {
 }
 
 function bootstrapMapAndLocation() {
+  initPlacesService();
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
@@ -1403,8 +1318,7 @@ function rotateMapSmoothly(targetBearing) {
   const mapDiv = document.getElementById('map');
   if (!mapDiv) return;
   mapRotationTarget = -targetBearing;
-  // Frame interpolation replaces the CSS transition, which otherwise restarts
-  // on every compass reading and introduces lag during continuous turns.
+  // Rotate the canvas with CSS to keep compass updates cheap on mobile devices.
   mapDiv.style.transition = 'none';
   if (mapRotationFrame !== null) return;
 
@@ -2843,6 +2757,10 @@ function openSpotDetailModal(item) {
 
   pageSpotDetail.classList.add('open');
 
+  if (detailMinimapInstance) {
+    detailMinimapInstance.remove();
+    detailMinimapInstance = null;
+  }
   const gallery = document.createElement('div');
   gallery.className = 'photo-gallery-scroll';
 
@@ -2851,23 +2769,26 @@ function openSpotDetailModal(item) {
   mapWrap.innerHTML = `
     <div id="detail-minimap"></div>
     <div class="minimap-badge">${t.minimapBadge}</div>
+    <div class="map-attribution detail-map-attribution">${SensorMap.attribution}</div>
+    <div class="map-load-status detail-map-status" hidden>地図を読み込めません / Map unavailable</div>
   `;
   gallery.appendChild(mapWrap);
 
-  if (!placesService) {
-    initMap(item.lat, item.lng);
-  }
+  // The map must render even when Google details are unavailable or slow.
+  loadPhotosAndMap(item, gallery, photosBox);
+
+  initPlacesService();
 
   const detailCacheValid = item.rating !== undefined && item.rating !== null && item.ratingCachedAt && (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS) && item.cachedPhotos && item.cachedPhotos.length > 0;
 
   if (detailCacheValid) {
     document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
-    loadPhotosAndMap(item, gallery, photosBox);
   } else if (placesService && item.id) {
     placesService.getDetails({
       placeId: item.id,
       fields: ['name', 'formatted_address', 'photos', 'rating']
     }, (place, status) => {
+      if (appState.selectedSpotForDetail !== item || !gallery.isConnected) return;
       if (status === google.maps.places.PlacesServiceStatus.OK && place) {
         document.getElementById('detail-spot-address').textContent = place.formatted_address || t.noAddress;
         item.formatted_address = place.formatted_address;
@@ -2885,13 +2806,11 @@ function openSpotDetailModal(item) {
       }
       loadPhotosAndMap(item, gallery, photosBox);
     });
-  } else {
-    photosBox.innerHTML = '';
-    photosBox.appendChild(gallery);
   }
 }
 
 function loadPhotosAndMap(item, gallery, photosBox) {
+  gallery.querySelectorAll('.gallery-img-wrap, .no-photos-box').forEach(element => element.remove());
   if (item.cachedPhotos && item.cachedPhotos.length > 0) {
     item.cachedPhotos.forEach(url => {
       const wrap = document.createElement('div');
@@ -2909,26 +2828,21 @@ function loadPhotosAndMap(item, gallery, photosBox) {
   photosBox.innerHTML = '';
   photosBox.appendChild(gallery);
 
-  setTimeout(() => {
-    const isDay = (currentMapStyleMode === 'botw');
-    detailMinimapInstance = new google.maps.Map(document.getElementById('detail-minimap'), {
-      center: { lat: item.lat, lng: item.lng },
-      zoom: 17,
-      disableDefaultUI: true,
-      styles: isDay ? mapStyleBotw : mapStyleSheikahDark,
-      gestureHandling: 'none',
-      draggable: false,
-      scrollwheel: false,
-      disableDoubleClickZoom: true
-    });
-
-    new google.maps.Marker({
-      position: { lat: item.lat, lng: item.lng },
-      map: detailMinimapInstance,
-      title: item.name,
-      icon: getMarkerIcon(isDay)
-    });
-  }, 80);
+  const mapContainer = gallery.querySelector('#detail-minimap');
+  const statusElement = gallery.querySelector('.detail-map-status');
+  if (mapContainer.dataset.initialized) return;
+  if (typeof maplibregl === 'undefined') {
+    statusElement.hidden = false;
+    return;
+  }
+  try {
+    detailMinimapInstance = SensorMap.createMap(mapContainer, item, currentMapStyleMode, statusElement);
+    detailMinimapInstance.addMarker(item, currentMapStyleMode === 'botw', 1, item.name);
+    mapContainer.dataset.initialized = 'true';
+  } catch (error) {
+    statusElement.hidden = false;
+    console.warn('OSM detail map initialization failed:', error);
+  }
 }
 
 document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);

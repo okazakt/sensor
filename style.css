@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "34";
+  --css-rev: "35";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -311,7 +311,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: calc(max(env(safe-area-inset-top), 24px) + 48px) 10px 8px;
+  padding: calc(max(env(safe-area-inset-top), 24px) + 48px) 10px 38px;
 }
 
 .sheikah-divider-bar {
@@ -412,13 +412,35 @@ body {
 #map {
   width: 100%;
   height: 100%;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center center;
 }
 
-.gm-style-cc, .gmnoprint, a[href^="https://maps.google.com/maps"] {
-  display: none !important;
+.map-attribution {
+  color: #e4d5a8;
+  background: rgba(3, 8, 14, 0.88);
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 3px 6px;
+  border-radius: 4px;
+  z-index: 6;
 }
+.map-attribution a { color: inherit; text-decoration: underline; }
+.map-attribution a:focus-visible { outline: 2px solid var(--sheikah-cyan); }
+.main-map-attribution { position: absolute; left: 8px; bottom: 4px; }
+.detail-map-attribution { position: absolute; left: 4px; bottom: 4px; }
+.osm-arrival-marker { width: 28px; height: 28px; pointer-events: none; }
+.map-load-status {
+  position: absolute;
+  left: 8px;
+  bottom: 42px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  background: #482718;
+  z-index: 7;
+}
+.map-load-status[hidden] { display: none; }
 
 #compass-status-btn {
   position: absolute;
@@ -1412,7 +1434,8 @@ body {
 }
 .minimap-badge {
   position: absolute;
-  bottom: 8px;
+  top: 8px;
+  bottom: auto;
   left: 8px;
   background: rgba(3, 8, 14, 0.85);
   border: 1px solid var(--sheikah-cyan);
@@ -1586,7 +1609,7 @@ body {
     width: 45%;
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top) + 60px) 12px 12px;
+    padding: calc(env(safe-area-inset-top) + 60px) 12px 38px;
   }
   .top-left-ctrl, .top-right-ctrl { top: calc(env(safe-area-inset-top) + 8px); }
   .sheikah-divider-bar { width: 6px; height: 100%; }

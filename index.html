@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="26">
+  <meta name="html-rev" content="27">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -32,6 +32,8 @@
   
   <link rel="apple-touch-icon" href="icon.png">
   
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+
   <!-- CSSキャッシュ回避用動的読み込み -->
   <script>
     const cacheBuster = Date.now();
@@ -182,6 +184,11 @@
             <button id="compass-status-btn" type="button" hidden data-available="false">方位を許可 · タップ</button>
           </div>
         </div>
+        <div class="map-attribution main-map-attribution">
+          <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>
+          Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>
+        </div>
+        <div id="map-load-status" class="map-load-status" hidden>地図を読み込めません / Map unavailable</div>
       </div>
 
       <!-- 立体ゴールドモールドライン -->
@@ -433,6 +440,8 @@
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
   
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+  <script src="osm-map.js?v=1"></script>
   <script src="responsive-layout.js?v=3"></script>
   <script>
     const scriptEl = document.createElement('script');
