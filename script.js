@@ -6,9 +6,179 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.062243";
+const BASE_JS_VERSION = "v0.26.101.062303";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
+
+/* OSM vector tiles use the OpenMapTiles schema. No Google drawing API is used here. */
+function initializeMapRenderer(global) {
+  'use strict';
+
+  const ATTRIBUTION = '<a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+
+  function createStyle(mode) {
+    const day = mode === 'botw';
+    const roadWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
+      5, 0.3, 12, 1.5,
+      16, ['match', ['get', 'class'], 'primary', 8, 'secondary', 7, 'tertiary', 6, 'service', 3, 5],
+      19, ['match', ['get', 'class'], 'primary', 28, 'secondary', 25, 'tertiary', 22, 'service', 10, 18]];
+    const majorWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
+      5, 0.7, 12, 3, 16, 10, 19, 30];
+    const casingWidth = (width, border) => width.map((value, index) =>
+      index >= 4 && index % 2 === 0
+        ? (typeof value === 'number' ? value + border : ['+', value, border]) : value);
+    const line = (id, filter, color, width) => ({
+      id, type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', filter,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': color, 'line-width': width }
+    });
+    // Sidewalks and crossings are separate OSM paths, not extra carriageways.
+    // Only road classes belong in these solid, road-width layers.
+    const minor = ['in', 'class', 'primary', 'secondary', 'tertiary', 'minor', 'service'];
+    const major = ['in', 'class', 'motorway', 'trunk'];
+    return {
+      version: 8,
+      sources: {
+        openmaptiles: {
+          type: 'vector', url: 'https://tiles.openfreemap.org/planet/latest',
+          attribution: ATTRIBUTION
+        }
+      },
+      layers: [
+        { id: 'background', type: 'background', paint: { 'background-color': day ? '#453820' : '#081018' } },
+        { id: 'landcover', type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+          paint: { 'fill-color': day ? '#3f331c' : '#081018' } },
+        { id: 'landuse', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
+          paint: { 'fill-color': day ? '#483b23' : '#081018' } },
+        { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water',
+          paint: { 'fill-color': day ? '#38485c' : '#02070d' } },
+        { id: 'waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway',
+          paint: { 'line-color': day ? '#38485c' : '#02070d', 'line-width': 2 } },
+        { id: 'building', type: 'fill', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
+          paint: { 'fill-color': day ? '#453820' : '#081018', 'fill-outline-color': day ? '#483b23' : '#081018' } },
+        line('road-casing', minor, day ? '#2c2415' : '#142433', casingWidth(roadWidth, 1.2)),
+        line('road-fill', minor, day ? '#e4d5a8' : '#142433', roadWidth),
+        line('highway-casing', major, day ? '#221b0e' : '#142433', casingWidth(majorWidth, 1.5)),
+        line('highway-fill', major, day ? '#f0e3bc' : '#142433', majorWidth)
+      ]
+    };
+  }
+
+  function markerElement(day, opacity) {
+    const element = document.createElement('div');
+    element.className = 'osm-arrival-marker';
+    element.innerHTML = day
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" fill="none" stroke="#ffee33" stroke-width="2.5" opacity="${opacity}"/><circle cx="14" cy="14" r="13" fill="none" stroke="#6e5426" stroke-width="1.2" opacity="${opacity * 0.8}"/><circle cx="14" cy="14" r="4.5" fill="#ffee33" opacity="${opacity}"/></svg>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="8" fill="#00f3ff" fill-opacity="${opacity}" stroke="#ffffff" stroke-width="2" stroke-opacity="${opacity}"/></svg>`;
+    return element;
+  }
+
+  function createMap(container, position, mode, statusElement) {
+    let theme = mode;
+    let styleReady = false;
+    const instance = new global.maplibregl.Map({
+      container, style: createStyle(mode), center: [position.lng, position.lat],
+      // MapLibre uses 512px tiles; Google zoom 17 has the same scale as zoom 16.
+      zoom: 16, interactive: false, attributionControl: false
+    });
+    if (statusElement) {
+      instance.on('error', () => { statusElement.hidden = false; });
+      instance.on('sourcedata', event => {
+        if (event.sourceId === 'openmaptiles' && event.sourceDataType === 'content' &&
+            instance.areTilesLoaded()) statusElement.hidden = true;
+      });
+    }
+    const resizeObserver = new ResizeObserver(() => instance.resize());
+    resizeObserver.observe(instance.getContainer());
+    function repaintTheme() {
+      createStyle(theme).layers.forEach(layer => {
+        Object.entries(layer.paint).forEach(([property, value]) =>
+          instance.setPaintProperty(layer.id, property, value));
+      });
+    }
+    instance.once('load', () => {
+      styleReady = true;
+      if (theme !== mode) repaintTheme();
+    });
+    return {
+      setCenter: position => instance.setCenter([position.lng, position.lat]),
+      setStyle: mode => {
+        // Both themes have identical layers and data. Repaint without reloading tiles.
+        theme = mode;
+        if (styleReady) repaintTheme();
+      },
+      addMarker(position, day, opacity = 1, title = '') {
+        const element = markerElement(day, opacity);
+        element.title = title;
+        return new global.maplibregl.Marker({ element, rotationAlignment: 'map' })
+          .setLngLat([position.lng, position.lat]).addTo(instance);
+      },
+      remove() { resizeObserver.disconnect(); instance.remove(); }
+    };
+  }
+
+  global.SensorMap = { createMap, createStyle, attribution: ATTRIBUTION };
+}
+initializeMapRenderer(window);
+
+// Fit text to the actual space remaining after icons, padding and separators.
+function initializeResponsiveLayout() {
+  const standalone = window.matchMedia('(display-mode: standalone)');
+  function updateDisplayMode() {
+    document.documentElement.classList.toggle('is-standalone', standalone.matches || navigator.standalone === true);
+  }
+  standalone.addEventListener('change', updateDisplayMode);
+  updateDisplayMode();
+  const labels = [...document.querySelectorAll(
+    '#label-sound-state, #label-wake-state, #label-continuous-state, .volume-label, .condition-label'
+  )];
+  const toasts = [...document.querySelectorAll('.sound-mode-toast, #toast-text')];
+  let pending = false;
+  function fit(element, maximum, heightLimit) {
+    if (!element.clientWidth || !element.textContent.trim()) return;
+    let low = 1;
+    let high = maximum;
+    for (let i = 0; i < 12; i++) {
+      const size = (low + high) / 2;
+      element.style.fontSize = `${size}px`;
+      if (element.scrollWidth <= element.clientWidth &&
+          (!heightLimit || element.scrollHeight <= heightLimit)) low = size;
+      else high = size;
+    }
+    const fitted = Math.floor(low * 10) / 10;
+    element.style.fontSize = `${fitted}px`;
+    return fitted;
+  }
+  function update() {
+    pending = false;
+    const panel = document.querySelector('.bottom-section');
+    const panelStyle = getComputedStyle(panel);
+    const panelWidth = panel.clientWidth - parseFloat(panelStyle.paddingLeft) - parseFloat(panelStyle.paddingRight);
+    const sizes = labels.map(label => fit(label, Math.min(12.5, panelWidth * 0.033))).filter(Number.isFinite);
+    const sharedSize = Math.min(...sizes);
+    if (sizes.length) labels.forEach(label => { label.style.fontSize = `${sharedSize}px`; });
+    toasts.forEach(toast => {
+      const box = toast.id === 'toast-text' ? toast.parentElement : toast;
+      const css = getComputedStyle(box);
+      const availableHeight = box.clientHeight - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom);
+      fit(toast, Math.min(13, box.clientWidth * 0.035), toast === box ? box.clientHeight : availableHeight);
+    });
+  }
+  function schedule() {
+    if (!pending) { pending = true; requestAnimationFrame(update); }
+  }
+  const resize = new ResizeObserver(schedule);
+  resize.observe(document.querySelector('#app-container'));
+  resize.observe(document.querySelector('.bottom-section'));
+  const mutations = new MutationObserver(schedule);
+  [...labels, ...toasts].forEach(element => {
+    mutations.observe(element, { childList: true, characterData: true, subtree: true });
+  });
+  document.fonts.ready.then(schedule);
+  schedule();
+}
+initializeResponsiveLayout();
+
 
 (function() {
   const metaTag = document.querySelector('meta[name="html-rev"]');

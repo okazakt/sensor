@@ -30,7 +30,9 @@ function fixture() {
     disconnect() { this.disconnected = true; }
   }
   const context = { window: { maplibregl: { Map } }, ResizeObserver };
-  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../osm-map.js'), 'utf8'), context);
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  vm.runInNewContext(source.slice(source.indexOf('function initializeMapRenderer(global)'),
+    source.indexOf('function initializeResponsiveLayout()')), context);
   return { api: context.window.SensorMap, maps, observers };
 }
 
