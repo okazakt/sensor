@@ -1419,7 +1419,7 @@ body {
 }
 
 .gallery-minimap-wrap {
-  flex: 0 0 85%;
+  flex: 0 0 100%;
   height: 220px;
   border-radius: 8px;
   overflow: hidden;

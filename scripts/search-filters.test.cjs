@@ -31,7 +31,7 @@ function sensorFixture() {
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('function readConditionSetting'),
-    source.indexOf('async function loadSearchHours')), context);
+    source.indexOf('function getSearchCandidates')), context);
   vm.runInContext(source.slice(source.indexOf('function getSearchCandidates'),
     source.indexOf('function scheduleRadarSound')), context);
   return { context, elements, records };
@@ -51,14 +51,12 @@ test('18件の候補と固定された探知先1件を区別して表示する',
   c.appState.ratingFilter = 4; // Rating 4 or higher, excluding unknown.
   c.chooseRandomTarget();
   c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 8);
-  assert.equal(c.appState.randomTarget.rating, 4.5);
+  assert.equal(elements['unknown-count'].textContent, 18);
 
   c.appState.ratingFilter = 8; // Unknown rating or below 3.
   c.chooseRandomTarget();
   c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 7);
-  assert.ok(c.appState.randomTarget.rating === undefined || c.appState.randomTarget.rating < 3);
+  assert.equal(elements['unknown-count'].textContent, 18);
 
   c.appState.ratingFilter = 0;
   c.chooseRandomTarget();
@@ -66,7 +64,7 @@ test('18件の候補と固定された探知先1件を区別して表示する',
   assert.equal(elements['unknown-count'].textContent, 18);
 });
 
-test('件数と対象選択に同じ範囲・除外・営業時間条件を適用する', () => {
+test('営業時間条件を無視し、件数と対象選択に範囲・除外を適用する', () => {
   const { context: c, elements, records } = sensorFixture();
   c.appState.places = [
     { id: 'valid', lat: 100, lng: 0 },
@@ -78,8 +76,8 @@ test('件数と対象選択に同じ範囲・除外・営業時間条件を適�
   c.appState.hoursFilter = 4; // Unknown hours only.
   c.chooseRandomTarget();
   c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 1);
-  assert.equal(c.appState.randomTarget.id, 'valid');
+  assert.equal(elements['unknown-count'].textContent, 2);
+  assert.ok(['valid', 'closed'].includes(c.appState.randomTarget.id));
 });
 
 test('検索中は0件と断定せず、指定スポットは1件として表示する', () => {
@@ -96,59 +94,34 @@ test('検索中は0件と断定せず、指定スポットは1件として表示
   assert.equal(elements['unknown-count'].textContent, 1);
 });
 
-test('5分タイマーで候補を更新し、固定対象を保持する。停止中はAPIを呼ばない', async () => {
+test('更新失敗時は固定対象を保持し、停止後の応答を無視する', async () => {
   const { context: c, elements } = sensorFixture();
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
-  const timers = [];
-  let callback;
-  let requests = 0;
-  c.setTimeout = (fn, delay) => { timers.push({ fn, delay }); return timers.length; };
   c.searchGeneration = 0;
-  c.appState.activeKeyword = 'ラーメン';
+  c.appState.activeKeyword = 'カフェ';
   elements['target-meta-info'] = { textContent: '' };
-  c.I18N.ja.targetMeta = () => 'ラーメン / 3km';
-  c.google = { maps: {
-    LatLng: function () {},
-    places: { PlacesServiceStatus: { OK: 'OK', ZERO_RESULTS: 'ZERO_RESULTS' } }
-  } };
-  c.placesService = { textSearch: (_request, done) => { requests++; callback = done; } };
-  c.loadSearchHours = async () => {};
+  c.I18N.ja.targetMeta = () => 'カフェ';
+  c.scheduleCandidateRefresh = () => {};
   c.console = { warn() {} };
-  vm.runInContext(source.slice(source.indexOf('const CANDIDATE_REFRESH_MS'),
-    source.indexOf('function readConditionSetting')), c);
-  vm.runInContext(source.slice(source.indexOf('function executeSearch('),
+  let resolve;
+  c.searchGeoapify = () => new Promise(done => { resolve = done; });
+  vm.runInContext(source.slice(source.indexOf('async function executeSearch('),
     source.indexOf('function getRadiusText')), c);
-  const result = (id, lat = 100) => ({
-    place_id: id, name: id, rating: 4.5,
-    geometry: { location: { lat: () => lat, lng: () => 0 } }
-  });
-  c.executeSearch();
-  await callback([result('fixed')], 'OK');
-  assert.equal(requests, 1);
+  const pending = c.executeSearch();
+  resolve({ places: [{ id: 'fixed', lat: 100, lng: 0 }], partial: false });
+  await pending;
   assert.equal(c.appState.randomTarget.id, 'fixed');
-  assert.equal(timers.at(-1).delay, 300000);
-
-  timers.at(-1).fn();
-  assert.equal(requests, 2);
-  c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 1); // Detection continues during refresh.
-  await callback([result('fixed'), result('new')], 'OK');
-  assert.equal(elements['unknown-count'].textContent, 2);
+  c.searchGeoapify = async () => { throw new Error('unavailable'); };
+  await c.executeSearch(true);
   assert.equal(c.appState.randomTarget.id, 'fixed');
-
-  timers.at(-1).fn();
-  await callback([], 'REQUEST_DENIED');
-  assert.equal(elements['unknown-count'].textContent, 2);
-  assert.equal(c.appState.randomTarget.id, 'fixed');
-
-  const previous = requests;
-  c.appState.isPaused = true;
-  timers.at(-1).fn();
-  assert.equal(requests, previous);
-  c.appState.isPaused = false;
+  assert.equal(elements['unknown-count'].textContent, 1);
+  c.searchGeoapify = () => new Promise(done => { resolve = done; });
+  const stale = c.executeSearch(true);
+  c.searchGeneration++;
   c.appState.isTracking = false;
-  timers.at(-1).fn();
-  assert.equal(requests, previous);
+  resolve({ places: [], partial: false });
+  await stale;
+  assert.equal(c.appState.places.length, 1);
 });
 
 test('検索半径に応じた探知段階の距離境界と方向条件を守る', () => {

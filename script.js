@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.062303";
+const BASE_JS_VERSION = "v0.26.101.081408";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -14,7 +14,7 @@ const COMPASS_DEBUG_ENABLED = false;
 function initializeMapRenderer(global) {
   'use strict';
 
-  const ATTRIBUTION = '<a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+  const ATTRIBUTION = '<a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>Search powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
 
   function createStyle(mode) {
     const day = mode === 'botw';
@@ -364,12 +364,9 @@ const I18N = {
     radarOn: "レーダーON",
     radarOff: "レーダーOFF",
     copyBtn: "コピー",
-    mapsReviewPhotoBtn: "★ クチコミ・写真投稿",
-    galleryHeader: "現地ギャラリー (Google Places)",
-    loadingPhotos: "写真を取得中...",
+    galleryHeader: "スポット地図",
     loadingAddress: "住所情報を照会中...",
     noAddress: "住所情報なし",
-    noPhotosText: "Googleマップに登録された写真がありません。",
     minimapBadge: "位置マップ",
     pwaTitle: "Sensor Challenge",
     pwaDesc: "「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。",
@@ -452,12 +449,9 @@ const I18N = {
     radarOn: "RADAR ON",
     radarOff: "RADAR OFF",
     copyBtn: "COPY",
-    mapsReviewPhotoBtn: "★ Post Review & Photo",
-    galleryHeader: "Place Gallery (Google Places)",
-    loadingPhotos: "Loading photos...",
+    galleryHeader: "Spot map",
     loadingAddress: "Querying address...",
     noAddress: "No address available",
-    noPhotosText: "No photos found on Google Maps.",
     minimapBadge: "Location Map",
     pwaTitle: "Sensor Challenge",
     pwaDesc: "To fully enjoy 'Sensor Challenge', please add this app to your Home Screen for full-screen startup.",
@@ -508,33 +502,10 @@ function redrawMarkersWithFade() {
   });
 }
 
-function formatStarRating(rating) {
-  if (rating === undefined || rating === null || isNaN(rating)) return "";
-  const r = Math.max(0, Math.min(5, rating));
-  
-  let html = '<span style="display:inline-flex; align-items:center; gap:1px; vertical-align:middle;">';
-  for (let i = 1; i <= 5; i++) {
-    let fill = '#445566';
-    if (r >= i) {
-      fill = '#ffaa00';
-    } else if (r > i - 1 && r < i) {
-      fill = 'url(#half-star)';
-    }
-    
-    html += `
-      <svg width="13" height="13" viewBox="0 0 24 24" style="display:inline-block;">
-        <defs>
-          <linearGradient id="half-star">
-            <stop offset="50%" stop-color="#ffaa00"/>
-            <stop offset="50%" stop-color="#445566"/>
-          </linearGradient>
-        </defs>
-        <path fill="${fill}" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-      </svg>
-    `;
-  }
-  html += `</span> <span style="color: #99aabb; font-size: 0.75rem; vertical-align:middle; margin-left:4px;">(${r.toFixed(1)})</span>`;
-  return html;
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
 }
 
 function applyLanguage(lang) {
@@ -564,7 +535,6 @@ function applyLanguage(lang) {
   document.getElementById('detail-btn-copy').textContent = t.copyBtn;
   document.getElementById('detail-btn-delete-single').textContent = t.deleteBtn;
   document.getElementById('detail-gallery-header').textContent = t.galleryHeader;
-  document.querySelector('#detail-btn-maps-review-photo span').textContent = t.mapsReviewPhotoBtn;
   document.getElementById('opt-hsort-near').textContent = t.sortHNear;
   document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
   document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
@@ -939,8 +909,8 @@ let appState = {
   wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
   continuousSearch: true,
-  hoursFilter: readConditionSetting("hours", 5),
-  ratingFilter: readConditionSetting("rating", 11),
+  hoursFilter: 0,
+  ratingFilter: 0,
   currentPos: null,
   lastSearchedPos: null,
 
@@ -976,7 +946,7 @@ let wakeLockSentinel = null;
 let watchId = null;
 let compassActive = false;
 let compassPermissionPending = false;
-let placesService = null;
+
 let isSearchInProgress = false;
 let searchGeneration = 0;
 let arrivalInProgressId = null;
@@ -999,13 +969,6 @@ let mapCenterFrame = null;
 let lastMapPositionFix = null;
 let mapPositionJump = null;
 let mapCenterIsMoving = false;
-
-function initPlacesService() {
-  if (!placesService && typeof google !== 'undefined' && google.maps && google.maps.places) {
-    // Places works with a detached container; it no longer needs a Google map.
-    placesService = new google.maps.places.PlacesService(document.createElement('div'));
-  }
-}
 
 function initMap(lat, lng) {
   if (typeof maplibregl === 'undefined' || typeof SensorMap === 'undefined') {
@@ -1098,7 +1061,6 @@ function updateMapPositionSmoothly(coords, now) {
 }
 
 function bootstrapMapAndLocation() {
-  initPlacesService();
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
@@ -1170,74 +1132,9 @@ function readConditionSetting(kind, count) {
   return Number.isInteger(value) && value >= 0 && value < count ? value : 0;
 }
 
-// Each star is one band: [1,2), [2,3), [3,4), [4,5), and 5.
-function ratingBand(rating) {
-  return typeof rating === 'number' && Number.isFinite(rating) && rating >= 1 && rating <= 5
-    ? Math.min(4, Math.floor(rating) - 1) : 5;
-}
-
-function ratingMask(mode) {
-  if (mode === 0) return [true, true, true, true, true, true];
-  if (mode <= 5) return [0, 1, 2, 3, 4].map(i => i >= mode - 1).concat(false);
-  return [0, 1, 2, 3, 4].map(i => i < mode - 6).concat(true);
-}
-
-const HOURS_MASKS = [
-  [true, true, true, true], [true, true, true, false],
-  [false, true, true, false], [false, false, true, false],
-  [false, false, false, true]
-];
-
-function openingBand(place, now = new Date()) {
-  const hours = place.openingHours;
-  if (!hours || typeof hours.isOpen !== 'function') return 3;
-  const open = hours.isOpen(now);
-  if (open === false) return 0;
-  if (open !== true) return 3;
-  const periods = hours.periods || [];
-  if (periods.some(period => period.open && !period.close)) return 2;
-  if (!Number.isFinite(place.utcOffsetMinutes)) return null;
-  const local = new Date(now.getTime() + place.utcOffsetMinutes * 60000);
-  const minute = local.getUTCDay() * 1440 + local.getUTCHours() * 60 + local.getUTCMinutes() + local.getUTCSeconds() / 60;
-  for (const period of periods) {
-    if (!period.open || !period.close) continue;
-    const start = period.open.day * 1440 + period.open.hours * 60 + period.open.minutes;
-    let end = period.close.day * 1440 + period.close.hours * 60 + period.close.minutes;
-    if (end <= start) end += 10080;
-    for (const current of [minute, minute + 10080]) {
-      if (current >= start && current < end) return end - current >= 60 ? 2 : 1;
-    }
-  }
-  return null;
-}
-
 function matchesSearchConditions(place) {
-  if (!ratingMask(appState.ratingFilter)[ratingBand(place.rating)]) return false;
-  if (appState.hoursFilter === 0) return true;
-  if (place.hoursLookupFailed) return false;
-  const band = openingBand(place);
-  // Known open with unavailable closing time still qualifies as open.
-  if (band === null) return appState.hoursFilter === 1 || appState.hoursFilter === 2;
-  return HOURS_MASKS[appState.hoursFilter][band];
-}
-
-async function loadSearchHours(places, generation) {
-  let next = 0;
-  // Limit concurrent detail requests; ignore obsolete searches.
-  await Promise.all(Array.from({length: Math.min(3, places.length)}, async () => {
-    while (next < places.length && generation === searchGeneration) {
-      const place = places[next++];
-      await new Promise(resolve => placesService.getDetails({
-        placeId: place.id, fields: ['opening_hours', 'utc_offset_minutes']
-      }, (details, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && details) {
-          place.openingHours = details.opening_hours;
-          place.utcOffsetMinutes = details.utc_offset_minutes;
-        } else place.hoursLookupFailed = true;
-        resolve();
-      }));
-    }
-  }));
+  // These conditions are disabled pending replacement controls.
+  return true;
 }
 
 function getSearchCandidates() {
@@ -1389,7 +1286,6 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
 function handleArrival(target) {
   if (arrivalInProgressId !== null) return;
   arrivalInProgressId = target.id;
-  const generation = searchGeneration;
   const flash = document.getElementById('arrival-flash-overlay');
   if (flash) {
     flash.classList.remove('flash-anim');
@@ -1402,47 +1298,22 @@ function handleArrival(target) {
   const db = loadSavedData();
   const now = new Date().toISOString();
 
-  const existing = db.arrivals.find(a => a.id === target.id);
-  const cacheValid = existing && existing.rating !== undefined && existing.rating !== null && existing.ratingCachedAt && (Date.now() - existing.ratingCachedAt < TWENTY_FOUR_HOURS);
-
-  if (cacheValid) {
-    updateArrivalRecord(db, target, now, existing.rating, existing.ratingCachedAt);
-  } else if (placesService && target.id) {
-    placesService.getDetails({ placeId: target.id, fields: ['rating', 'photos', 'formatted_address'] }, (place, status) => {
-      if (generation !== searchGeneration || !appState.isTracking) return;
-      const ratingVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) ? place.rating : null;
-      const addrVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.formatted_address) ? place.formatted_address : null;
-      const photosVal = (status === google.maps.places.PlacesServiceStatus.OK && place && place.photos) ? place.photos.map(p => p.getUrl({ maxWidth: 800, maxHeight: 600 })) : [];
-      updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, photosVal, Date.now());
-    });
-  } else {
-    updateArrivalRecordWithDetails(db, target, now, null, null, [], Date.now());
-  }
+  updateArrivalRecordWithDetails(db, target, now);
 }
 
-function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, photosVal, cachedTime) {
+function updateArrivalRecordWithDetails(db, target, now) {
   arrivalInProgressId = null;
   const existing = db.arrivals.find(a => a.id === target.id);
   if (!existing) {
     db.arrivals.push({
-      id: target.id,
-      name: target.name,
-      keyword: appState.activeKeyword,
-      lat: target.lat,
-      lng: target.lng,
-      date: now,
-      muted: true,
-      rating: ratingVal,
-      formatted_address: addrVal,
-      cachedPhotos: photosVal,
-      ratingCachedAt: cachedTime
+      id: target.id, name: target.name, keyword: appState.activeKeyword,
+      lat: target.lat, lng: target.lng, date: now, muted: true,
+      formatted_address: target.formatted_address || '',
+      phone: target.phone || null, website: target.website || null
     });
   } else {
     existing.muted = true;
-    if (ratingVal !== null) existing.rating = ratingVal;
-    if (addrVal) existing.formatted_address = addrVal;
-    if (photosVal && photosVal.length > 0) existing.cachedPhotos = photosVal;
-    existing.ratingCachedAt = cachedTime;
+    if (target.formatted_address) existing.formatted_address = target.formatted_address;
   }
 
   if (!db.keywordHistory[appState.activeKeyword]) {
@@ -1474,10 +1345,6 @@ function updateArrivalRecordWithDetails(db, target, now, ratingVal, addrVal, pho
   setTimeout(() => {
     evaluateSensorCycle();
   }, 1500);
-}
-
-function updateArrivalRecord(db, target, now, ratingVal, cachedTime) {
-  updateArrivalRecordWithDetails(db, target, now, ratingVal, null, [], cachedTime);
 }
 
 let mapRotationFrame = null;
@@ -1705,78 +1572,116 @@ function onPositionUpdate(pos) {
   evaluateSensorCycle();
 }
 
-function executeSearch(refreshCandidates = false) {
+const GEOAPIFY_API_KEY = 'c4ad45c8a379433baa272cc50e57572e';
+const CATEGORY_KEYWORDS = [
+  { terms: ['カフェ', '喫茶店', 'コーヒー', 'cafe', 'café', 'coffee'], category: 'catering.cafe' },
+  { terms: ['レストラン', '飲食店', 'restaurant'], category: 'catering.restaurant' },
+  { terms: ['コンビニ', 'コンビニエンスストア', 'convenience store'], category: 'commercial.convenience' },
+  { terms: ['スーパー', 'スーパーマーケット', 'supermarket'], category: 'commercial.supermarket' },
+  { terms: ['ホテル', '宿泊', 'hotel'], category: 'accommodation.hotel' },
+  { terms: ['公園', 'park'], category: 'leisure.park' },
+  { terms: ['薬局', 'pharmacy'], category: 'healthcare.pharmacy' },
+  { terms: ['病院', 'hospital'], category: 'healthcare.hospital' },
+  { terms: ['銀行', 'bank'], category: 'service.financial.bank' },
+  { terms: ['駐車場', 'parking'], category: 'parking' },
+  { terms: ['観光', '観光名所', 'sights'], category: 'tourism.sights' }
+];
+
+function categoriesForKeyword(text) {
+  const normalized = text.normalize('NFKC').trim().toLowerCase();
+  return CATEGORY_KEYWORDS.filter(entry => entry.terms.includes(normalized)).map(entry => entry.category);
+}
+
+async function fetchGeoapify(path, parameters) {
+  const url = new URL(path, 'https://api.geoapify.com');
+  for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
+  url.searchParams.set('apiKey', GEOAPIFY_API_KEY);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data.features)) throw new Error('Invalid search response');
+    return data.features;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function searchGeoapify(text, position, radius, language) {
+  const common = {
+    filter: `circle:${position.lng},${position.lat},${radius}`,
+    bias: `proximity:${position.lng},${position.lat}`, lang: language
+  };
+  const requests = [fetchGeoapify('/v1/geocode/search', { ...common, text, limit: 20 })];
+  const categories = categoriesForKeyword(text);
+  if (categories.length) requests.push(fetchGeoapify('/v2/places', {
+    ...common, categories: categories.join(','), limit: 100
+  }));
+  const responses = await Promise.allSettled(requests);
+  const successful = responses.filter(result => result.status === 'fulfilled');
+  if (!successful.length) throw new Error('Search unavailable');
+  const places = new Map();
+  for (const result of successful) for (const feature of result.value) {
+    const p = feature.properties || {};
+    const lat = p.lat ?? feature.geometry?.coordinates?.[1];
+    const lng = p.lon ?? feature.geometry?.coordinates?.[0];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+    if (getDistance(position.lat, position.lng, lat, lng) > radius) continue;
+    const name = p.name || p.address_line1 || p.formatted;
+    if (!name) continue;
+    const id = p.place_id || `geo:${lat}:${lng}:${name}`;
+    const previous = places.get(id);
+    places.set(id, {
+      id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
+      phone: p.contact?.phone || previous?.phone || null,
+      website: p.website || previous?.website || null
+    });
+  }
+  return {
+    places: [...places.values()].sort((a, b) =>
+      getDistance(position.lat, position.lng, a.lat, a.lng) - getDistance(position.lat, position.lng, b.lat, b.lng)),
+    partial: successful.length !== responses.length
+  };
+}
+
+async function executeSearch(refreshCandidates = false) {
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
       appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return;
   scheduleCandidateRefresh();
   const generation = searchGeneration;
   isSearchInProgress = true;
-  appState.lastSearchedPos = { ...appState.currentPos };
-  const currentRadius = RADIUS_OPTIONS[radiusIndex];
-
-  const rText = currentRadius >= 1000 ? `${currentRadius/1000}km` : `${currentRadius}m`;
-  const t = I18N[currentLang];
-  document.getElementById('target-meta-info').textContent = t.targetMeta(appState.activeKeyword, rText);
-
-  if (placesService) {
-    const queryWord = appState.activeKeyword.trim();
-    
-    const request = {
-      location: new google.maps.LatLng(appState.currentPos.lat, appState.currentPos.lng),
-      radius: currentRadius,
-      query: queryWord
-    };
-
-    placesService.textSearch(request, async (results, status) => {
-      // Ignore responses from stopped searches or superseded keywords/radii.
-      if (generation !== searchGeneration || !appState.isTracking) return;
-      if (refreshCandidates && status !== google.maps.places.PlacesServiceStatus.OK &&
-          status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-        // A transient refresh error must not discard a working target or cached count.
-        isSearchInProgress = false;
-        console.warn("Places API refresh status:", status);
-        evaluateSensorCycle();
-        return;
-      }
-      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-        const filtered = results.filter(place => {
-          if (!place.geometry || !place.geometry.location) return false;
-          const d = getDistance(
-            appState.currentPos.lat, appState.currentPos.lng,
-            place.geometry.location.lat(), place.geometry.location.lng()
-          );
-          return d <= currentRadius;
-        });
-
-        appState.places = filtered.map(place => ({
-          id: place.place_id,
-          name: place.name,
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-          rating: place.rating
-        }));
-      } else {
-        appState.places = [];
-        if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS && status !== google.maps.places.PlacesServiceStatus.OK) {
-          console.warn("Places API Status:", status);
-          document.getElementById('distance-info').innerHTML = `<span style="color:#ff5555;">API Error: ${status}</span>`;
-        }
-      }
-      if (appState.hoursFilter !== 0) await loadSearchHours(appState.places, generation);
-      if (generation !== searchGeneration || !appState.isTracking) return;
+  const position = { ...appState.currentPos };
+  appState.lastSearchedPos = position;
+  const radius = RADIUS_OPTIONS[radiusIndex];
+  const rText = radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
+  document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta(appState.activeKeyword, rText);
+  try {
+    const result = await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang);
+    if (generation !== searchGeneration || !appState.isTracking) return;
+    if (result.partial) console.warn('One search source is unavailable; using available results.');
+    appState.places = result.places;
+    const fixedTarget = refreshCandidates ? appState.randomTarget : null;
+    if (fixedTarget && !appState.places.some(place => place.id === fixedTarget.id)) appState.places.push(fixedTarget);
+    const retained = fixedTarget && getSearchCandidates().find(place => place.id === fixedTarget.id);
+    if (retained) appState.randomTarget = retained;
+    else chooseRandomTarget();
+  } catch (error) {
+    if (generation !== searchGeneration || !appState.isTracking) return;
+    console.warn('Geoapify search unavailable.');
+    if (!refreshCandidates) {
+      appState.places = [];
+      appState.randomTarget = null;
+    }
+    document.getElementById('target-meta-info').textContent = currentLang === 'ja'
+      ? '検索に失敗しました。時間をおいて再試行してください。'
+      : 'Search failed. Please try again later.';
+  } finally {
+    if (generation === searchGeneration) {
       isSearchInProgress = false;
-      const fixedTarget = refreshCandidates ? appState.randomTarget : null;
-      if (fixedTarget && !appState.places.some(place => place.id === fixedTarget.id)) {
-        // Text search can omit a previously found place; keep the fixed target eligible.
-        appState.places.push(fixedTarget);
-      }
-      const retainedTarget = fixedTarget && getSearchCandidates().find(place => place.id === fixedTarget.id);
-      if (retainedTarget) appState.randomTarget = retainedTarget;
-      else chooseRandomTarget();
       evaluateSensorCycle();
-    });
-  } else {
-    isSearchInProgress = false;
+    }
   }
 }
 
@@ -2171,47 +2076,16 @@ document.getElementById('continuous-toggle-btn').addEventListener('click', () =>
 
 let conditionToastTimer = null;
 
-function conditionDescription(kind) {
-  const ja = currentLang === 'ja';
-  const mode = appState[`${kind}Filter`];
-  if (kind === 'hours') return (ja
-    ? ['営業時間：すべて', '営業時間不明を除外', '営業中のみ', '閉店まで1時間以上', '営業時間不明のみ']
-    : ['Hours: all', 'Exclude unknown hours', 'Open now only', 'Open for at least 1 hour', 'Unknown hours only'])[mode];
-  if (mode === 0) return ja ? '評価：すべて' : 'Rating: all';
-  if (mode === 1) return ja ? '評価不明を除外' : 'Exclude unknown ratings';
-  if (mode <= 5) return ja ? `評価${mode}以上` : `Rating ${mode} or higher`;
-  if (mode === 6) return ja ? '評価不明のみ' : 'Unknown ratings only';
-  return ja ? `評価不明、または${mode - 5}未満` : `Unknown rating or below ${mode - 5}`;
-}
-
 function updateConditionButtons() {
   for (const kind of ['hours', 'rating']) {
     const btn = document.getElementById(`${kind}-filter-btn`);
-    const mask = kind === 'hours' ? HOURS_MASKS[appState.hoursFilter] : ratingMask(appState.ratingFilter);
-    btn.querySelectorAll('[data-condition]').forEach((el, i) => el.classList.toggle('selected', mask[i]));
-    btn.setAttribute('aria-label', conditionDescription(kind));
-    btn.title = conditionDescription(kind);
+    btn.disabled = true;
+    btn.classList.remove('active');
+    btn.querySelectorAll('[data-condition]').forEach(el => el.classList.remove('selected'));
+    const label = currentLang === 'ja' ? 'この絞り込みは無効です' : 'This filter is disabled';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
   }
-}
-
-for (const kind of ['hours', 'rating']) {
-  document.getElementById(`${kind}-filter-btn`).addEventListener('click', () => {
-    const key = `${kind}Filter`;
-    appState[key] = (appState[key] + 1) % (kind === 'hours' ? 5 : 11);
-    localStorage.setItem(`sheikah_${kind}_filter`, String(appState[key]));
-    updateConditionButtons();
-    hideOtherSettingToasts('condition-mode-toast');
-    const toast = document.getElementById('condition-mode-toast');
-    toast.textContent = conditionDescription(kind) + (kind === 'hours'
-      ? (currentLang === 'ja' ? '（△：閉店まで1時間未満／○：1時間以上）'
-        : ' (△: closes in under 1h / ○: open for at least 1h)') : '');
-    toast.classList.add('show');
-    clearTimeout(conditionToastTimer);
-    conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
-    resetKeywordSearch();
-    executeSearch();
-    evaluateSensorCycle();
-  });
 }
 updateConditionButtons();
 
@@ -2637,28 +2511,11 @@ function renderHistoryList() {
         distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
       }
 
-      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS)) {
-        if (placesService && item.id) {
-          placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) {
-              item.rating = place.rating;
-              item.ratingCachedAt = Date.now();
-              saveAppData(db);
-              const starEl = document.getElementById(`list-star-${item.id}`);
-              if (starEl) starEl.innerHTML = formatStarRating(item.rating);
-            }
-          });
-        }
-      }
-
-      const starHtml = formatStarRating(item.rating);
-
       const div = document.createElement('div');
       div.className = 'list-item';
       div.innerHTML = `
         <div class="list-item-left">
-          <span class="list-item-title">${item.name}</span>
-          <div id="list-star-${item.id}" style="margin: 3px 0 4px 0;">${starHtml}</div>
+          <span class="list-item-title">${escapeHtml(item.name)}</span>
           <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
         </div>
         <div class="action-button-row">
@@ -2745,29 +2602,11 @@ function renderAllHistoryList() {
         distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
       }
 
-      if ((item.rating === undefined || item.rating === null) || !item.ratingCachedAt || (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS)) {
-        if (placesService && item.id) {
-          placesService.getDetails({ placeId: item.id, fields: ['rating'] }, (place, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && place && place.rating !== undefined) {
-              item.rating = place.rating;
-              item.ratingCachedAt = Date.now();
-              saveAppData(db);
-              const starEl = document.getElementById(`all-star-${item.id}`);
-              if (starEl) starEl.innerHTML = formatStarRating(item.rating);
-            }
-          });
-        }
-      }
-
-      const starHtml = formatStarRating(item.rating);
-      const keywordLabel = t.targetKeywordLabel(item.keyword || '-');
-
       const div = document.createElement('div');
       div.className = 'list-item';
       div.innerHTML = `
         <div class="list-item-left">
-          <span class="list-item-title">${item.name}</span>
-          <div id="all-star-${item.id}" style="margin: 3px 0 2px 0;">${starHtml}</div>
+          <span class="list-item-title">${escapeHtml(item.name)}</span>
           <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
           <div class="list-item-sub" style="color: #99aabb; margin-top: 2px;">${keywordLabel}</div>
         </div>
@@ -2867,7 +2706,6 @@ function openSpotDetailModal(item) {
   }
 
   document.getElementById('detail-spot-name').textContent = item.name;
-  document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
   document.getElementById('detail-spot-address').textContent = t.loadingAddress;
 
   const d = new Date(item.date);
@@ -2881,8 +2719,8 @@ function openSpotDetailModal(item) {
   document.getElementById('detail-spot-meta').textContent = t.arrivalDate(dateStr, distStr);
   document.getElementById('detail-spot-keyword').textContent = t.targetKeywordLabel(item.keyword || '-');
 
-  const photosBox = document.getElementById('detail-photos-container');
-  photosBox.innerHTML = `<div class="no-photos-box">${t.loadingPhotos}</div>`;
+  const detailMapBox = document.getElementById('detail-map-container');
+  detailMapBox.innerHTML = `<div class="no-photos-box">${currentLang === 'ja' ? '地図を準備中...' : 'Preparing map...'}</div>`;
 
   document.getElementById('detail-btn-pinpoint-set').onclick = () => setPinpointTargetAndStart(item);
   document.getElementById('detail-btn-copy').onclick = () => copyPlaceNameToClipboard(item.name);
@@ -2918,13 +2756,6 @@ function openSpotDetailModal(item) {
     }
   };
 
-  document.getElementById('detail-btn-maps-review-photo').onclick = () => {
-    const reviewUrl = item.id 
-      ? `https://search.google.com/local/writereview?placeid=${item.id}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name)}`;
-    window.open(reviewUrl, '_blank');
-  };
-
   pageSpotDetail.classList.add('open');
 
   if (detailMinimapInstance) {
@@ -2944,59 +2775,16 @@ function openSpotDetailModal(item) {
   `;
   gallery.appendChild(mapWrap);
 
-  // The map must render even when Google details are unavailable or slow.
-  loadPhotosAndMap(item, gallery, photosBox);
+  // Render the saved coordinates without a detail API request.
+  renderDetailMap(item, gallery, detailMapBox);
 
-  initPlacesService();
 
-  const detailCacheValid = item.rating !== undefined && item.rating !== null && item.ratingCachedAt && (Date.now() - item.ratingCachedAt < TWENTY_FOUR_HOURS) && item.cachedPhotos && item.cachedPhotos.length > 0;
-
-  if (detailCacheValid) {
-    document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
-  } else if (placesService && item.id) {
-    placesService.getDetails({
-      placeId: item.id,
-      fields: ['name', 'formatted_address', 'photos', 'rating']
-    }, (place, status) => {
-      if (appState.selectedSpotForDetail !== item || !gallery.isConnected) return;
-      if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-        document.getElementById('detail-spot-address').textContent = place.formatted_address || t.noAddress;
-        item.formatted_address = place.formatted_address;
-        if (place.rating !== undefined) {
-          item.rating = place.rating;
-          item.ratingCachedAt = Date.now();
-          document.getElementById('detail-spot-rating').innerHTML = formatStarRating(item.rating);
-        }
-        if (place.photos && place.photos.length > 0) {
-          item.cachedPhotos = place.photos.map(p => p.getUrl({ maxWidth: 800, maxHeight: 600 }));
-        }
-        saveAppData(db);
-      } else {
-        document.getElementById('detail-spot-address').textContent = t.noAddress;
-      }
-      loadPhotosAndMap(item, gallery, photosBox);
-    });
-  }
+  document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
 }
 
-function loadPhotosAndMap(item, gallery, photosBox) {
-  gallery.querySelectorAll('.gallery-img-wrap, .no-photos-box').forEach(element => element.remove());
-  if (item.cachedPhotos && item.cachedPhotos.length > 0) {
-    item.cachedPhotos.forEach(url => {
-      const wrap = document.createElement('div');
-      wrap.className = 'gallery-img-wrap';
-      wrap.innerHTML = `<img src="${url}" alt="${item.name}" loading="lazy">`;
-      gallery.appendChild(wrap);
-    });
-  } else {
-    const noPhoto = document.createElement('div');
-    noPhoto.className = 'no-photos-box';
-    noPhoto.style.flex = '0 0 85%';
-    noPhoto.textContent = I18N[currentLang].noPhotosText;
-    gallery.appendChild(noPhoto);
-  }
-  photosBox.innerHTML = '';
-  photosBox.appendChild(gallery);
+function renderDetailMap(item, gallery, detailMapBox) {
+  detailMapBox.innerHTML = '';
+  detailMapBox.appendChild(gallery);
 
   const mapContainer = gallery.querySelector('#detail-minimap');
   const statusElement = gallery.querySelector('.detail-map-status');

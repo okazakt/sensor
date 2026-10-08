@@ -112,7 +112,7 @@
 
       <div class="map-attribution main-map-attribution">
         <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>
-        © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
+        Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
       </div>
       <!-- 右上：言語切り替えトグル -->
       <div class="top-right-ctrl">
@@ -243,8 +243,8 @@
             <span id="label-sensor-state">SENSOR: STANDBY</span>
           </button>
           <div class="dual-btn-row condition-row">
-            <button type="button" id="hours-filter-btn" class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="condition-icon" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L21 20H3Z"/></svg><svg class="condition-icon" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><svg class="condition-icon condition-question" data-condition="3" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>OPEN NOW</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
-            <button type="button" id="rating-filter-btn" class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon condition-star" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="4" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-question" data-condition="5" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>RATING</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
+            <button type="button" id="hours-filter-btn" disabled class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="condition-icon" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L21 20H3Z"/></svg><svg class="condition-icon" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><svg class="condition-icon condition-question" data-condition="3" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>OPEN NOW</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
+            <button type="button" id="rating-filter-btn" disabled class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon condition-star" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="4" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-question" data-condition="5" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>RATING</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
             <div id="condition-mode-toast" class="sound-mode-toast" role="status" aria-live="polite"></div>
           </div>
           <div class="dual-btn-row">
@@ -391,7 +391,6 @@
       <div class="spot-detail-content">
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
-          <div id="detail-spot-rating" style="margin-bottom: 4px;"></div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
           <div class="spot-address-text" id="detail-spot-meta" style="margin-top: 6px; color: #99aabb;">--</div>
           <div class="spot-address-text" id="detail-spot-keyword" style="margin-top: 4px; color: #99aabb;">--</div>
@@ -403,22 +402,18 @@
             <button class="btn-sheikah-sm btn-danger-sm" id="detail-btn-delete-single">削除</button>
           </div>
 
-          <div class="action-button-row" style="margin-top: 8px;">
-            <button class="btn-sheikah-sm btn-maps-intent" id="detail-btn-maps-review-photo" style="width: 100%; justify-content: center;">
-              <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path d="M12 12c1.65 0 3-1.35 3-3s-1.35-3-3-3-3 1.35-3 3 1.35 3 3 3zm0-4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm6.5 1h-1.8l-1.12-1.5c-.38-.5-.98-.8-1.61-.8H10.03c-.63 0-1.23.3-1.61.8L7.3 9H5.5C4.67 9 4 9.67 4 10.5v8c0 .83.67 1.5 1.5 1.5h13c.83 0 1.5-.67 1.5-1.5v-8c0-.83-.67-1.5-1.5-1.5zm-.5 9.5H6v-7h2.2l1.35-1.8c.19-.25.49-.4.81-.4h3.28c.32 0 .62.15.81.4L15.8 11.5H18v7z"/></svg>
-              <span>★ クチコミ・写真投稿</span>
-            </button>
-          </div>
+
         </div>
 
         <div id="detail-gallery-header" style="font-size: 0.85rem; color: var(--sheikah-gold); font-weight: bold; letter-spacing: 1px;">
-          現地ギャラリー (Google Places)
+          スポット地図
         </div>
-        <div id="detail-photos-container">
-          <div class="no-photos-box" id="detail-loading-box">写真を取得中...</div>
+        <div id="detail-map-container">
+          <div class="no-photos-box" id="detail-loading-box">地図を準備中...</div>
         </div>
       </div>
     </div>
+
 
     <!-- 最下部固定フッターナビゲーション -->
     <nav class="app-footer-nav">
@@ -441,7 +436,6 @@
     </nav>
   </div>
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDF5voeGaCH5nEHwQyeYC1wV1ccTyEsOAc&libraries=places"></script>
   
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script>
