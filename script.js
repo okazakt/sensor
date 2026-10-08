@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.082141";
+const BASE_JS_VERSION = "v0.26.101.082145";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2248,13 +2248,39 @@ function getRadiusText(r) {
 
 updateRadiusAccess();
 
+let pendingChallengeEnd = null;
 function confirmChallengeEnd() {
-  if (!confirm(currentLang === 'ja' ? 'チャレンジを終了しますか？' : 'End the challenge?')) return false;
+  const dialog = document.getElementById('challenge-end-dialog');
+  if (!appState.activeChallenge || dialog.open) return;
+  pendingChallengeEnd = appState.activeChallenge;
+  const ja = currentLang === 'ja';
+  document.getElementById('challenge-end-question').textContent = ja ? 'チャレンジを終了しますか？' : 'End the challenge?';
+  document.getElementById('challenge-end-no').textContent = ja ? 'いいえ' : 'No';
+  document.getElementById('challenge-end-yes').textContent = ja ? 'はい' : 'Yes';
+  hideOtherSettingToasts();
+  dialog.showModal();
+  document.getElementById('challenge-end-question').focus({ preventScroll: true });
+}
+
+document.getElementById('challenge-end-no').addEventListener('click', () => {
+  pendingChallengeEnd = null;
+  document.getElementById('challenge-end-dialog').close();
+});
+document.getElementById('challenge-end-yes').addEventListener('click', () => {
+  const challenge = pendingChallengeEnd;
+  pendingChallengeEnd = null;
+  document.getElementById('challenge-end-dialog').close();
+  if (!challenge || appState.activeChallenge !== challenge) return;
   stopSearchAndReset();
   document.getElementById('keyword-input').value = '';
   checkMainInputClearState();
-  return true;
-}
+});
+document.getElementById('challenge-end-dialog').addEventListener('close', () => {
+  if (!document.getElementById('challenge-end-dialog').open) pendingChallengeEnd = null;
+});
+document.getElementById('challenge-end-dialog').addEventListener('cancel', () => {
+  pendingChallengeEnd = null;
+});
 
 document.getElementById('dial-btn').addEventListener('click', () => {
   if (appState.activeChallenge) confirmChallengeEnd();
@@ -2313,7 +2339,8 @@ btnInputClearEl.addEventListener('click', (e) => {
   e.preventDefault();
   const t = I18N[currentLang];
   if (appState.activeChallenge) {
-    if (!confirmChallengeEnd()) return;
+    confirmChallengeEnd();
+    return;
   } else if (appState.isTracking) {
     if (!confirm(t.confirmEndSearch)) {
       return;
