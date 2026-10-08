@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.082145";
+const BASE_JS_VERSION = "v0.26.101.082152";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2248,13 +2248,14 @@ function getRadiusText(r) {
 
 updateRadiusAccess();
 
-let pendingChallengeEnd = null;
-function confirmChallengeEnd() {
+let pendingSearchEnd = null;
+function requestSearchEndConfirmation(question, onConfirm) {
   const dialog = document.getElementById('challenge-end-dialog');
-  if (!appState.activeChallenge || dialog.open) return;
-  pendingChallengeEnd = appState.activeChallenge;
+  if (dialog.open) return;
+  pendingSearchEnd = onConfirm;
   const ja = currentLang === 'ja';
-  document.getElementById('challenge-end-question').textContent = ja ? 'チャレンジを終了しますか？' : 'End the challenge?';
+  document.getElementById('keyword-input').blur();
+  document.getElementById('challenge-end-question').textContent = question;
   document.getElementById('challenge-end-no').textContent = ja ? 'いいえ' : 'No';
   document.getElementById('challenge-end-yes').textContent = ja ? 'はい' : 'Yes';
   hideOtherSettingToasts();
@@ -2262,24 +2263,42 @@ function confirmChallengeEnd() {
   document.getElementById('challenge-end-question').focus({ preventScroll: true });
 }
 
+function confirmChallengeEnd() {
+  const challenge = appState.activeChallenge;
+  if (!challenge) return;
+  requestSearchEndConfirmation(currentLang === 'ja' ? 'チャレンジを終了しますか？' : 'End the challenge?', () => {
+    if (appState.activeChallenge !== challenge) return;
+    stopSearchAndReset();
+    document.getElementById('keyword-input').value = '';
+    checkMainInputClearState();
+  });
+}
+
+function confirmKeywordSearchEnd(clearKeyword = false) {
+  const generation = searchGeneration;
+  requestSearchEndConfirmation(I18N[currentLang].confirmEndSearch, () => {
+    if (appState.activeChallenge || generation !== searchGeneration || !appState.isTracking) return;
+    stopSearchAndReset();
+    if (clearKeyword) document.getElementById('keyword-input').value = '';
+    checkMainInputClearState();
+  });
+}
+
 document.getElementById('challenge-end-no').addEventListener('click', () => {
-  pendingChallengeEnd = null;
+  pendingSearchEnd = null;
   document.getElementById('challenge-end-dialog').close();
 });
 document.getElementById('challenge-end-yes').addEventListener('click', () => {
-  const challenge = pendingChallengeEnd;
-  pendingChallengeEnd = null;
+  const onConfirm = pendingSearchEnd;
+  pendingSearchEnd = null;
   document.getElementById('challenge-end-dialog').close();
-  if (!challenge || appState.activeChallenge !== challenge) return;
-  stopSearchAndReset();
-  document.getElementById('keyword-input').value = '';
-  checkMainInputClearState();
+  if (onConfirm) onConfirm();
 });
 document.getElementById('challenge-end-dialog').addEventListener('close', () => {
-  if (!document.getElementById('challenge-end-dialog').open) pendingChallengeEnd = null;
+  if (!document.getElementById('challenge-end-dialog').open) pendingSearchEnd = null;
 });
 document.getElementById('challenge-end-dialog').addEventListener('cancel', () => {
-  pendingChallengeEnd = null;
+  pendingSearchEnd = null;
 });
 
 document.getElementById('dial-btn').addEventListener('click', () => {
@@ -2337,15 +2356,12 @@ checkMainInputClearState();
 
 btnInputClearEl.addEventListener('click', (e) => {
   e.preventDefault();
-  const t = I18N[currentLang];
   if (appState.activeChallenge) {
     confirmChallengeEnd();
     return;
   } else if (appState.isTracking) {
-    if (!confirm(t.confirmEndSearch)) {
-      return;
-    }
-    stopSearchAndReset();
+    confirmKeywordSearchEnd(true);
+    return;
   }
   keywordInputEl.value = '';
   checkMainInputClearState();
@@ -2358,13 +2374,7 @@ keywordInputEl.addEventListener('focus', () => {
     return;
   }
   if (appState.isTracking && keywordInputEl.value.trim() !== "") {
-    const t = I18N[currentLang];
-    if (confirm(t.confirmEndSearch)) {
-      stopSearchAndReset();
-      checkMainInputClearState();
-    } else {
-      keywordInputEl.blur();
-    }
+    confirmKeywordSearchEnd();
   }
 });
 
