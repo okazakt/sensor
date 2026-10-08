@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.082010";
+const BASE_JS_VERSION = "v0.26.101.082042";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1059,8 +1059,52 @@ let detailMinimapInstance = null;
 
 function loadSavedData() {
   const data = localStorage.getItem('sheikah_db_v1');
-  if (data) return JSON.parse(data);
+  if (data) return normalizeHistoryData(JSON.parse(data));
   return { keywordHistory: {}, arrivals: [] };
+}
+
+function normalizeHistoryData(db) {
+  db.keywordHistory ||= {};
+  db.arrivals ||= [];
+  const legacyChallenges = new Map();
+  for (const challenge of CHALLENGES) {
+    const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
+    legacyChallenges.set(`${group.ja}${challenge.radius / 1000}km${challenge.mode === 'nearest' ? '最寄り' : 'ランダム'}`, challenge.id);
+    legacyChallenges.set(`${group.en} ${challenge.radius / 1000}km ${challenge.mode === 'nearest' ? 'Nearest' : 'Random'}`, challenge.id);
+  }
+  for (const item of db.arrivals) {
+    if (!Array.isArray(item.keywords)) {
+      const legacyId = legacyChallenges.get(item.keyword);
+      item.keywords = item.keyword && !legacyId ? [item.keyword] : [];
+      if (legacyId) item.challengeIds = [...new Set([...(item.challengeIds || []), legacyId])];
+    }
+    item.keyword = item.keywords[0] || '';
+  }
+  for (const name of legacyChallenges.keys()) delete db.keywordHistory[name];
+  return db;
+}
+
+function recordArrivalAssociation(db, item, keyword, challenge, now) {
+  item.keywords ||= item.keyword ? [item.keyword] : [];
+  if (challenge) {
+    db.completedChallenges = [...new Set([...(db.completedChallenges || []), challenge.id])];
+    item.challengeIds = [...new Set([...(item.challengeIds || []), challenge.id])];
+  } else if (keyword) {
+    item.keywords = [...new Set([...item.keywords, keyword])];
+    db.keywordHistory[keyword] ||= { lastSearch: now };
+    db.keywordHistory[keyword].lastArrival = now;
+  }
+  item.keyword = item.keywords[0] || '';
+}
+
+function deleteKeywordHistory(db, keyword) {
+  delete db.keywordHistory[keyword];
+  db.arrivals = db.arrivals.filter(item => {
+    const associated = item.keywords.includes(keyword);
+    item.keywords = item.keywords.filter(key => key !== keyword);
+    item.keyword = item.keywords[0] || '';
+    return !associated || item.keywords.length > 0 || (item.challengeIds || []).length > 0;
+  });
 }
 
 function saveAppData(db) {
@@ -1479,7 +1523,7 @@ function updateArrivalRecordWithDetails(db, target, now) {
   const existing = db.arrivals.find(a => a.id === target.id);
   if (!existing) {
     db.arrivals.push({
-      id: target.id, name: target.name, keyword: appState.activeKeyword,
+      id: target.id, name: target.name, keyword: '', keywords: [],
       lat: target.lat, lng: target.lng, date: now, muted: true,
       formatted_address: target.formatted_address || '',
       phone: target.phone || null, website: target.website || null
@@ -1489,17 +1533,8 @@ function updateArrivalRecordWithDetails(db, target, now) {
     if (target.formatted_address) existing.formatted_address = target.formatted_address;
   }
 
-  if (!db.keywordHistory[appState.activeKeyword]) {
-    db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: now };
-  } else {
-    db.keywordHistory[appState.activeKeyword].lastArrival = now;
-  }
   const challenge = appState.activeChallenge;
-  if (challenge) {
-    db.completedChallenges = [...new Set([...(db.completedChallenges || []), challenge.id])];
-    const arrival = db.arrivals.find(item => item.id === target.id);
-    arrival.challengeIds = [...new Set([...(arrival.challengeIds || []), challenge.id])];
-  }
+  recordArrivalAssociation(db, db.arrivals.find(item => item.id === target.id), appState.activeKeyword, challenge, now);
   saveAppData(db);
 
   redrawMarkersWithFade();
@@ -2692,10 +2727,12 @@ async function startSearchFromSet(fromChallenge = false) {
 
   const db = loadSavedData();
   const now = new Date().toISOString();
-  if (!db.keywordHistory[appState.activeKeyword]) {
-    db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
-  } else {
-    db.keywordHistory[appState.activeKeyword].lastSearch = now;
+  if (!appState.activeChallenge) {
+    if (!db.keywordHistory[appState.activeKeyword]) {
+      db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
+    } else {
+      db.keywordHistory[appState.activeKeyword].lastSearch = now;
+    }
   }
   saveAppData(db);
 
@@ -2938,6 +2975,24 @@ function setupSwipeAndNavigationSystem() {
   });
 }
 
+let keywordListReturnScroll = 0;
+
+document.getElementById('btn-delete-current-keyword').addEventListener('click', () => {
+  const keyword = appState.selectedKeywordForHistory;
+  if (!keyword || !confirm(I18N[currentLang].confirmDeleteKeyword(keyword))) return;
+  const db = loadSavedData();
+  deleteKeywordHistory(db, keyword);
+  saveAppData(db);
+  appState.selectedKeywordForHistory = null;
+  pageHistory.classList.remove('open');
+  pageSpotDetail.classList.remove('open');
+  renderKeywordsList();
+  renderAllHistoryList();
+  pageKeywords.classList.add('open');
+  updateFooterActive(2);
+  document.getElementById('keywords-list-container').scrollTop = keywordListReturnScroll;
+});
+
 function renderKeywordsList() {
   const db = loadSavedData();
   const container = document.getElementById('keywords-list-container');
@@ -2952,8 +3007,8 @@ function renderKeywordsList() {
   keys.sort((a, b) => {
     const dataA = db.keywordHistory[a];
     const dataB = db.keywordHistory[b];
-    const countA = db.arrivals.filter(item => item.keyword === a).length;
-    const countB = db.arrivals.filter(item => item.keyword === b).length;
+    const countA = db.arrivals.filter(item => item.keywords.includes(a)).length;
+    const countB = db.arrivals.filter(item => item.keywords.includes(b)).length;
 
     if (sortType === 'recent_search') {
       return new Date(dataB.lastSearch || 0) - new Date(dataA.lastSearch || 0);
@@ -2965,9 +3020,10 @@ function renderKeywordsList() {
   });
 
   keys.forEach(k => {
-    const count = db.arrivals.filter(item => item.keyword === k).length;
+    const count = db.arrivals.filter(item => item.keywords.includes(k)).length;
     const div = document.createElement('div');
     div.className = 'list-item';
+    div.dataset.keyword = k;
     div.innerHTML = `
       <div class="list-item-row">
         <div class="list-item-left">
@@ -2983,6 +3039,7 @@ function renderKeywordsList() {
 
     div.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-reset-search')) return;
+      keywordListReturnScroll = container.scrollTop;
       appState.selectedKeywordForHistory = k;
       document.getElementById('history-header-title').textContent = `${k}`;
       document.getElementById('history-filter').value = '';
@@ -3008,7 +3065,7 @@ document.getElementById('btn-delete-zero-keywords').addEventListener('click', ()
   const db = loadSavedData();
   const t = I18N[currentLang];
   const zeroKeys = Object.keys(db.keywordHistory).filter(k => {
-    const count = db.arrivals.filter(item => item.keyword === k).length;
+    const count = db.arrivals.filter(item => item.keywords.includes(k)).length;
     return count === 0;
   });
 
@@ -3036,7 +3093,7 @@ function renderHistoryList() {
   const sortType = document.getElementById('sort-history').value;
 
   let items = db.arrivals.filter(a => 
-    a.keyword === appState.selectedKeywordForHistory &&
+    a.keywords.includes(appState.selectedKeywordForHistory) &&
     a.name.toLowerCase().includes(filterText)
   );
 
@@ -3165,6 +3222,10 @@ function renderAllHistoryList() {
       if (item.calcDistance !== undefined) {
         distStr = item.calcDistance >= 1000 ? `${(item.calcDistance/1000).toFixed(1)}km` : `${Math.round(item.calcDistance)}m`;
       }
+
+      const keywordLabel = [...(item.keywords || []), ...(item.challengeIds || [])
+        .map(id => CHALLENGES.find(challenge => challenge.id === id))
+        .filter(Boolean).map(challengeName)].map(escapeHtml).join(' / ');
 
       const div = document.createElement('div');
       div.className = 'list-item';
