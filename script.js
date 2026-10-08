@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081804";
+const BASE_JS_VERSION = "v0.26.101.081836";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -18,23 +18,24 @@ function initializeMapRenderer(global) {
 
   function createStyle(mode) {
     const day = mode === 'botw';
+    // At the normal zoom (16), give residential roads a visible ribbon width.
     const roadWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
-      5, 0.3, 12, 1.5,
-      16, ['match', ['get', 'class'], 'primary', 8, 'secondary', 7, 'tertiary', 6, 'service', 3, 5],
-      19, ['match', ['get', 'class'], 'primary', 28, 'secondary', 25, 'tertiary', 22, 'service', 10, 18]];
+      5, day ? 0.5 : 0.3, 12, day ? 2.5 : 1.5,
+      16, day
+        ? ['match', ['get', 'class'], 'primary', 12, 'secondary', 11, 'tertiary', 10, 'service', 6, 9]
+        : ['match', ['get', 'class'], 'primary', 8, 'secondary', 7, 'tertiary', 6, 'service', 3, 5],
+      19, day
+        ? ['match', ['get', 'class'], 'primary', 42, 'secondary', 38, 'tertiary', 34, 'service', 18, 28]
+        : ['match', ['get', 'class'], 'primary', 28, 'secondary', 25, 'tertiary', 22, 'service', 10, 18]];
     const majorWidth = ['interpolate', ['exponential', 1.5], ['zoom'],
-      5, 0.7, 12, 3, 16, 10, 19, 30];
+      5, day ? 1 : 0.7, 12, day ? 4.5 : 3, 16, day ? 14 : 10, 19, day ? 46 : 30];
     const casingWidth = (width, border) => width.map((value, index) =>
       index >= 4 && index % 2 === 0
         ? (typeof value === 'number' ? value + border : ['+', value, border]) : value);
-    // Keep zoom interpolation at the root so MapLibre accepts the width expression.
-    const themedWidth = width => day ? width.map((value, index) =>
-      index >= 4 && index % 2 === 0
-        ? (typeof value === 'number' ? value * 1.15 : ['*', value, 1.15]) : value) : width;
     const line = (id, filter, color, width) => ({
       id, type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', filter,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': color, 'line-width': themedWidth(width) }
+      paint: { 'line-color': color, 'line-width': width }
     });
     // Sidewalks and crossings are separate OSM paths, not extra carriageways.
     // Only road classes belong in these solid, road-width layers.

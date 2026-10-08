@@ -162,7 +162,7 @@ test('停止情報・精度不良で予測をやめ、速度欠落時は位置�
   }
 });
 
-test('ゼルダ風の道路幅は15%太くし、MapLibreのズーム式を最上位に保つ', () => {
+test('通常ズームのゼルダ風地図は住宅街・細街路も太く描き、ズーム式を最上位に保つ', () => {
   const { api } = fixture();
   const day = api.createStyle('botw');
   const night = api.createStyle('sheikah');
@@ -172,5 +172,17 @@ test('ゼルダ風の道路幅は15%太くし、MapLibreのズーム式を最上
     assert.equal(width[2][0], 'zoom');
   }
   const highway = style => style.layers.find(layer => layer.id === 'highway-fill').paint['line-width'];
-  assert.equal(highway(day)[8], highway(night)[8] * 1.15);
+  assert.ok(highway(day)[8] > highway(night)[8] * 1.15);
+  const roadAtNormalZoom = style => style.layers.find(layer => layer.id === 'road-fill').paint['line-width'][8];
+  const matchWidth = (expression, roadClass) => {
+    for (let i = 2; i < expression.length - 1; i += 2) {
+      if (expression[i] === roadClass) return expression[i + 1];
+    }
+    return expression.at(-1);
+  };
+  for (const roadClass of ['primary', 'secondary', 'tertiary', 'minor', 'service']) {
+    assert.ok(matchWidth(roadAtNormalZoom(day), roadClass) > matchWidth(roadAtNormalZoom(night), roadClass) * 1.15);
+  }
+  assert.ok(matchWidth(roadAtNormalZoom(day), 'minor') >= 9);
+  assert.ok(matchWidth(roadAtNormalZoom(day), 'service') >= 6);
 });
