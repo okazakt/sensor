@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "50";
+  --css-rev: "51";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1602,13 +1602,14 @@ body {
 @media (orientation: landscape) {
   #app-container {
     max-width: 960px;
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    --landscape-nav-width: calc(54px + env(safe-area-inset-right, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: var(--landscape-nav-width);
   }
   #page-main-wrap {
     flex-direction: row !important;
     overflow: hidden;
-    padding-bottom: var(--footer-height);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .top-section {
     width: 45%;
@@ -1616,7 +1617,31 @@ body {
     min-height: 0;
     padding: calc(env(safe-area-inset-top) + 36px) 12px 12px;
   }
-  .map-top-controls { top: calc(env(safe-area-inset-top) + 8px); }
+  .map-top-controls {
+    top: calc(env(safe-area-inset-top) + 8px);
+    left: 12px;
+    right: 12px;
+  }
+  .app-footer-nav {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: var(--landscape-nav-width);
+    height: 100%;
+    flex-direction: column;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0;
+    border-top: 0;
+    border-left: 1.5px solid var(--sheikah-gold);
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.85);
+  }
+  .footer-nav-btn { padding: 8px; }
+  .slide-page {
+    left: env(safe-area-inset-left, 0px);
+    width: calc(100% - env(safe-area-inset-left, 0px) - var(--landscape-nav-width));
+    height: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
   .sheikah-divider-bar { width: 6px; height: 100%; }
   .bottom-section {
     flex: 1;
@@ -1627,8 +1652,8 @@ body {
   .bottom-section > * { flex-shrink: 0; }
   .slide-page .page-header {
     padding-top: calc(env(safe-area-inset-top) + 8px);
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: 16px;
+    padding-right: 16px;
   }
   .slide-page .list-scroll { padding-bottom: 16px; }
   .overlay-modal { justify-content: flex-start; padding-block: 16px; }
