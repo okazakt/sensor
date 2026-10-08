@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081502";
+const BASE_JS_VERSION = "v0.26.101.081530";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2157,8 +2157,8 @@ function conditionDescription(kind) {
     all: 'All: react to all search results without locking'
   })[appState.targetMode];
   return ja
-    ? (appState.sensorDetail === 'standard' ? '反応の細かさ：標準（5段階）' : '反応の細かさ：詳細（9段階）。距離の変化を細かく伝えます')
-    : (appState.sensorDetail === 'standard' ? 'Sensor detail: standard (5 levels)' : 'Sensor detail: detailed (9 levels), with finer distance feedback');
+    ? (appState.sensorDetail === 'standard' ? 'NORMAL SENS：通常の5段階で反応します' : 'HI-SENS：反応を9段階に細分化し、距離の変化を細かく伝えます')
+    : (appState.sensorDetail === 'standard' ? 'NORMAL SENS: five reaction levels' : 'HI-SENS: nine reaction levels, with finer distance feedback');
 }
 
 function updateConditionButtons() {
@@ -2166,9 +2166,10 @@ function updateConditionButtons() {
     const btn = document.getElementById(`${kind}-btn`);
     const mode = kind === 'target' ? appState.targetMode : appState.sensorDetail;
     btn.querySelectorAll('[data-mode]').forEach(el => el.classList.toggle('selected', el.dataset.mode === mode));
-    const labels = currentLang === 'ja'
-      ? { random: 'ランダム', nearest: '最寄り', all: 'すべて', standard: '標準', detailed: '詳細' }
-      : { random: 'Random', nearest: 'Nearest', all: 'All', standard: 'Standard', detailed: 'Detailed' };
+    const labels = {
+      nearest: 'NEAREST LOCK', random: 'RANDOM LOCK', all: 'ALL TARGET',
+      standard: 'NORMAL SENS', detailed: 'HI-SENS'
+    };
     btn.querySelector('.setting-current-mode').textContent = labels[mode];
     btn.setAttribute('aria-label', conditionDescription(kind));
     btn.title = conditionDescription(kind);
@@ -2179,7 +2180,7 @@ for (const kind of ['target', 'sensor-detail']) {
   document.getElementById(`${kind}-btn`).addEventListener('click', () => {
     const target = kind === 'target';
     const key = target ? 'targetMode' : 'sensorDetail';
-    const modes = target ? ['random', 'nearest', 'all'] : ['standard', 'detailed'];
+    const modes = target ? ['nearest', 'random', 'all'] : ['standard', 'detailed'];
     appState[key] = modes[(modes.indexOf(appState[key]) + 1) % modes.length];
     localStorage.setItem(`sheikah_${target ? 'target_mode' : 'sensor_detail'}`, appState[key]);
     updateConditionButtons();

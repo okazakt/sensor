@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "40";
+  --css-rev: "41";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1654,9 +1654,9 @@ body {
 .footer-nav-btn { min-width: 44px; min-height: 44px; }
 .volume-step-btn { height: 100%; }
 
-/* Current modes remain readable after the explanatory toast disappears. */
-.condition-label { flex-direction: column; gap: 2px; }
-.setting-current-mode { font-size: 0.8em; }
+/* Keep the mode label on one line, matching the other setting controls. */
+.lock-question { stroke-width: 2; }
+.lock-question-dot { fill: currentColor; stroke: none; }
 .circle-map-wrapper.signal-level1-half {
   box-shadow: 0 0 26px var(--sheikah-cyan), inset 0 0 12px var(--sheikah-cyan);
   animation: ring-pulse-1 2.05s infinite ease-in-out;
