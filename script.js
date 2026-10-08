@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081530";
+const BASE_JS_VERSION = "v0.26.101.081740";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -564,6 +564,7 @@ function applyLanguage(lang) {
   renderKeywordsList();
   if (appState.selectedKeywordForHistory) renderHistoryList();
   renderAllHistoryList();
+  renderChallenges();
 }
 
 document.getElementById('pwa-lang-btn').addEventListener('click', () => {
@@ -624,6 +625,9 @@ function triggerDataTransferPrompt() {
         const restoredDb = JSON.parse(restoredJson);
         if (restoredDb && restoredDb.arrivals) {
           saveAppData(restoredDb);
+          stopSearchAndReset();
+          applyFeatureAccess();
+          renderChallenges();
           renderKeywordsList();
           alert("復元完了しました！");
         } else {
@@ -870,7 +874,44 @@ function playTreasureFanfare() {
   });
 }
 
-const RADIUS_OPTIONS = [200, 1000, 3000, 10000, 50000];
+const CHALLENGE_GROUPS = [
+  { id: 'gourmet', ja: 'グルメ', en: 'Gourmet', categories: ['catering.restaurant', 'catering.cafe', 'catering.fast_food', 'catering.bar'] },
+  { id: 'life', ja: 'ライフ', en: 'Life', categories: ['commercial.supermarket', 'commercial.convenience', 'public_transport', 'tourism.sights.city_hall', 'leisure.park'] },
+  { id: 'leisure', ja: 'レジャー', en: 'Leisure', categories: ['entertainment.theme_park', 'entertainment.zoo', 'entertainment.aquarium', 'beach', 'entertainment.water_park'] },
+  { id: 'deep', ja: 'ディープ', en: 'Deep', categories: ['tourism.sights.castle', 'tourism.sights.ruines', 'tourism.sights.archaeological_site'] },
+  { id: 'secret', ja: 'シークレット', en: 'Secret', categories: [] }
+];
+const CHALLENGE_STAGES = [
+  { id: 'nearest1', radius: 1000, mode: 'nearest' },
+  { id: 'random1', radius: 1000, mode: 'random' },
+  { id: 'random3', radius: 3000, mode: 'random' }
+];
+const CHALLENGES = CHALLENGE_STAGES.flatMap(stage => CHALLENGE_GROUPS.map(group => ({
+  ...stage, id: `${stage.id}-${group.id}`, stage: stage.id, group: group.id, sensor: 'standard'
+})));
+
+function challengeProgress(db = loadSavedData()) {
+  const completed = new Set((Array.isArray(db.completedChallenges) ? db.completedChallenges : [])
+    .filter(id => CHALLENGES.some(challenge => challenge.id === id)));
+  const count = stage => CHALLENGES.filter(c => c.stage === stage && completed.has(c.id)).length;
+  const nearest = count('nearest1'), random = count('random1'), wide = count('random3');
+  return { completed, nearest, random, wide, target: random >= 1, sensor: random >= 5,
+    maxRadius: completed.size === CHALLENGES.length ? 100000 : wide >= 3 ? 50000 : wide >= 1 ? 10000 : 3000 };
+}
+
+function isChallengeAvailable(challenge, progress = challengeProgress()) {
+  return challenge.stage === 'nearest1' ||
+    (challenge.stage === 'random1' ? progress.nearest >= 3 : progress.nearest >= 3 && progress.random >= 3);
+}
+
+function challengeName(challenge) {
+  const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
+  return currentLang === 'ja'
+    ? `${group.ja}${challenge.radius / 1000}km${challenge.mode === 'nearest' ? '最寄り' : 'ランダム'}`
+    : `${group.en} ${challenge.radius / 1000}km ${challenge.mode === 'nearest' ? 'Nearest' : 'Random'}`;
+}
+
+const RADIUS_OPTIONS = [200, 1000, 3000, 10000, 50000, 100000];
 let savedRadiusIdx = parseInt(localStorage.getItem('sheikah_last_radius_idx') || '2', 10);
 let radiusIndex = isNaN(savedRadiusIdx) ? 2 : Math.max(0, Math.min(savedRadiusIdx, RADIUS_OPTIONS.length - 1));
 if (radiusIndex !== savedRadiusIdx) {
@@ -909,8 +950,11 @@ let appState = {
   wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
   continuousSearch: true,
-  targetMode: readSensorSetting("target_mode", ["random", "nearest", "all"], "random"),
-  sensorDetail: readSensorSetting("sensor_detail", ["standard", "detailed"], "standard"),
+  targetMode: challengeProgress().target ? readSensorSetting("target_mode", ["random", "nearest", "all"], "nearest") : "nearest",
+  sensorDetail: challengeProgress().sensor ? readSensorSetting("sensor_detail", ["standard", "detailed"], "standard") : "standard",
+  activeChallenge: null,
+  challengeSettings: null,
+  challengeCategories: null,
   currentPos: null,
   lastSearchedPos: null,
 
@@ -1379,6 +1423,10 @@ function updateArrivalRecordWithDetails(db, target, now) {
   } else {
     db.keywordHistory[appState.activeKeyword].lastArrival = now;
   }
+  const challenge = appState.activeChallenge;
+  if (challenge) {
+    db.completedChallenges = [...new Set([...(db.completedChallenges || []), challenge.id])];
+  }
   saveAppData(db);
 
   redrawMarkersWithFade();
@@ -1388,6 +1436,17 @@ function updateArrivalRecordWithDetails(db, target, now) {
   document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 5000);
+
+  if (challenge) {
+    document.getElementById('toast-text').textContent = currentLang === 'ja'
+      ? `${challengeName(challenge)}クリア！ ${target.name}への到達を記録しました。`
+      : `${challengeName(challenge)} completed! Arrival at ${target.name} recorded.`;
+    stopSearchAndReset();
+    document.getElementById('keyword-input').value = '';
+    checkMainInputClearState();
+    renderChallenges();
+    return;
+  }
 
   if (!appState.continuousSearch) {
     appState.pinpointTarget = null;
@@ -1676,14 +1735,14 @@ async function fetchGeoapify(path, parameters) {
   }
 }
 
-async function searchGeoapify(text, position, radius, language) {
+async function searchGeoapify(text, position, radius, language, forcedCategories = null) {
   getGeoapifyApiKey();
   const common = {
     filter: `circle:${position.lng},${position.lat},${radius}`,
     bias: `proximity:${position.lng},${position.lat}`, lang: language
   };
-  const requests = [fetchGeoapify('/v1/geocode/search', { ...common, text, limit: 20 })];
-  const categories = categoriesForKeyword(text);
+  const requests = forcedCategories ? [] : [fetchGeoapify('/v1/geocode/search', { ...common, text, limit: 20 })];
+  const categories = forcedCategories || categoriesForKeyword(text);
   if (categories.length) requests.push(fetchGeoapify('/v2/places', {
     ...common, categories: categories.join(','), limit: 100
   }));
@@ -1726,7 +1785,7 @@ async function executeSearch(refreshCandidates = false) {
   const rText = radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
   document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta(appState.activeKeyword, rText);
   try {
-    const result = await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang);
+    const result = await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang, appState.challengeCategories);
     if (generation !== searchGeneration || !appState.isTracking) return;
     if (result.partial) console.warn('One search source is unavailable; using available results.');
     appState.places = result.places;
@@ -1754,15 +1813,190 @@ async function executeSearch(refreshCandidates = false) {
   }
 }
 
+function showConditionToast(message) {
+  hideOtherSettingToasts('condition-mode-toast');
+  const toast = document.getElementById('condition-mode-toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(conditionToastTimer);
+  conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+}
+
+function updateRadiusAccess() {
+  const select = document.getElementById('radius-select');
+  const max = challengeProgress().maxRadius;
+  if (!appState.activeChallenge && RADIUS_OPTIONS[radiusIndex] > max) {
+    radiusIndex = RADIUS_OPTIONS.indexOf(max);
+    localStorage.setItem('sheikah_last_radius_idx', String(radiusIndex));
+  }
+  [...select.options].forEach(option => {
+    const locked = RADIUS_OPTIONS[Number(option.value)] > max;
+    option.hidden = locked;
+    option.disabled = locked;
+  });
+  select.disabled = Boolean(appState.activeChallenge);
+  select.value = String(radiusIndex);
+  document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
+}
+
+function applyFeatureAccess() {
+  const progress = challengeProgress();
+  if (!progress.target) appState.targetMode = 'nearest';
+  if (!progress.sensor) appState.sensorDetail = 'standard';
+  updateRadiusAccess();
+  updateConditionButtons();
+}
+
+function releaseChallengeSettings() {
+  if (!appState.activeChallenge) return;
+  const saved = appState.challengeSettings;
+  appState.activeChallenge = null;
+  appState.challengeCategories = null;
+  appState.challengeSettings = null;
+  appState.targetMode = saved.targetMode;
+  appState.sensorDetail = saved.sensorDetail;
+  appState.continuousSearch = saved.continuousSearch;
+  radiusIndex = saved.radiusIndex;
+  document.getElementById('keyword-input').readOnly = false;
+  document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'false');
+  document.getElementById('continuous-toggle-btn').classList.remove('feature-locked');
+  applyFeatureAccess();
+  renderChallenges();
+}
+
+function startChallenge(challenge) {
+  if (!isChallengeAvailable(challenge)) return;
+  stopSearchAndReset();
+  appState.challengeSettings = { targetMode: appState.targetMode, sensorDetail: appState.sensorDetail,
+    continuousSearch: appState.continuousSearch, radiusIndex };
+  appState.activeChallenge = challenge;
+  let categories = CHALLENGE_GROUPS.find(g => g.id === challenge.group).categories;
+  if (challenge.group === 'secret') {
+    const all = CHALLENGE_GROUPS.flatMap(g => g.categories);
+    categories = [all[Math.floor(Math.random() * all.length)]];
+  }
+  appState.challengeCategories = [...categories];
+  appState.targetMode = challenge.mode;
+  appState.sensorDetail = challenge.sensor;
+  appState.continuousSearch = false;
+  radiusIndex = RADIUS_OPTIONS.indexOf(challenge.radius);
+  const input = document.getElementById('keyword-input');
+  input.value = challengeName(challenge);
+  input.readOnly = true;
+  document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'true');
+  document.getElementById('continuous-toggle-btn').classList.add('feature-locked');
+  checkMainInputClearState();
+  updateRadiusAccess();
+  startSearchFromSet(true);
+  renderChallenges();
+  navigateToMain();
+}
+
+let pendingChallenge = null;
+function requestChallengeStart(challenge) {
+  if (!isChallengeAvailable(challenge)) return;
+  pendingChallenge = challenge;
+  const ja = currentLang === 'ja';
+  const dialog = document.getElementById('challenge-start-dialog');
+  dialog.returnValue = '';
+  document.getElementById('challenge-start-question').textContent = ja
+    ? 'チャレンジを開始しますか？' : 'Start this challenge?';
+  document.getElementById('challenge-start-name').textContent = challengeName(challenge) +
+    (appState.isTracking ? (ja ? '（現在の探索は終了します）' : ' (the current search will end)') : '');
+  document.getElementById('challenge-start-yes').textContent = ja ? 'はい' : 'Yes';
+  document.getElementById('challenge-start-no').textContent = ja ? 'いいえ' : 'No';
+  dialog.showModal();
+}
+
+function renderChallenges() {
+  const container = document.getElementById('challenges-list-container');
+  if (!container) return;
+  const ja = currentLang === 'ja';
+  const progress = challengeProgress();
+  document.getElementById('title-page-challenges').textContent = ja ? 'チャレンジ一覧' : 'Challenges';
+  document.getElementById('challenge-help').textContent = ja
+    ? '指定カテゴリの対象に20m以内まで近づくとクリア。メインのSETで一時停止・再開できます。停止・終了後は、この画面から再度SETしてください。'
+    : 'Reach a target within 20m to complete. Use SET on the main screen to pause/resume. After stopping, SET a challenge here to start again.';
+  container.replaceChildren();
+  if (appState.activeChallenge) {
+    const row = document.createElement('div');
+    row.className = 'list-item challenge-active';
+    const label = document.createElement('span');
+    label.textContent = challengeName(appState.activeChallenge) + (appState.isPaused ? (ja ? ' 一時停止中' : ' Paused') : (ja ? ' 実行中' : ' Active'));
+    const stop = document.createElement('button');
+    stop.className = 'btn-sheikah challenge-set';
+    stop.textContent = ja ? '停止' : 'Stop';
+    stop.onclick = () => {
+      stopSearchAndReset();
+      document.getElementById('keyword-input').value = '';
+      checkMainInputClearState();
+    };
+    row.append(label, stop);
+    container.append(row);
+  }
+  const milestone = (text, count, required) => {
+    const row = document.createElement('div');
+    row.className = 'challenge-milestone' + (count >= required ? ' achieved' : '');
+    row.textContent = `${count >= required ? '✓ ' : ''}${text} (${Math.min(count, required)}/${required})`;
+    container.append(row);
+  };
+  for (const stage of CHALLENGE_STAGES) {
+    for (const challenge of CHALLENGES.filter(c => c.stage === stage.id)) {
+      const row = document.createElement('div');
+      row.className = 'list-item challenge-row';
+      const left = document.createElement('div');
+      left.className = 'list-item-left';
+      const title = document.createElement('span');
+      title.className = 'list-item-title';
+      title.textContent = challengeName(challenge);
+      const status = document.createElement('div');
+      status.className = 'list-item-sub';
+      const available = isChallengeAvailable(challenge, progress);
+      const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
+      const descriptions = ja ? {
+        gourmet: '飲食店・カフェなど', life: 'スーパー・駅・市役所・公園など',
+        leisure: '遊園地・海岸など', deep: '城跡・遺跡など', secret: '全カテゴリからランダムに指定'
+      } : { gourmet: 'Restaurants and cafes', life: 'Supermarkets, stations, town halls and parks',
+        leisure: 'Theme parks and beaches', deep: 'Castles and archaeological sites', secret: 'A random category from all groups' };
+      status.textContent = descriptions[group.id] + ' · ' + (progress.completed.has(challenge.id)
+        ? (ja ? 'クリア済み' : 'Completed') : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));
+      left.append(title, status);
+      const button = document.createElement('button');
+      button.className = 'btn-sheikah challenge-set';
+      button.textContent = 'SET';
+      button.disabled = !available;
+      button.setAttribute('aria-label', `${challengeName(challenge)} SET`);
+      button.onclick = () => requestChallengeStart(challenge);
+      row.append(left, button);
+      container.append(row);
+    }
+    if (stage.id === 'nearest1') {
+      milestone(ja ? '1km最寄りを3つクリア → 1kmランダムチャレンジ開放' : 'Complete 3 × 1km Nearest → unlock 1km Random challenges', progress.nearest, 3);
+    } else if (stage.id === 'random1') {
+      milestone(ja ? '1kmランダムを1つクリア → ターゲットロック切替開放' : 'Complete 1 × 1km Random → unlock target lock switching', progress.random, 1);
+      milestone(ja ? '1kmランダムを3つクリア → 3kmランダムチャレンジ開放' : 'Complete 3 × 1km Random → unlock 3km Random challenges', progress.random, 3);
+      milestone(ja ? '1kmランダムを5つクリア → センサー高精度機能開放' : 'Complete 5 × 1km Random → unlock HI-SENS', progress.random, 5);
+    } else {
+      milestone(ja ? '3kmランダムを1つクリア → 範囲指定10km開放' : 'Complete 1 × 3km Random → unlock 10km', progress.wide, 1);
+      milestone(ja ? '3kmランダムを3つクリア → 範囲指定50km開放' : 'Complete 3 × 3km Random → unlock 50km', progress.wide, 3);
+      milestone(ja ? '全チャレンジクリア → 範囲指定100km開放' : 'Complete all challenges → unlock 100km', progress.completed.size, 15);
+    }
+  }
+}
+
 function getRadiusText(r) {
   return r >= 1000 ? `${r/1000}km` : `${r}m`;
 }
 
-document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
-document.getElementById('radius-select').value = radiusIndex.toString();
+updateRadiusAccess();
 
 document.getElementById('radius-select').addEventListener('change', (e) => {
-  radiusIndex = parseInt(e.target.value, 10);
+  const next = Number(e.target.value);
+  if (appState.activeChallenge || !Number.isInteger(next) || !RADIUS_OPTIONS[next] || RADIUS_OPTIONS[next] > challengeProgress().maxRadius) {
+    updateRadiusAccess();
+    return;
+  }
+  radiusIndex = next;
   document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
   localStorage.setItem('sheikah_last_radius_idx', radiusIndex.toString());
   if (appState.isTracking && !appState.pinpointTarget) {
@@ -1820,6 +2054,7 @@ btnInputClearEl.addEventListener('click', (e) => {
 });
 
 keywordInputEl.addEventListener('focus', () => {
+  if (appState.activeChallenge) return;
   if (appState.isTracking && keywordInputEl.value.trim() !== "") {
     const t = I18N[currentLang];
     if (confirm(t.confirmEndSearch)) {
@@ -2138,6 +2373,10 @@ function showContinuousModeToast() {
 }
 
 document.getElementById('continuous-toggle-btn').addEventListener('click', () => {
+  if (appState.activeChallenge) {
+    showConditionToast(currentLang === 'ja' ? 'チャレンジ中は到達時終了です。変更するにはチャレンジを停止してください。' : 'Challenges end on arrival. Stop the challenge to change this setting.');
+    return;
+  }
   appState.continuousSearch = !appState.continuousSearch;
   updateButtonStateUI();
   showContinuousModeToast();
@@ -2166,10 +2405,10 @@ function updateConditionButtons() {
     const btn = document.getElementById(`${kind}-btn`);
     const mode = kind === 'target' ? appState.targetMode : appState.sensorDetail;
     btn.querySelectorAll('[data-mode]').forEach(el => el.classList.toggle('selected', el.dataset.mode === mode));
-    const labels = {
-      nearest: 'NEAREST LOCK', random: 'RANDOM LOCK', all: 'ALL TARGET',
-      standard: 'NORMAL SENS', detailed: 'HI-SENS'
-    };
+    const labels = currentLang === 'ja' ? { nearest: '最寄りロック', random: 'ランダムロック', all: '全ターゲット', standard: 'ノーマルセンサー', detailed: 'HI-SENS' } : { nearest: 'NEAREST LOCK', random: 'RANDOM LOCK', all: 'ALL TARGET', standard: 'NORMAL SENS', detailed: 'HI-SENS' };
+    const locked = Boolean(appState.activeChallenge) || !(kind === 'target' ? challengeProgress().target : challengeProgress().sensor);
+    btn.setAttribute('aria-disabled', String(locked));
+    btn.classList.toggle('feature-locked', locked);
     btn.querySelector('.setting-current-mode').textContent = labels[mode];
     btn.setAttribute('aria-label', conditionDescription(kind));
     btn.title = conditionDescription(kind);
@@ -2179,6 +2418,12 @@ function updateConditionButtons() {
 for (const kind of ['target', 'sensor-detail']) {
   document.getElementById(`${kind}-btn`).addEventListener('click', () => {
     const target = kind === 'target';
+    if (appState.activeChallenge || !(target ? challengeProgress().target : challengeProgress().sensor)) {
+      showConditionToast(conditionDescription(kind) + '\n' + (appState.activeChallenge
+        ? (currentLang === 'ja' ? 'チャレンジ中は変更できません。変更するにはチャレンジを停止してください。' : 'Stop the challenge to change this setting.')
+        : (currentLang === 'ja' ? 'チャレンジ条件クリアで機能が開放されます' : 'Complete challenge requirements to unlock this feature.')));
+      return;
+    }
     const key = target ? 'targetMode' : 'sensorDetail';
     const modes = target ? ['nearest', 'random', 'all'] : ['standard', 'detailed'];
     appState[key] = modes[(modes.indexOf(appState[key]) + 1) % modes.length];
@@ -2200,6 +2445,7 @@ for (const kind of ['target', 'sensor-detail']) {
 updateConditionButtons();
 
 function stopSearchAndReset() {
+  releaseChallengeSettings();
   resetKeywordSearch();
   appState.pinpointTarget = null;
   appState.isTracking = false;
@@ -2214,7 +2460,11 @@ function stopSearchAndReset() {
   updateButtonStateUI();
 }
 
-async function startSearchFromSet() {
+async function startSearchFromSet(fromChallenge = false) {
+  if (appState.activeChallenge && !fromChallenge) {
+    showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
+    return;
+  }
   initAudio();
   playBeep(2200);
   if (appState.wakeLockActive) requestWakeLock();
@@ -2267,6 +2517,7 @@ document.getElementById('set-btn').addEventListener('click', () => {
       scheduledInterval = null;
     }
     updateButtonStateUI();
+    renderChallenges();
     evaluateSensorCycle();
   }
 });
@@ -2280,7 +2531,6 @@ document.getElementById('keyword-input').addEventListener('keypress', (e) => {
 // ============================================================
 
 const pageChallenges = document.getElementById('page-challenges');
-const pageChallengeKeywords = document.getElementById('page-challenge-keywords');
 const pageMainWrap = document.getElementById('page-main-wrap');
 const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
@@ -2309,7 +2559,6 @@ function navigateToMain() {
   pageSpotDetail.classList.remove('open');
   pageHistory.classList.remove('open');
   pageKeywords.classList.remove('open');
-  pageChallengeKeywords.classList.remove('open');
   pageChallenges.classList.remove('open');
   updateFooterActive(1);
   evaluateSensorCycle();
@@ -2356,7 +2605,6 @@ function setupSwipeAndNavigationSystem() {
 
   fnavBtnHistory?.addEventListener('click', () => {
     pageChallenges.classList.remove('open');
-    pageChallengeKeywords.classList.remove('open');
     pageAllHistory.classList.remove('open');
     pageSpotDetail.classList.remove('open');
     pageHistory.classList.remove('open');
@@ -2367,7 +2615,6 @@ function setupSwipeAndNavigationSystem() {
 
   fnavBtnAll?.addEventListener('click', () => {
     pageChallenges.classList.remove('open');
-    pageChallengeKeywords.classList.remove('open');
     pageSpotDetail.classList.remove('open');
     pageHistory.classList.remove('open');
     renderAllHistoryList();
@@ -2375,20 +2622,6 @@ function setupSwipeAndNavigationSystem() {
     updateFooterActive(3);
   });
 
-  // 仮コンテンツタップ挙動
-  document.getElementById('dummy-challenge-item')?.addEventListener('click', () => {
-    pageChallengeKeywords.classList.add('open');
-  });
-  document.getElementById('dummy-challenge-keyword-item')?.addEventListener('click', () => {
-    appState.fromChallenge = true;
-    appState.fromAllHistory = false;
-    document.getElementById('detail-spot-name').textContent = "チャレンジターゲットA（仮）";
-    document.getElementById('detail-spot-address').textContent = "仮のコンテンツです";
-    pageSpotDetail.classList.add('open');
-  });
-  document.getElementById('back-to-challenges')?.addEventListener('click', () => {
-    pageChallengeKeywords.classList.remove('open');
-  });
   document.getElementById('back-to-keywords')?.addEventListener('click', () => {
     pageHistory.classList.remove('open');
     updateFooterActive(2);
@@ -2409,16 +2642,6 @@ function setupSwipeAndNavigationSystem() {
     pageChallenges.classList.remove('open');
     updateFooterActive(1);
   }, null);
-
-  // 1-1. チャレンジ図鑑一覧：左スワイプ時メインへ／右スワイプ時チャレンジ一覧へ戻る
-  bindSwipe(pageChallengeKeywords, () => {
-    pageChallengeKeywords.classList.remove('open');
-    pageChallenges.classList.remove('open');
-    updateFooterActive(1);
-  }, () => {
-    pageChallengeKeywords.classList.remove('open');
-    updateFooterActive(0);
-  });
 
   // 2. メイン：左スワイプ時探索履歴一覧へ／右スワイプ時チャレンジ一覧へ
   bindSwipe(pageMainWrap, () => {
@@ -2780,6 +3003,10 @@ function showToast(msg) {
 }
 
 function setPinpointTargetAndStart(item) {
+  if (appState.activeChallenge) {
+    showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
+    return;
+  }
   resetKeywordSearch();
   const t = I18N[currentLang];
   appState.pinpointTarget = {
@@ -2961,6 +3188,19 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
 
 setInterval(updateCompassStatus, 500);
 
+document.getElementById('challenge-start-no').addEventListener('click', () => {
+  pendingChallenge = null;
+  document.getElementById('challenge-start-dialog').close();
+});
+document.getElementById('challenge-start-yes').addEventListener('click', () => {
+  const challenge = pendingChallenge;
+  pendingChallenge = null;
+  document.getElementById('challenge-start-dialog').close();
+  if (challenge) startChallenge(challenge);
+});
+document.getElementById('challenge-start-dialog').addEventListener('cancel', () => {
+  pendingChallenge = null;
+});
 applyLanguage(currentLang);
 window.addEventListener('load', () => {
   bootstrapMapAndLocation();

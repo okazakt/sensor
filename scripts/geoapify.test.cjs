@@ -61,3 +61,18 @@ test('設定が未入力または仮のキーなら通信せずに設定エラ�
   }
   assert.equal(calls, 0);
 });
+
+test('チャレンジは指定カテゴリのみ検索し、チャレンジ名の文字検索を混ぜない', async () => {
+  const urls = [];
+  const c = fixture(async url => {
+    urls.push(url);
+    return {ok:true, json:async () => ({features:[feature('category-target', 0.1)]})};
+  });
+  const result = await c.searchGeoapify('グルメ1kmランダム', {lat:0,lng:0}, 1000, 'ja',
+    ['catering.restaurant', 'catering.cafe']);
+  assert.equal(urls.length, 1);
+  assert.equal(urls[0].pathname, '/v2/places');
+  assert.equal(urls[0].searchParams.get('categories'), 'catering.restaurant,catering.cafe');
+  assert.equal(urls[0].searchParams.has('text'), false);
+  assert.equal(result.places[0].id, 'category-target');
+});

@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="34">
+  <meta name="html-rev" content="35">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -133,45 +133,20 @@
       <div class="page-header header-flex">
         <div class="page-title-text" id="title-page-challenges">チャレンジ一覧</div>
       </div>
-      <div class="filter-bar">
-        <div class="sheikah-input-wrap">
-          <input type="text" id="challenge-filter" placeholder="チャレンジ絞り込み...">
-          <button class="btn-input-clear" id="btn-challenge-filter-clear">✕</button>
-        </div>
-      </div>
-      <div class="list-scroll" id="challenges-list-container">
-        <div class="list-item" id="dummy-challenge-item">
-          <div class="list-item-row">
-            <div class="list-item-left">
-              <span class="list-item-title">試練の祠・探索チャレンジ（仮）</span>
-              <div class="list-item-sub">タップしてチャレンジ図鑑一覧へ</div>
-            </div>
-            <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
-          </div>
-        </div>
-      </div>
+      <div class="challenge-help" id="challenge-help"></div>
+      <div class="list-scroll" id="challenges-list-container"></div>
     </div>
 
-    <!-- チャレンジ小画面：チャレンジ図鑑一覧（仮） -->
-    <div class="slide-page" id="page-challenge-keywords">
-      <div class="page-header header-flex">
-        <div class="header-left-group">
-          <button class="back-btn" id="back-to-challenges">
-            <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:2px;"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>チャレンジ一覧
-          </button>
-        </div>
-        <div class="page-title-text">チャレンジ図鑑一覧</div>
-        <div style="width: 40px;"></div>
-      </div>
-      <div class="list-scroll">
-        <div class="list-item" id="dummy-challenge-keyword-item">
-          <div class="list-item-left">
-            <span class="list-item-title">指定ターゲットA（仮）</span>
-            <div class="list-item-sub">タップして図鑑詳細へ</div>
-          </div>
+    <dialog id="challenge-start-dialog" class="challenge-dialog" aria-labelledby="challenge-start-question" aria-describedby="challenge-start-name">
+      <div>
+        <p id="challenge-start-question"></p>
+        <p id="challenge-start-name"></p>
+        <div class="challenge-dialog-actions">
+          <button type="button" id="challenge-start-no" class="btn-sheikah">いいえ</button>
+          <button type="button" id="challenge-start-yes" class="btn-sheikah">はい</button>
         </div>
       </div>
-    </div>
+    </dialog>
 
     <!-- 第2画面（メイン画面） -->
     <div id="page-main-wrap" style="width: 100%; height: 100%; position: relative; display: flex; flex-direction: column;">
@@ -213,6 +188,7 @@
               <option value="2" selected>3km</option>
               <option value="3">10km</option>
               <option value="4">50km</option>
+              <option value="5">100km</option>
             </select>
           </div>
 
