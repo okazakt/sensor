@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081750";
+const BASE_JS_VERSION = "v0.26.101.081804";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -27,10 +27,14 @@ function initializeMapRenderer(global) {
     const casingWidth = (width, border) => width.map((value, index) =>
       index >= 4 && index % 2 === 0
         ? (typeof value === 'number' ? value + border : ['+', value, border]) : value);
+    // Keep zoom interpolation at the root so MapLibre accepts the width expression.
+    const themedWidth = width => day ? width.map((value, index) =>
+      index >= 4 && index % 2 === 0
+        ? (typeof value === 'number' ? value * 1.15 : ['*', value, 1.15]) : value) : width;
     const line = (id, filter, color, width) => ({
       id, type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', filter,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': color, 'line-width': width }
+      paint: { 'line-color': color, 'line-width': themedWidth(width) }
     });
     // Sidewalks and crossings are separate OSM paths, not extra carriageways.
     // Only road classes belong in these solid, road-width layers.
@@ -310,6 +314,7 @@ const I18N = {
     btnSet: "SET",
     unvisited: "未踏:",
     detecting: "件探知中",
+    detectingLocked: "件探知　対象1件をロック",
     standby: "STANDBY",
     searching: "SEARCHING...",
     paused: "PAUSED",
@@ -395,6 +400,7 @@ const I18N = {
     btnSet: "SET",
     unvisited: "Left:",
     detecting: " detected",
+    detectingLocked: " detected · 1 target locked",
     standby: "STANDBY",
     searching: "SEARCHING...",
     paused: "PAUSED",
@@ -1282,7 +1288,16 @@ function sensorReaction(distance, angle) {
   };
 }
 
+function updateDetectionLabel() {
+  const label = document.getElementById('label-detecting');
+  if (!label) return;
+  const locked = appState.isTracking && !appState.isPaused &&
+    appState.targetMode !== 'all' && Boolean(appState.pinpointTarget || appState.randomTarget);
+  label.textContent = locked ? I18N[currentLang].detectingLocked : I18N[currentLang].detecting;
+}
+
 function evaluateSensorCycle() {
+  updateDetectionLabel();
   const countEl = document.getElementById('unknown-count');
   const distInfoEl = document.getElementById('distance-info');
   const t = I18N[currentLang];
@@ -1311,6 +1326,7 @@ function evaluateSensorCycle() {
 
   // The count represents all eligible places in either locked or all-target mode.
   countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
+  updateDetectionLabel();
 
   if (activeTargets.length === 0) {
     if (!distInfoEl.textContent.includes("API")) {
@@ -1834,11 +1850,14 @@ function updateRadiusAccess() {
     radiusIndex = RADIUS_OPTIONS.indexOf(max);
     localStorage.setItem('sheikah_last_radius_idx', String(radiusIndex));
   }
-  [...select.options].forEach(option => {
-    const locked = RADIUS_OPTIONS[Number(option.value)] > max;
-    option.hidden = locked;
-    option.disabled = locked;
+  const options = RADIUS_OPTIONS.flatMap((radius, index) => {
+    if (radius > max) return [];
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = getRadiusText(radius);
+    return [option];
   });
+  select.replaceChildren(...options);
   select.disabled = Boolean(appState.activeChallenge);
   select.value = String(radiusIndex);
   document.getElementById('radius-val').textContent = getRadiusText(RADIUS_OPTIONS[radiusIndex]);
@@ -2025,7 +2044,7 @@ function renderChallenges() {
   const milestone = (text, count, required) => {
     const row = document.createElement('div');
     row.className = 'challenge-milestone' + (count >= required ? ' achieved' : '');
-    row.textContent = `${count >= required ? '✓ ' : ''}${text} (${Math.min(count, required)}/${required})`;
+    row.textContent = `${count >= required ? '✓ ' : ''}${text}`;
     container.append(row);
   };
   for (const stage of CHALLENGE_STAGES) {
@@ -2513,11 +2532,12 @@ function conditionDescription(kind) {
 }
 
 function updateConditionButtons() {
+  updateDetectionLabel();
   for (const kind of ['target', 'sensor-detail']) {
     const btn = document.getElementById(`${kind}-btn`);
     const mode = kind === 'target' ? appState.targetMode : appState.sensorDetail;
     btn.querySelectorAll('[data-mode]').forEach(el => el.classList.toggle('selected', el.dataset.mode === mode));
-    const labels = currentLang === 'ja' ? { nearest: '最寄りロック', random: 'ランダムロック', all: '全ターゲット', standard: 'ノーマルセンサー', detailed: 'HI-SENS' } : { nearest: 'NEAREST LOCK', random: 'RANDOM LOCK', all: 'ALL TARGET', standard: 'NORMAL SENS', detailed: 'HI-SENS' };
+    const labels = { nearest: 'NEAREST LOCK', random: 'RANDOM LOCK', all: 'ALL TARGET', standard: 'NORMAL SENS', detailed: 'HI-SENS' };
     const locked = Boolean(appState.activeChallenge) || !(kind === 'target' ? challengeProgress().target : challengeProgress().sensor);
     btn.setAttribute('aria-disabled', String(locked));
     btn.classList.toggle('feature-locked', locked);

@@ -8,7 +8,7 @@ const vm = require('node:vm');
 
 function sensorFixture() {
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
-  const elements = { 'unknown-count': { textContent: '' }, 'distance-info': { textContent: '' } };
+  const elements = { 'unknown-count': { textContent: '' }, 'label-detecting': { textContent: '' }, 'distance-info': { textContent: '' } };
   const records = { arrivals: [] };
   const context = {
     appState: {
@@ -20,6 +20,7 @@ function sensorFixture() {
     isSearchInProgress: false, arrivalInProgressId: null,
     radarTimer: null, scheduledInterval: null,
     currentLang: 'ja', I18N: { ja: {
+      detecting: '件探知中', detectingLocked: '件探知　対象1件をロック',
       searching: 'SEARCHING...', noSpotsInRange: '範囲内に対象なし', spotDetected: '探知反応あり'
     } },
     document: { getElementById: id => elements[id] },
@@ -207,4 +208,22 @@ test('保存したモードを復元し、不正値は既定値に戻す', () =>
   assert.equal(c.readSensorSetting('sensor_detail', ['standard', 'detailed'], 'standard'), 'detailed');
   saved.sheikah_target_mode = 'invalid';
   assert.equal(c.readSensorSetting('target_mode', ['random', 'nearest', 'all'], 'random'), 'random');
+});
+
+test('最寄り・ランダムのロック時だけ件数に対象1件の説明を添える', () => {
+  const { context: c, elements } = sensorFixture();
+  c.appState.places = [{ id: 'near', lat: 100, lng: 0 }, { id: 'far', lat: 200, lng: 0 }];
+  for (const mode of ['nearest', 'random', 'all']) {
+    c.appState.targetMode = mode;
+    c.chooseSearchTarget();
+    c.evaluateSensorCycle();
+    assert.equal(elements['unknown-count'].textContent, 2);
+    assert.equal(elements['label-detecting'].textContent,
+      mode === 'all' ? '件探知中' : '件探知　対象1件をロック');
+  }
+  c.appState.targetMode = 'nearest';
+  c.appState.places = [];
+  c.chooseSearchTarget();
+  c.evaluateSensorCycle();
+  assert.equal(elements['label-detecting'].textContent, '件探知中');
 });

@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "43";
+  --css-rev: "44";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1688,7 +1688,7 @@ body {
 .challenge-row .list-item-title { overflow-wrap: anywhere; }
 .challenge-set { flex-shrink: 0; }
 .challenge-set:disabled { opacity: .35; cursor: default; }
-.challenge-milestone { margin: 6px 12px 14px; padding: 12px; border-left: 3px solid var(--sheikah-gold); background: rgba(180, 140, 60, .1); color: var(--sheikah-gold); font-size: .8rem; line-height: 1.6; }
+.challenge-milestone { margin: 0; flex-shrink: 0; width: 100%; box-sizing: border-box; padding: 12px; border-left: 3px solid var(--sheikah-gold); background: rgba(180, 140, 60, .1); color: var(--sheikah-gold); font-size: .8rem; line-height: 1.6; }
 .challenge-milestone.achieved { border-left-color: #75bd93; color: #75bd93; }
 .challenge-dialog { width: min(360px, 85vw); border: 1px solid var(--sheikah-gold); border-radius: 12px; padding: 24px; background: #101c25; color: #fff; }
 .challenge-dialog::backdrop { background: rgba(0, 0, 0, .7); }
@@ -1702,3 +1702,8 @@ body {
 .challenge-history-arrow { color: var(--sheikah-gold); font-size: 1.3rem; }
 .challenge-row.challenge-locked .challenge-history-arrow { color: #63707c; }
 .challenge-arrivals-name { padding: 0 16px 8px; color: var(--sheikah-gold); font-size: .85rem; }
+
+.status-panel { gap: 8px; }
+.status-panel > div:first-child { flex: 1; min-width: 0; }
+.unknown-badge #label-detecting { min-width: 0; line-height: 1.4; }
+.unknown-badge #label-unvisited, .unknown-count { flex-shrink: 0; }

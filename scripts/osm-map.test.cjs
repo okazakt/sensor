@@ -161,3 +161,16 @@ test('停止情報・精度不良で予測をやめ、速度欠落時は位置�
     assert.ok(Math.abs(f.center().lng - 139.00015) < 0.000002);
   }
 });
+
+test('ゼルダ風の道路幅は15%太くし、MapLibreのズーム式を最上位に保つ', () => {
+  const { api } = fixture();
+  const day = api.createStyle('botw');
+  const night = api.createStyle('sheikah');
+  for (const id of ['road-fill', 'road-casing', 'highway-fill', 'highway-casing']) {
+    const width = day.layers.find(layer => layer.id === id).paint['line-width'];
+    assert.equal(width[0], 'interpolate');
+    assert.equal(width[2][0], 'zoom');
+  }
+  const highway = style => style.layers.find(layer => layer.id === 'highway-fill').paint['line-width'];
+  assert.equal(highway(day)[8], highway(night)[8] * 1.15);
+});
