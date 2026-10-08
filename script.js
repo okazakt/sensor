@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.082053";
+const BASE_JS_VERSION = "v0.26.101.082141";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2248,6 +2248,18 @@ function getRadiusText(r) {
 
 updateRadiusAccess();
 
+function confirmChallengeEnd() {
+  if (!confirm(currentLang === 'ja' ? 'チャレンジを終了しますか？' : 'End the challenge?')) return false;
+  stopSearchAndReset();
+  document.getElementById('keyword-input').value = '';
+  checkMainInputClearState();
+  return true;
+}
+
+document.getElementById('dial-btn').addEventListener('click', () => {
+  if (appState.activeChallenge) confirmChallengeEnd();
+});
+
 document.getElementById('radius-select').addEventListener('change', (e) => {
   const next = Number(e.target.value);
   if (appState.activeChallenge || !Number.isInteger(next) || !RADIUS_OPTIONS[next] || RADIUS_OPTIONS[next] > challengeProgress().maxRadius) {
@@ -2300,7 +2312,9 @@ checkMainInputClearState();
 btnInputClearEl.addEventListener('click', (e) => {
   e.preventDefault();
   const t = I18N[currentLang];
-  if (appState.isTracking) {
+  if (appState.activeChallenge) {
+    if (!confirmChallengeEnd()) return;
+  } else if (appState.isTracking) {
     if (!confirm(t.confirmEndSearch)) {
       return;
     }
