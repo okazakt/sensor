@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081915";
+const BASE_JS_VERSION = "v0.26.101.081926";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -2117,13 +2117,13 @@ function renderChallenges() {
     if (stage.id === 'nearest1') {
       milestone(ja ? '1km最寄りチャレンジを3つクリアすると、1kmランダムチャレンジが開放されます。' : 'Complete 3 × 1km Nearest, then unlock 1km Random challenges', progress.nearest, 3);
     } else if (stage.id === 'random1') {
-      milestone(ja ? '1kmランダムチャレンジを1つクリアすると、ターゲットロックを切り替えられるようになります。' : 'Complete 1 × 1km Random, then unlock target lock switching', progress.random, 1);
+      milestone(ja ? '1kmランダムチャレンジを1つクリアすると、ターゲットロック機能でモードを切り替えられるようになります。' : 'Complete 1 × 1km Random, then unlock target lock switching', progress.random, 1);
       milestone(ja ? '1kmランダムチャレンジを3つクリアすると、3kmランダムチャレンジが開放されます。' : 'Complete 3 × 1km Random, then unlock 3km Random challenges', progress.random, 3);
-      milestone(ja ? '1kmランダムチャレンジを5つクリアすると、高精度センサー（HI-SENS）が使えるようになります。' : 'Complete 5 × 1km Random, then unlock HI-SENS', progress.random, 5);
+      milestone(ja ? '1kmランダムチャレンジを5つクリアすると、高精度センサー（HI-SENS）機能が使えるようになります。' : 'Complete 5 × 1km Random, then unlock HI-SENS', progress.random, 5);
     } else {
-      milestone(ja ? '3kmランダムチャレンジを1つクリアすると、検索範囲に10kmを選べるようになります。' : 'Complete 1 × 3km Random, then unlock 10km', progress.wide, 1);
-      milestone(ja ? '3kmランダムチャレンジを3つクリアすると、検索範囲に50kmを選べるようになります。' : 'Complete 3 × 3km Random, then unlock 50km', progress.wide, 3);
-      milestone(ja ? '15種類すべてのチャレンジをクリアすると、検索範囲に100kmを選べるようになります。' : 'Complete all challenges, then unlock 100km', progress.completed.size, 15);
+      milestone(ja ? '3kmランダムチャレンジを1つクリアすると、検索範囲に10kmが指定できるようになります。' : 'Complete 1 × 3km Random, then unlock 10km', progress.wide, 1);
+      milestone(ja ? '3kmランダムチャレンジを3つクリアすると、検索範囲に50kmが指定できるようになります。' : 'Complete 3 × 3km Random, then unlock 50km', progress.wide, 3);
+      milestone(ja ? '15種類すべてのチャレンジをクリアすると、検索範囲に100kmが指定できるようになります。' : 'Complete all challenges, then unlock 100km', progress.completed.size, 15);
     }
   }
 }
