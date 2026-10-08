@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081410";
+const BASE_JS_VERSION = "v0.26.101.081502";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -909,8 +909,8 @@ let appState = {
   wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
   continuousSearch: true,
-  hoursFilter: 0,
-  ratingFilter: 0,
+  targetMode: readSensorSetting("target_mode", ["random", "nearest", "all"], "random"),
+  sensorDetail: readSensorSetting("sensor_detail", ["standard", "detailed"], "standard"),
   currentPos: null,
   lastSearchedPos: null,
 
@@ -1168,14 +1168,9 @@ function resetKeywordSearch() {
   appState.lastSearchedPos = null;
 }
 
-function readConditionSetting(kind, count) {
-  const value = Number(localStorage.getItem(`sheikah_${kind}_filter`) || 0);
-  return Number.isInteger(value) && value >= 0 && value < count ? value : 0;
-}
-
-function matchesSearchConditions(place) {
-  // These conditions are disabled pending replacement controls.
-  return true;
+function readSensorSetting(key, modes, fallback) {
+  const value = localStorage.getItem(`sheikah_${key}`);
+  return modes.includes(value) ? value : fallback;
 }
 
 function getSearchCandidates() {
@@ -1183,26 +1178,62 @@ function getSearchCandidates() {
   const db = loadSavedData();
   const radius = RADIUS_OPTIONS[radiusIndex];
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
-  return appState.places.filter(place => !mutedIds.has(place.id) && matchesSearchConditions(place) &&
+  return appState.places.filter(place => !mutedIds.has(place.id) &&
     getDistance(appState.currentPos.lat, appState.currentPos.lng, place.lat, place.lng) <= radius);
 }
 
-function chooseRandomTarget() {
+function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos) {
   const candidates = getSearchCandidates();
-  appState.randomTarget = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+  if (appState.targetMode === 'all' || !candidates.length) {
+    appState.randomTarget = null;
+  } else if (appState.targetMode === 'nearest') {
+    appState.randomTarget = candidates.reduce((nearest, place) =>
+      getDistance(origin.lat, origin.lng, place.lat, place.lng) <
+      getDistance(origin.lat, origin.lng, nearest.lat, nearest.lng) ? place : nearest);
+  } else {
+    appState.randomTarget = candidates[Math.floor(Math.random() * candidates.length)];
+  }
 }
 
-function maintainRandomTarget() {
-  if (!appState.randomTarget) return;
-  const target = appState.randomTarget;
-  const distance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
-  if (distance > RADIUS_OPTIONS[radiusIndex]) {
-    // Reuse eligible cached candidates until the next timed refresh.
-    chooseRandomTarget();
+function maintainSearchTarget() {
+  if (appState.targetMode === 'all') {
+    appState.randomTarget = null;
     return;
   }
-  const record = loadSavedData().arrivals.find(item => item.id === target.id);
-  if ((record && record.muted) || !matchesSearchConditions(target)) chooseRandomTarget();
+  if (!appState.randomTarget || !getSearchCandidates().some(place => place.id === appState.randomTarget.id)) {
+    chooseSearchTarget();
+  }
+}
+
+function sensorReaction(distance, angle) {
+  const radius = RADIUS_OPTIONS[radiusIndex];
+  const strong = Math.max(100, radius * 0.1);
+  const medium = Math.max(150, radius * 0.3);
+  let band = 0;
+  let progress = 0;
+  if (angle >= 90) return { level: 'idle', interval: null, double: false };
+  if (distance <= 50 && angle <= 20) {
+    band = 4;
+    progress = (50 - distance) / 30;
+  } else if ((distance <= strong && angle <= 35) || (distance <= 50 && angle <= 55)) {
+    band = 3;
+    progress = (strong - distance) / (strong - 50);
+  } else if (distance <= medium && angle <= 55) {
+    band = 2;
+    progress = (medium - distance) / (medium - strong);
+  } else if (angle < 85) {
+    band = 1;
+    progress = (radius - distance) / (radius - medium);
+  }
+  if (!band) return { level: 'idle', interval: null, double: false };
+  const enhanced = appState.sensorDetail === 'detailed' && progress >= 0.5;
+  const intervals = [null, 2600, 1500, 800, 450];
+  const intermediateIntervals = [null, 2050, 1150, 625, 350];
+  return {
+    level: `level${band}${enhanced ? '-half' : ''}`,
+    interval: enhanced ? intermediateIntervals[band] : intervals[band],
+    double: band === 4
+  };
 }
 
 function evaluateSensorCycle() {
@@ -1219,7 +1250,7 @@ function evaluateSensorCycle() {
     return;
   }
 
-  if (!appState.pinpointTarget) maintainRandomTarget();
+  if (!appState.pinpointTarget) maintainSearchTarget();
   if (!appState.pinpointTarget && !appState.randomTarget && isSearchInProgress) {
     countEl.textContent = "--";
     distInfoEl.textContent = t.searching;
@@ -1228,10 +1259,11 @@ function evaluateSensorCycle() {
     updateVisualRing('idle');
     return;
   }
-  const target = appState.pinpointTarget || appState.randomTarget;
-  const activeTargets = target ? [target] : [];
+  const lockedTarget = appState.pinpointTarget || appState.randomTarget;
+  const activeTargets = lockedTarget ? [lockedTarget] :
+    (appState.targetMode === 'all' ? getSearchCandidates() : []);
 
-  // The sensor follows one fixed target, but the count represents all eligible places.
+  // The count represents all eligible places in either locked or all-target mode.
   countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
 
   if (activeTargets.length === 0) {
@@ -1244,38 +1276,23 @@ function evaluateSensorCycle() {
     return;
   }
 
-  const minDistance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
-  const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
-  const targetBearingDiff = Math.abs(headingDelta(appState.currentHeading, bearing));
-
-  if (minDistance <= 20) {
-    if (arrivalInProgressId === target.id) return;
-    handleArrival(target);
+  const readings = activeTargets.map(target => {
+    const distance = getDistance(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
+    const bearing = getBearing(appState.currentPos.lat, appState.currentPos.lng, target.lat, target.lng);
+    const angle = Math.abs(headingDelta(appState.currentHeading, bearing));
+    return { target, distance, ...sensorReaction(distance, angle) };
+  });
+  const arrival = readings.filter(reading => reading.distance <= 20)
+    .sort((a, b) => a.distance - b.distance)[0];
+  if (arrival) {
+    if (arrivalInProgressId === arrival.target.id) return;
+    handleArrival(arrival.target);
     return;
   }
-
-  let interval = null;
-  let level = 'idle';
-  const searchRadius = RADIUS_OPTIONS[radiusIndex];
-  const strongDistance = Math.max(100, searchRadius * 0.1);
-  const mediumDistance = Math.max(150, searchRadius * 0.3);
-
-  if (targetBearingDiff >= 90) {
-    level = 'idle';
-    interval = null;
-  } else if (minDistance <= 50 && targetBearingDiff <= 20) {
-    level = 'level4';
-    interval = 450;
-  } else if ((minDistance <= strongDistance && targetBearingDiff <= 35) || (minDistance <= 50 && targetBearingDiff <= 55)) {
-    level = 'level3';
-    interval = 800;
-  } else if (minDistance <= mediumDistance && targetBearingDiff <= 55) {
-    level = 'level2';
-    interval = 1500;
-  } else if (targetBearingDiff < 85) {
-    level = 'level1';
-    interval = 2600;
-  }
+  // Every candidate participates; the strongest reaction drives the shared ring and sound.
+  const reaction = readings.reduce((best, reading) =>
+    reading.interval !== null && (best.interval === null || reading.interval < best.interval) ? reading : best);
+  const { level, interval, double } = reaction;
 
   updateVisualRing(level);
 
@@ -1284,7 +1301,7 @@ function evaluateSensorCycle() {
   }
 
   if (interval !== null) {
-    scheduleRadarSound(interval, level === 'level4');
+    scheduleRadarSound(interval, double);
   } else {
     if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
     scheduledInterval = null;
@@ -1613,7 +1630,6 @@ function onPositionUpdate(pos) {
   evaluateSensorCycle();
 }
 
-const GEOAPIFY_API_KEY = 'c4ad45c8a379433baa272cc50e57572e';
 const CATEGORY_KEYWORDS = [
   { terms: ['カフェ', '喫茶店', 'コーヒー', 'cafe', 'café', 'coffee'], category: 'catering.cafe' },
   { terms: ['レストラン', '飲食店', 'restaurant'], category: 'catering.restaurant' },
@@ -1633,10 +1649,20 @@ function categoriesForKeyword(text) {
   return CATEGORY_KEYWORDS.filter(entry => entry.terms.includes(normalized)).map(entry => entry.category);
 }
 
+function getGeoapifyApiKey() {
+  const key = window.SENSOR_CONFIG?.geoapifyApiKey;
+  if (typeof key !== 'string' || !key.trim() || key === 'YOUR_GEOAPIFY_API_KEY') {
+    const error = new Error('Search API key is not configured');
+    error.code = 'SEARCH_NOT_CONFIGURED';
+    throw error;
+  }
+  return key.trim();
+}
+
 async function fetchGeoapify(path, parameters) {
   const url = new URL(path, 'https://api.geoapify.com');
   for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
-  url.searchParams.set('apiKey', GEOAPIFY_API_KEY);
+  url.searchParams.set('apiKey', getGeoapifyApiKey());
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
@@ -1651,6 +1677,7 @@ async function fetchGeoapify(path, parameters) {
 }
 
 async function searchGeoapify(text, position, radius, language) {
+  getGeoapifyApiKey();
   const common = {
     filter: `circle:${position.lng},${position.lat},${radius}`,
     bias: `proximity:${position.lng},${position.lat}`, lang: language
@@ -1707,7 +1734,7 @@ async function executeSearch(refreshCandidates = false) {
     if (fixedTarget && !appState.places.some(place => place.id === fixedTarget.id)) appState.places.push(fixedTarget);
     const retained = fixedTarget && getSearchCandidates().find(place => place.id === fixedTarget.id);
     if (retained) appState.randomTarget = retained;
-    else chooseRandomTarget();
+    else chooseSearchTarget(position);
   } catch (error) {
     if (generation !== searchGeneration || !appState.isTracking) return;
     console.warn('Geoapify search unavailable.');
@@ -1715,9 +1742,10 @@ async function executeSearch(refreshCandidates = false) {
       appState.places = [];
       appState.randomTarget = null;
     }
-    document.getElementById('target-meta-info').textContent = currentLang === 'ja'
-      ? '検索に失敗しました。時間をおいて再試行してください。'
-      : 'Search failed. Please try again later.';
+    document.getElementById('target-meta-info').textContent = error.code === 'SEARCH_NOT_CONFIGURED'
+      ? (currentLang === 'ja' ? '検索設定が未完了です。' : 'Search is not configured.')
+      : (currentLang === 'ja' ? '検索に失敗しました。時間をおいて再試行してください。'
+        : 'Search failed. Please try again later.');
   } finally {
     if (generation === searchGeneration) {
       isSearchInProgress = false;
@@ -2117,16 +2145,56 @@ document.getElementById('continuous-toggle-btn').addEventListener('click', () =>
 
 let conditionToastTimer = null;
 
+function conditionDescription(kind) {
+  const ja = currentLang === 'ja';
+  if (kind === 'target') return (ja ? {
+    random: 'ランダム：検索結果からランダムに1件をロックします',
+    nearest: '最寄り：検索時点で最も近い1件をロックします',
+    all: 'すべて：ロックせず、検索結果すべてに反応します'
+  } : {
+    random: 'Random: lock one randomly selected search result',
+    nearest: 'Nearest: lock the closest result at search time',
+    all: 'All: react to all search results without locking'
+  })[appState.targetMode];
+  return ja
+    ? (appState.sensorDetail === 'standard' ? '反応の細かさ：標準（5段階）' : '反応の細かさ：詳細（9段階）。距離の変化を細かく伝えます')
+    : (appState.sensorDetail === 'standard' ? 'Sensor detail: standard (5 levels)' : 'Sensor detail: detailed (9 levels), with finer distance feedback');
+}
+
 function updateConditionButtons() {
-  for (const kind of ['hours', 'rating']) {
-    const btn = document.getElementById(`${kind}-filter-btn`);
-    btn.disabled = true;
-    btn.classList.remove('active');
-    btn.querySelectorAll('[data-condition]').forEach(el => el.classList.remove('selected'));
-    const label = currentLang === 'ja' ? 'この絞り込みは無効です' : 'This filter is disabled';
-    btn.setAttribute('aria-label', label);
-    btn.title = label;
+  for (const kind of ['target', 'sensor-detail']) {
+    const btn = document.getElementById(`${kind}-btn`);
+    const mode = kind === 'target' ? appState.targetMode : appState.sensorDetail;
+    btn.querySelectorAll('[data-mode]').forEach(el => el.classList.toggle('selected', el.dataset.mode === mode));
+    const labels = currentLang === 'ja'
+      ? { random: 'ランダム', nearest: '最寄り', all: 'すべて', standard: '標準', detailed: '詳細' }
+      : { random: 'Random', nearest: 'Nearest', all: 'All', standard: 'Standard', detailed: 'Detailed' };
+    btn.querySelector('.setting-current-mode').textContent = labels[mode];
+    btn.setAttribute('aria-label', conditionDescription(kind));
+    btn.title = conditionDescription(kind);
   }
+}
+
+for (const kind of ['target', 'sensor-detail']) {
+  document.getElementById(`${kind}-btn`).addEventListener('click', () => {
+    const target = kind === 'target';
+    const key = target ? 'targetMode' : 'sensorDetail';
+    const modes = target ? ['random', 'nearest', 'all'] : ['standard', 'detailed'];
+    appState[key] = modes[(modes.indexOf(appState[key]) + 1) % modes.length];
+    localStorage.setItem(`sheikah_${target ? 'target_mode' : 'sensor_detail'}`, appState[key]);
+    updateConditionButtons();
+    hideOtherSettingToasts('condition-mode-toast');
+    const toast = document.getElementById('condition-mode-toast');
+    toast.textContent = conditionDescription(kind);
+    toast.classList.add('show');
+    clearTimeout(conditionToastTimer);
+    conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+    if (target && !appState.pinpointTarget) {
+      resetKeywordSearch();
+      executeSearch();
+    }
+    evaluateSensorCycle();
+  });
 }
 updateConditionButtons();
 

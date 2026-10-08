@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="31">
+  <meta name="html-rev" content="33">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -242,8 +242,21 @@
             <span id="label-sensor-state">SENSOR: STANDBY</span>
           </button>
           <div class="dual-btn-row condition-row">
-            <button type="button" id="hours-filter-btn" disabled class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><svg class="condition-icon" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L21 20H3Z"/></svg><svg class="condition-icon" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><svg class="condition-icon condition-question" data-condition="3" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>OPEN NOW</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
-            <button type="button" id="rating-filter-btn" disabled class="btn-sheikah btn-sub-control active condition-btn"><span class="condition-symbols" aria-hidden="true"><svg class="condition-icon condition-star" data-condition="0" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-star" data-condition="4" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg><svg class="condition-icon condition-question" data-condition="5" viewBox="4 1 16 22" aria-hidden="true"><path d="M7 8a5 5 0 0 1 10 0c0 3-5 3-5 6"/><circle class="condition-question-dot" cx="12" cy="19" r="1.3"/></svg></span><span class="sound-mode-separator" aria-hidden="true">｜</span><span class="condition-label"><span>RATING</span><svg class="condition-filter-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z"/></svg></span></button>
+            <button type="button" id="target-btn" class="btn-sheikah btn-sub-control active condition-btn">
+              <span class="condition-symbols" aria-hidden="true">
+                <svg class="condition-icon" data-mode="random" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 9h.1M15 15h.1M12 12h.1"/></svg>
+                <svg class="condition-icon" data-mode="nearest" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 18s5-5 5-8a5 5 0 0 0-10 0c0 3 5 8 5 8Z"/><circle cx="12" cy="10" r="1"/></svg>
+                <svg class="condition-icon" data-mode="all" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><circle cx="12" cy="16" r="1"/></svg>
+              </span><span class="sound-mode-separator" aria-hidden="true">｜</span>
+              <span class="condition-label">TARGET<span class="setting-current-mode">ランダム</span></span>
+            </button>
+            <button type="button" id="sensor-detail-btn" class="btn-sheikah btn-sub-control active condition-btn">
+              <span class="condition-symbols" aria-hidden="true">
+                <svg class="condition-icon" data-mode="standard" viewBox="0 0 24 24"><path d="M12 20V12M8 20h8M7 7a7 7 0 0 0 0 10M17 7a7 7 0 0 1 0 10"/><circle cx="12" cy="10" r="2"/></svg>
+                <svg class="condition-icon" data-mode="detailed" viewBox="0 0 24 24"><path d="M12 20V12M8 20h8M7 7a7 7 0 0 0 0 10M17 7a7 7 0 0 1 0 10M4 4a11 11 0 0 0 0 16M20 4a11 11 0 0 1 0 16"/><circle cx="12" cy="10" r="2"/></svg>
+              </span><span class="sound-mode-separator" aria-hidden="true">｜</span>
+              <span class="condition-label">SENSOR<span class="setting-current-mode">標準</span></span>
+            </button>
             <div id="condition-mode-toast" class="sound-mode-toast" role="status" aria-live="polite"></div>
           </div>
           <div class="dual-btn-row">
@@ -436,6 +449,7 @@
   </div>
 
   
+  <script src="geoapify-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script>
     const scriptEl = document.createElement('script');

@@ -12,7 +12,7 @@ function sensorFixture() {
   const records = { arrivals: [] };
   const context = {
     appState: {
-      hoursFilter: 0, ratingFilter: 0, isTracking: true, isPaused: false,
+      targetMode: "random", sensorDetail: "standard", isTracking: true, isPaused: false,
       currentPos: { lat: 0, lng: 0 }, currentHeading: 0,
       pinpointTarget: null, randomTarget: null, places: []
     },
@@ -30,7 +30,7 @@ function sensorFixture() {
     resetKeywordSearch() {}, executeSearch() {}, handleArrival() {}
   };
   vm.createContext(context);
-  vm.runInContext(source.slice(source.indexOf('function readConditionSetting'),
+  vm.runInContext(source.slice(source.indexOf('function readSensorSetting'),
     source.indexOf('function getSearchCandidates')), context);
   vm.runInContext(source.slice(source.indexOf('function getSearchCandidates'),
     source.indexOf('function scheduleRadarSound')), context);
@@ -42,42 +42,32 @@ test('18件の候補と固定された探知先1件を区別して表示する',
   c.appState.places = Array.from({ length: 18 }, (_, i) => ({
     id: String(i), lat: 100 + i, lng: 0, rating: i < 8 ? 4.5 : i < 13 ? 2.5 : i < 16 ? 3.5 : undefined
   }));
-  c.chooseRandomTarget();
+  c.chooseSearchTarget();
   const fixed = c.appState.randomTarget;
   c.evaluateSensorCycle();
   assert.equal(elements['unknown-count'].textContent, 18);
   assert.equal(c.appState.randomTarget, fixed);
 
-  c.appState.ratingFilter = 4; // Rating 4 or higher, excluding unknown.
-  c.chooseRandomTarget();
-  c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 18);
-
-  c.appState.ratingFilter = 8; // Unknown rating or below 3.
-  c.chooseRandomTarget();
-  c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 18);
-
-  c.appState.ratingFilter = 0;
-  c.chooseRandomTarget();
+  // Legacy rating/hour metadata no longer restricts the new modes.
+  c.appState.ratingFilter = 4;
+  c.appState.hoursFilter = 2;
+  c.chooseSearchTarget();
   c.evaluateSensorCycle();
   assert.equal(elements['unknown-count'].textContent, 18);
 });
 
-test('営業時間条件を無視し、件数と対象選択に範囲・除外を適用する', () => {
+test('件数と対象選択に同じ範囲・除外条件を適用する', () => {
   const { context: c, elements, records } = sensorFixture();
   c.appState.places = [
     { id: 'valid', lat: 100, lng: 0 },
     { id: 'muted', lat: 100, lng: 0 },
-    { id: 'outside', lat: 3001, lng: 0 },
-    { id: 'closed', lat: 100, lng: 0, openingHours: { isOpen: () => false } }
+    { id: 'outside', lat: 3001, lng: 0 }
   ];
   records.arrivals.push({ id: 'muted', muted: true });
-  c.appState.hoursFilter = 4; // Unknown hours only.
-  c.chooseRandomTarget();
+  c.chooseSearchTarget();
   c.evaluateSensorCycle();
-  assert.equal(elements['unknown-count'].textContent, 2);
-  assert.ok(['valid', 'closed'].includes(c.appState.randomTarget.id));
+  assert.equal(elements['unknown-count'].textContent, 1);
+  assert.equal(c.appState.randomTarget.id, 'valid');
 });
 
 test('検索中は0件と断定せず、指定スポットは1件として表示する', () => {
@@ -163,4 +153,58 @@ test('最小半径は画面の選択肢と検索処理ともに200m', () => {
   vm.runInContext(script.match(/^const RADIUS_OPTIONS = .*;$/m)[0] + '\nthis.minimumRadius = RADIUS_OPTIONS[0];', c);
   assert.equal(c.minimumRadius, 200);
   assert.match(html, /<option value="0">200m<\/option>/);
+});
+
+test('最寄りは検索開始時点の位置で選び、移動後もロックを保持する', () => {
+  const { context: c } = sensorFixture();
+  c.getDistance = (lat, _lng, otherLat) => Math.abs(otherLat - lat);
+  c.appState.targetMode = 'nearest';
+  c.appState.lastSearchedPos = { lat: 0, lng: 0 };
+  c.appState.currentPos = { lat: 250, lng: 0 };
+  c.appState.places = [{ id: 'at-search', lat: 100, lng: 0 }, { id: 'now', lat: 300, lng: 0 }];
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget.id, 'at-search');
+  c.evaluateSensorCycle();
+  assert.equal(c.appState.randomTarget.id, 'at-search');
+});
+
+test('全件モードは方向を含めた最強の反応を表示し、後方の到着も検出する', () => {
+  const { context: c } = sensorFixture();
+  c.appState.targetMode = 'all';
+  c.appState.places = [{ id: 'behind', lat: 40, lng: 180 }, { id: 'ahead', lat: 200, lng: 0 }];
+  c.getBearing = (_lat, _lng, _otherLat, lng) => lng;
+  c.headingDelta = (_heading, bearing) => bearing;
+  let interval;
+  c.scheduleRadarSound = value => { interval = value; };
+  c.evaluateSensorCycle();
+  assert.equal(c.appState.randomTarget, null);
+  assert.equal(interval, 800);
+  c.appState.places[0].lat = 10;
+  let arrived;
+  c.handleArrival = target => { arrived = target.id; };
+  c.evaluateSensorCycle();
+  assert.equal(arrived, 'behind');
+});
+
+test('詳細は距離の中間段階を加え、標準の到着・方向条件を保持する', () => {
+  const { context: c } = sensorFixture();
+  c.appState.sensorDetail = 'detailed';
+  const samples = [2000, 1000, 700, 500, 250, 100, 45, 30];
+  const readings = samples.map(distance => c.sensorReaction(distance, 0));
+  assert.equal(new Set(readings.map(reading => reading.level)).size, 8);
+  for (let i = 1; i < readings.length; i++) {
+    assert.ok(readings[i].interval < readings[i - 1].interval);
+  }
+  assert.equal(c.sensorReaction(30, 90).level, 'idle');
+  assert.equal(c.sensorReaction(30, 0).double, true);
+});
+
+test('保存したモードを復元し、不正値は既定値に戻す', () => {
+  const { context: c } = sensorFixture();
+  const saved = { sheikah_target_mode: 'all', sheikah_sensor_detail: 'detailed' };
+  c.localStorage = { getItem: key => saved[key] || null };
+  assert.equal(c.readSensorSetting('target_mode', ['random', 'nearest', 'all'], 'random'), 'all');
+  assert.equal(c.readSensorSetting('sensor_detail', ['standard', 'detailed'], 'standard'), 'detailed');
+  saved.sheikah_target_mode = 'invalid';
+  assert.equal(c.readSensorSetting('target_mode', ['random', 'nearest', 'all'], 'random'), 'random');
 });

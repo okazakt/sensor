@@ -6,9 +6,10 @@ const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../script.js'), 'utf8');
 function fixture(fetch) {
   const c = { URL, AbortController, fetch, setTimeout, clearTimeout,
+    window: {SENSOR_CONFIG: {geoapifyApiKey: 'test-only-placeholder'}},
     getDistance: (_a, _b, lat) => Math.abs(lat) * 1000 };
   vm.createContext(c);
-  vm.runInContext(source.slice(source.indexOf('const GEOAPIFY_API_KEY'), source.indexOf('async function executeSearch')), c);
+  vm.runInContext(source.slice(source.indexOf('const CATEGORY_KEYWORDS'), source.indexOf('async function executeSearch')), c);
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
@@ -23,6 +24,8 @@ test('文字とカテゴリを同時検索し、ID重複・範囲外・無効座
   });
   const result = await c.searchGeoapify('カフェ', {lat:0,lng:0}, 1000, 'ja');
   assert.equal(urls.length, 2);
+  assert.ok(urls.every(url => url.origin === 'https://api.geoapify.com'));
+  assert.ok(urls.every(url => url.searchParams.get('apiKey') === 'test-only-placeholder'));
   assert.equal(urls[0].searchParams.get('text'), 'カフェ');
   assert.equal(urls[1].searchParams.get('categories'), 'catering.cafe');
   assert.ok(urls.every(url => url.searchParams.get('filter') === 'circle:0,0,1000'));
@@ -47,4 +50,14 @@ test('全検索失敗と正常な0件を区別する', async () => {
   await assert.rejects(c.searchGeoapify('cafe', {lat:0,lng:0}, 1000, 'en'));
   c.fetch = async () => ({ok:true, json:async () => ({features:[]})});
   assert.equal((await c.searchGeoapify('cafe', {lat:0,lng:0}, 1000, 'en')).places.length, 0);
+});
+
+test('設定が未入力または仮のキーなら通信せずに設定エラーを返す', async () => {
+  let calls = 0;
+  const c = fixture(async () => { calls++; });
+  for (const key of [undefined, '', 'YOUR_GEOAPIFY_API_KEY']) {
+    c.window.SENSOR_CONFIG.geoapifyApiKey = key;
+    await assert.rejects(c.searchGeoapify('cafe', {lat:0,lng:0}, 1000, 'en'), error => error.code === 'SEARCH_NOT_CONFIGURED');
+  }
+  assert.equal(calls, 0);
 });

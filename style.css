@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "39";
+  --css-rev: "40";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1511,22 +1511,17 @@ body {
 .condition-btn { justify-content: flex-start; gap: 1px; padding: 10px 0 10px 10px; white-space: nowrap; }
 .condition-symbols { display: inline-flex; align-items: center; gap: 1px; flex-shrink: 0; }
 .condition-icon { width: 14px; height: 16px; flex-shrink: 0; color: #667788; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: color 0.2s, filter 0.2s; }
-#rating-filter-btn .condition-star { width: 11px; }
 .condition-star, .condition-question-dot { fill: currentColor; stroke: none; }
 .condition-icon.selected { color: var(--sheikah-cyan); filter: drop-shadow(0 0 3px rgba(0, 243, 255, 0.7)); }
 .condition-label { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: center; gap: 1px; }
 .condition-filter-icon { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (min-width: 420px) {
   .condition-icon { width: 16px; }
-  #rating-filter-btn .condition-star { width: 14px; }
 }
 @media (max-width: 360px) {
   .condition-btn { gap: 0; }
   .condition-symbols { gap: 0; }
   .condition-icon { width: 8px; }
-  #hours-filter-btn .condition-question { width: 9px; }
-  #rating-filter-btn .condition-question { width: 10px; }
-  #rating-filter-btn .condition-star { width: 7px; }
   .condition-filter-icon { width: 14px; }
 }
 
@@ -1596,9 +1591,7 @@ body {
   --setting-icon-size: clamp(12px, 3.8cqw, 16px);
 }
 .sound-mode-icon, .wake-mode-icon, .continuous-mode-icon,
-.condition-icon, #rating-filter-btn .condition-star,
-#hours-filter-btn .condition-question, #rating-filter-btn .condition-question,
-.condition-filter-icon {
+.condition-icon, .condition-filter-icon {
   width: var(--setting-icon-size);
   height: var(--setting-icon-size);
 }
@@ -1660,3 +1653,37 @@ body {
 }
 .footer-nav-btn { min-width: 44px; min-height: 44px; }
 .volume-step-btn { height: 100%; }
+
+/* Current modes remain readable after the explanatory toast disappears. */
+.condition-label { flex-direction: column; gap: 2px; }
+.setting-current-mode { font-size: 0.8em; }
+.circle-map-wrapper.signal-level1-half {
+  box-shadow: 0 0 26px var(--sheikah-cyan), inset 0 0 12px var(--sheikah-cyan);
+  animation: ring-pulse-1 2.05s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level2-half {
+  box-shadow: 0 0 37px var(--sheikah-cyan), inset 0 0 16px #fff;
+  animation: ring-pulse-2 1.15s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level3-half {
+  box-shadow: 0 0 48px var(--sheikah-cyan), 0 0 25px var(--sheikah-orange), inset 0 0 21px #fff;
+  animation: ring-pulse-3 0.625s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level4-half {
+  box-shadow: 0 0 62px var(--sheikah-orange), 0 0 35px var(--sheikah-cyan), inset 0 0 28px #fff;
+  animation: ring-pulse-4 0.35s infinite ease-in-out;
+  border: 2px solid #fff;
+}
+.day-mode .circle-map-wrapper.signal-level1-half {
+  box-shadow: 0 0 26px var(--botw-yellow), inset 0 0 12px var(--botw-yellow);
+}
+.day-mode .circle-map-wrapper.signal-level2-half {
+  box-shadow: 0 0 37px var(--botw-yellow), inset 0 0 16px #fff;
+}
+.day-mode .circle-map-wrapper.signal-level3-half {
+  box-shadow: 0 0 48px var(--botw-yellow), 0 0 25px var(--botw-amber), inset 0 0 21px #fff;
+}
+.day-mode .circle-map-wrapper.signal-level4-half {
+  box-shadow: 0 0 62px var(--botw-amber), 0 0 35px var(--botw-yellow), inset 0 0 28px #fff;
+  border: 2px solid var(--botw-yellow);
+}
