@@ -108,7 +108,7 @@ function positionFixture() {
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('let map = null;'),
-    source.indexOf('function initPlacesService()')) +
+    source.indexOf('function initMap(')) +
     source.slice(source.indexOf('function updateMapPositionSmoothly('),
       source.indexOf('function bootstrapMapAndLocation()')) +
     source.slice(source.indexOf('function getDistance('), source.indexOf('let radarTimer =')), context);
