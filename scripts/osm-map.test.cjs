@@ -186,3 +186,17 @@ test('通常ズームのゼルダ風地図は住宅街・細街路も太く描�
   assert.ok(matchWidth(roadAtNormalZoom(day), 'minor') >= 9);
   assert.ok(matchWidth(roadAtNormalZoom(day), 'service') >= 6);
 });
+
+test('川幅は水面ポリゴンで描き、固定幅の中心線を重ねない', () => {
+  const { api } = fixture();
+  for (const theme of ['botw', 'sheikah']) {
+    const style = api.createStyle(theme);
+    const water = style.layers.find(layer => layer.id === 'water');
+    assert.equal(water.type, 'fill');
+    assert.equal(water['source-layer'], 'water');
+    assert.equal(JSON.stringify(water.filter), '["==","$type","Polygon"]');
+    assert.equal(style.layers.some(layer => layer['source-layer'] === 'waterway'), false);
+    assert.ok(style.layers.indexOf(water) > style.layers.findIndex(layer => layer.id === 'building'));
+    assert.ok(style.layers.indexOf(water) < style.layers.findIndex(layer => layer.id === 'road-fill'));
+  }
+});

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081839";
+const BASE_JS_VERSION = "v0.26.101.081901";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -55,12 +55,13 @@ function initializeMapRenderer(global) {
           paint: { 'fill-color': day ? '#3f331c' : '#081018' } },
         { id: 'landuse', type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse',
           paint: { 'fill-color': day ? '#483b23' : '#081018' } },
-        { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water',
-          paint: { 'fill-color': day ? '#38485c' : '#02070d' } },
-        { id: 'waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway',
-          paint: { 'line-color': day ? '#38485c' : '#02070d', 'line-width': day ? 3 : 2 } },
         { id: 'building', type: 'fill', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
           paint: { 'fill-color': day ? '#453820' : '#081018', 'fill-outline-color': day ? '#483b23' : '#081018' } },
+        // Draw riverbanks, lakes and seas from polygon geometry; never invent a
+        // river width from a fixed-pixel centerline. Keep water above land/buildings.
+        { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water',
+          filter: ['==', '$type', 'Polygon'],
+          paint: { 'fill-color': day ? '#38485c' : '#02070d' } },
         line('road-casing', minor, day ? '#2c2415' : '#142433', casingWidth(roadWidth, 1.2)),
         line('road-fill', minor, day ? '#e4d5a8' : '#142433', roadWidth),
         line('highway-casing', major, day ? '#221b0e' : '#142433', casingWidth(majorWidth, 1.5)),
