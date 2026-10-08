@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081906";
+const BASE_JS_VERSION = "v0.26.101.081915";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1459,8 +1459,12 @@ function updateArrivalRecordWithDetails(db, target, now) {
   const t = I18N[currentLang];
   const toast = document.getElementById('toast-banner');
   document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
+  hideOtherSettingToasts('toast-banner');
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 5000);
+  toastBannerTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    toastBannerTimer = null;
+  }, 5000);
 
   if (challenge) {
     document.getElementById('toast-text').textContent = currentLang === 'ja'
@@ -1948,6 +1952,7 @@ function getChallengeArrivals(db, challenge) {
 }
 
 function openChallengeArrivals(challenge) {
+  hideOtherSettingToasts();
   appState.selectedChallengeForHistory = challenge.id;
   appState.fromChallenge = true;
   appState.fromAllHistory = false;
@@ -2048,8 +2053,11 @@ function renderChallenges() {
   }
   const milestone = (text, count, required) => {
     const row = document.createElement('div');
-    row.className = 'challenge-milestone' + (count >= required ? ' achieved' : '');
-    row.textContent = `${count >= required ? '✓ ' : ''}${text}`;
+    row.className = 'list-item challenge-milestone' + (count >= required ? ' achieved' : '');
+    const label = document.createElement('span');
+    label.className = 'list-item-title';
+    label.textContent = `${count >= required ? '✓ ' : ''}${text}`;
+    row.append(label);
     container.append(row);
   };
   for (const stage of CHALLENGE_STAGES) {
@@ -2329,25 +2337,27 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 let wakeModeToastTimer = null;
+let toastBannerTimer = null;
 
-function hideOtherSettingToasts(activeToastId) {
-  const toastIds = [
-    'condition-mode-toast',
-    'sound-mode-toast',
-    'volume-mode-toast',
-    'continuous-mode-toast',
-    'wake-mode-toast'
-  ];
-
-  toastIds.forEach((toastId) => {
-    if (toastId === activeToastId) return;
-
-    const toast = document.getElementById(toastId);
-    if (toast) {
-      toast.classList.remove('show');
-    }
+function hideOtherSettingToasts(activeToastId = null) {
+  [conditionToastTimer, soundModeToastTimer, volumeModeToastTimer,
+    continuousModeToastTimer, wakeModeToastTimer, toastBannerTimer].forEach(clearTimeout);
+  conditionToastTimer = soundModeToastTimer = volumeModeToastTimer = null;
+  continuousModeToastTimer = wakeModeToastTimer = toastBannerTimer = null;
+  const toastIds = ['condition-mode-toast', 'sound-mode-toast', 'volume-mode-toast',
+    'continuous-mode-toast', 'wake-mode-toast', 'toast-banner'];
+  toastIds.forEach(id => {
+    if (id !== activeToastId) document.getElementById(id)?.classList.remove('show');
   });
 }
+
+// Clear the old toast before the tapped control handles the event and shows a new one.
+function dismissToastsOnOutsideTap(event) {
+  if (event.target.closest?.('.sound-mode-toast, #toast-banner')) return;
+  hideOtherSettingToasts();
+}
+document.addEventListener('pointerdown', dismissToastsOnOutsideTap, true);
+document.addEventListener('click', dismissToastsOnOutsideTap, true);
 
 function showWakeModeToast() {
   const toast = document.getElementById('wake-mode-toast');
@@ -2681,6 +2691,7 @@ const fnavBtnHistory = document.getElementById('fnav-btn-history');
 const fnavBtnAll = document.getElementById('fnav-btn-all');
 
 function updateFooterActive(tabIndex) {
+  hideOtherSettingToasts();
   [fnavBtnChallenges, fnavBtnMain, fnavBtnHistory, fnavBtnAll].forEach((btn, idx) => {
     if (btn) {
       if (idx === tabIndex) {
@@ -2719,8 +2730,10 @@ function bindSwipe(el, onSwipeLeft, onSwipeRight) {
 
     if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
       if (diffX < 0 && onSwipeLeft) {
+        hideOtherSettingToasts();
         onSwipeLeft();
       } else if (diffX > 0 && onSwipeRight) {
+        hideOtherSettingToasts();
         onSwipeRight();
       }
     }
@@ -3152,10 +3165,14 @@ function copyPlaceNameToClipboard(text) {
 }
 
 function showToast(msg) {
+  hideOtherSettingToasts('toast-banner');
   const toast = document.getElementById('toast-banner');
   document.getElementById('toast-text').textContent = msg;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+  toastBannerTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    toastBannerTimer = null;
+  }, 2500);
 }
 
 function setPinpointTargetAndStart(item) {
@@ -3185,6 +3202,7 @@ function setPinpointTargetAndStart(item) {
 }
 
 function openSpotDetailModal(item) {
+  hideOtherSettingToasts();
   appState.selectedSpotForDetail = item;
   const t = I18N[currentLang];
   const db = loadSavedData();
