@@ -6,11 +6,12 @@
  * ============================================================
  */
 :root {
-  --css-rev: "38";
+  --css-rev: "39";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
-  --footer-height: calc(54px + var(--footer-bottom-space));
+  --footer-control-height: 54px;
+  --footer-height: calc(var(--footer-control-height) + var(--footer-bottom-space));
   --main-controls-height: clamp(326px, calc((100vh - env(safe-area-inset-top) - var(--footer-height)) * 0.46), 420px);
 
   --sheikah-cyan: #00f3ff;
@@ -1646,12 +1647,16 @@ body {
   }
 }
 
-/* Standalone windows need a small thumb margin above the home indicator. */
+/* Compact standalone navigation; browser spacing remains unchanged. */
 @media (display-mode: standalone) {
-  :root { --footer-bottom-space: clamp(12px, env(safe-area-inset-bottom), 20px); }
+  :root {
+    --footer-control-height: 48px;
+    --footer-bottom-space: 4px;
+  }
 }
 :root.is-standalone {
-  --footer-bottom-space: clamp(12px, env(safe-area-inset-bottom), 20px);
+  --footer-control-height: 48px;
+  --footer-bottom-space: 4px;
 }
 .footer-nav-btn { min-width: 44px; min-height: 44px; }
 .volume-step-btn { height: 100%; }
