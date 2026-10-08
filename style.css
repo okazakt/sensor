@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "48";
+  --css-rev: "49";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -424,6 +424,8 @@ body {
 }
 
 .map-attribution {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   white-space: nowrap;
   color: #e4d5a8;
   background: rgba(3, 8, 14, 0.88);
@@ -442,7 +444,7 @@ body {
   background: transparent;
   padding: 0;
   white-space: nowrap;
-  font-size: clamp(8px, 2.5cqw, 10px);
+  font-size: 10px;
 }
 .main-map-attribution, .main-map-attribution a { font-family: Arial, sans-serif; }
 .main-map-attribution a { white-space: nowrap; }
