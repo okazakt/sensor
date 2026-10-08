@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="30">
+  <meta name="html-rev" content="31">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -103,6 +103,10 @@
     </div>
 
     <div class="map-top-controls">
+      <div class="map-attribution main-map-attribution">
+        © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a><br>
+        Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a>
+      </div>
       <!-- 左上：昼夜切り替え -->
       <div class="top-left-ctrl">
         <button class="top-icon-btn" id="map-style-toggle-btn" title="Toggle Map Style">
@@ -110,10 +114,6 @@
         </button>
       </div>
 
-      <div class="map-attribution main-map-attribution">
-        <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>
-        Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
-      </div>
       <!-- 右上：言語切り替えトグル -->
       <div class="top-right-ctrl">
         <button class="lang-toggle-btn" id="lang-toggle-btn">

@@ -96,3 +96,68 @@ test('コンパス回転は北をまたぐ最短方向で補間し、出典を�
   assert.ok(Math.abs(context.appState.visualMapRotation + 361) < 0.001);
   assert.ok(Math.abs(Number(mapElement.style.transform.slice(7, -4)) + 361) < 0.001);
 });
+
+function positionFixture() {
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  let clock = 0;
+  const frames = [];
+  const context = {
+    appState: { isWalking: false }, performance: { now: () => clock },
+    requestAnimationFrame(callback) { frames.push(callback); return 1; },
+    headingDelta: (target, current) => ((target - current + 540) % 360) - 180
+  };
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('let map = null;'),
+    source.indexOf('function initPlacesService()')) +
+    source.slice(source.indexOf('function updateMapPositionSmoothly('),
+      source.indexOf('function bootstrapMapAndLocation()')) +
+    source.slice(source.indexOf('function getDistance('), source.indexOf('let radarTimer =')), context);
+  vm.runInContext('map = { setCenter() {} }', context);
+  return {
+    fix(lng, speed = 30, heading = 90, accuracy = 5) {
+      context.coords = { latitude: 35, longitude: lng, speed, heading, accuracy };
+      context.now = clock;
+      vm.runInContext('updateMapPositionSmoothly(coords, now)', context);
+    },
+    advance(ms) {
+      const end = clock + ms;
+      while (clock < end) {
+        clock = Math.min(end, clock + 16);
+        const callback = frames.shift();
+        if (callback) callback(clock);
+      }
+    },
+    center: () => vm.runInContext('({...visualMapCenter})', context),
+    pending: () => frames.length
+  };
+}
+
+test('高速移動はGPS更新間も進み続け、途絶時は予測を終了する', () => {
+  const f = positionFixture();
+  f.fix(139);
+  f.advance(1000);
+  f.fix(139.00033);
+  f.advance(800);
+  const first = f.center().lng;
+  f.advance(400);
+  assert.ok(f.center().lng > first + 0.00008, 'continues moving between fixes');
+  assert.ok(f.center().lng > 139.00033, 'predicts beyond latest fix');
+  f.advance(5000);
+  assert.equal(f.pending(), 0, 'stale prediction settles');
+  assert.ok(f.center().lng < 139.001, 'prediction distance is bounded');
+});
+
+test('停止情報・精度不良で予測をやめ、速度欠落時は位置差から補う', () => {
+  for (const badAccuracy of [false, true]) {
+    const f = positionFixture();
+    f.fix(139);
+    f.advance(1000);
+    f.fix(139.00015, null, null);
+    f.advance(1200);
+    assert.ok(f.center().lng > 139.00015, 'infers velocity without GPS speed/heading');
+    f.fix(139.00015, 0, null, badAccuracy ? 100 : 5);
+    f.advance(5000);
+    assert.equal(f.pending(), 0);
+    assert.ok(Math.abs(f.center().lng - 139.00015) < 0.000002);
+  }
+});

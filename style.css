@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "37";
+  --css-rev: "38";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -242,15 +242,18 @@ body {
 
 .map-top-controls {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top), 24px) + 12px);
+  top: calc(max(env(safe-area-inset-top), 24px) + 4px);
   left: 18px;
   right: 18px;
   z-index: 25;
   display: grid;
   grid-template-columns: var(--top-control-size) minmax(0, 1fr) auto;
+  grid-template-areas: "attribution attribution attribution" "style . language";
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
 }
+.top-left-ctrl { grid-area: style; }
+.top-right-ctrl { grid-area: language; }
 
 .top-icon-btn {
   width: var(--top-control-size);
@@ -310,7 +313,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: calc(max(env(safe-area-inset-top), 24px) + 68px) 10px 8px;
+  padding: calc(max(env(safe-area-inset-top), 24px) + 36px) 10px 8px;
 }
 
 .sheikah-divider-bar {
@@ -425,7 +428,15 @@ body {
 }
 .map-attribution a { color: inherit; text-decoration: underline; }
 .map-attribution a:focus-visible { outline: 2px solid var(--sheikah-cyan); }
-.main-map-attribution { text-align: center; min-width: 0; background: transparent; }
+.main-map-attribution {
+  grid-area: attribution;
+  text-align: left;
+  min-width: 0;
+  background: transparent;
+  padding: 0;
+  white-space: nowrap;
+  font-size: clamp(8px, 2.5cqw, 10px);
+}
 .main-map-attribution, .main-map-attribution a { font-family: Arial, sans-serif; }
 .main-map-attribution a { white-space: nowrap; }
 .detail-map-attribution { position: absolute; left: 4px; bottom: 4px; }
@@ -1610,7 +1621,7 @@ body {
     width: 45%;
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top) + 60px) 12px 12px;
+    padding: calc(env(safe-area-inset-top) + 36px) 12px 12px;
   }
   .map-top-controls { top: calc(env(safe-area-inset-top) + 8px); }
   .sheikah-divider-bar { width: 6px; height: 100%; }

@@ -14,7 +14,7 @@ const COMPASS_DEBUG_ENABLED = false;
 function initializeMapRenderer(global) {
   'use strict';
 
-  const ATTRIBUTION = '<a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>Search powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+  const ATTRIBUTION = '<a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a><br>Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · Data from © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
 
   function createStyle(mode) {
     const day = mode === 'botw';
@@ -969,6 +969,7 @@ let mapCenterFrame = null;
 let lastMapPositionFix = null;
 let mapPositionJump = null;
 let mapCenterIsMoving = false;
+let mapCenterMotion = null;
 
 function initMap(lat, lng) {
   if (typeof maplibregl === 'undefined' || typeof SensorMap === 'undefined') {
@@ -1001,12 +1002,13 @@ function updateMapPositionSmoothly(coords, now) {
   // Hold the display when the GPS uncertainty becomes too large.
   if (accuracy > 50) {
     mapPositionJump = null;
+    mapCenterMotion = null;
     return;
   }
   if (!lastMapPositionFix) {
     visualMapCenter = { ...position };
     mapCenterTarget = { ...position };
-    lastMapPositionFix = { accuracy, time: now };
+    lastMapPositionFix = { ...position, accuracy, time: now };
     map.setCenter(position);
     return;
   }
@@ -1014,11 +1016,13 @@ function updateMapPositionSmoothly(coords, now) {
   const speed = coords.speed;
   const moving = appState.isWalking || (Number.isFinite(speed) && speed > 0.4);
   mapCenterIsMoving = moving;
+  // A reported stop or rejected fix must immediately end prediction.
+  mapCenterMotion = null;
   const distance = getDistance(mapCenterTarget.lat, mapCenterTarget.lng, position.lat, position.lng);
   const deadZone = Math.max(1.5, Math.min(8, accuracy * 0.35));
   if (!moving && distance <= deadZone) {
     mapPositionJump = null;
-    lastMapPositionFix = { accuracy, time: now };
+    lastMapPositionFix = { ...position, accuracy, time: now };
     return;
   }
 
@@ -1036,7 +1040,22 @@ function updateMapPositionSmoothly(coords, now) {
     if (now - candidate.time < 300) return;
   }
   mapPositionJump = null;
-  lastMapPositionFix = { accuracy, time: now };
+  const previousFix = lastMapPositionFix;
+  const measuredDistance = getDistance(previousFix.lat, previousFix.lng, position.lat, position.lng);
+  const inferredSpeed = elapsed > 0 ? measuredDistance / elapsed : 0;
+  const travelSpeed = Number.isFinite(speed) ? Math.max(0, speed) : inferredSpeed;
+  const heading = Number.isFinite(coords.heading) ? coords.heading :
+    (measuredDistance > Math.max(3, accuracy * 0.5) ?
+      getBearing(previousFix.lat, previousFix.lng, position.lat, position.lng) : null);
+  // Predict only fast travel with recent, credible fixes. Walking retains its
+  // noise filtering; prediction never changes the measured application position.
+  if (travelSpeed >= 5 && travelSpeed <= 120 && heading !== null && elapsed > 0 && elapsed <= 5) {
+    mapCenterMotion = {
+      speed: travelSpeed, heading, startedAt: performance.now(),
+      horizon: Math.max(1, Math.min(3, elapsed * 1.5))
+    };
+  }
+  lastMapPositionFix = { ...position, accuracy, time: now };
   mapCenterTarget = position;
   if (mapCenterFrame !== null) return;
 
@@ -1044,15 +1063,37 @@ function updateMapPositionSmoothly(coords, now) {
   function animateCenter(timestamp) {
     const elapsed = lastFrameTime === null ? 16 : Math.min(64, timestamp - lastFrameTime);
     lastFrameTime = timestamp;
-    const distance = getDistance(visualMapCenter.lat, visualMapCenter.lng, mapCenterTarget.lat, mapCenterTarget.lng);
-    if (distance <= 0.1) {
-      visualMapCenter = { ...mapCenterTarget };
+    let target = mapCenterTarget;
+    let predicting = false;
+    if (mapCenterMotion) {
+      const age = Math.max(0, (timestamp - mapCenterMotion.startedAt) / 1000);
+      const horizon = mapCenterMotion.horizon;
+      // Ease velocity to zero over the last second if GPS updates stop.
+      const cruise = horizon - 1;
+      const taper = Math.max(0, Math.min(1, age - cruise));
+      const travelTime = Math.min(age, cruise) + taper - taper * taper / 2;
+      const angularDistance = mapCenterMotion.speed * travelTime / 6371000;
+      const bearing = mapCenterMotion.heading * Math.PI / 180;
+      const latitude = mapCenterTarget.lat * Math.PI / 180;
+      const projectedLatitude = Math.asin(Math.sin(latitude) * Math.cos(angularDistance) +
+        Math.cos(latitude) * Math.sin(angularDistance) * Math.cos(bearing));
+      target = {
+        lat: projectedLatitude * 180 / Math.PI,
+        lng: ((mapCenterTarget.lng + Math.atan2(Math.sin(bearing) * Math.sin(angularDistance) *
+          Math.cos(latitude), Math.cos(angularDistance) - Math.sin(latitude) *
+          Math.sin(projectedLatitude)) * 180 / Math.PI + 540) % 360) - 180
+      };
+      predicting = age < horizon;
+    }
+    const distance = getDistance(visualMapCenter.lat, visualMapCenter.lng, target.lat, target.lng);
+    if (distance <= 0.1 && !predicting) {
+      visualMapCenter = { ...target };
       mapCenterFrame = null;
     } else {
       const amount = 1 - Math.exp(-elapsed / (mapCenterIsMoving ? 250 : 650));
-      visualMapCenter.lat += (mapCenterTarget.lat - visualMapCenter.lat) * amount;
+      visualMapCenter.lat += (target.lat - visualMapCenter.lat) * amount;
       visualMapCenter.lng = ((visualMapCenter.lng +
-        headingDelta(mapCenterTarget.lng, visualMapCenter.lng) * amount + 540) % 360) - 180;
+        headingDelta(target.lng, visualMapCenter.lng) * amount + 540) % 360) - 180;
       mapCenterFrame = requestAnimationFrame(animateCenter);
     }
     map.setCenter(visualMapCenter);
