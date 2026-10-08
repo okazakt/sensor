@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "51";
+  --css-rev: "52";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1142,6 +1142,9 @@ body {
 
 /* ページヘッダー（ノッチ・セーフエリア完全対応） */
 .page-header {
+  /* Keep mobile browsers from inflating header text after rotation. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   padding-top: calc(max(env(safe-area-inset-top), 24px) + 10px);
   padding-bottom: 12px;
   padding-left: 16px;
