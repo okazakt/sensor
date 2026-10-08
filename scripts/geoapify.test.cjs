@@ -9,7 +9,7 @@ function fixture(fetch) {
     window: {SENSOR_CONFIG: {geoapifyApiKey: 'test-only-placeholder'}},
     getDistance: (_a, _b, lat) => Math.abs(lat) * 1000 };
   vm.createContext(c);
-  vm.runInContext(source.slice(source.indexOf('const CATEGORY_KEYWORDS'), source.indexOf('async function executeSearch')), c);
+  vm.runInContext(source.slice(source.indexOf('const CHALLENGE_EXCLUDED_CATEGORIES'), source.indexOf('async function executeSearch')), c);
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
@@ -75,4 +75,23 @@ test('チャレンジは指定カテゴリのみ検索し、チャレンジ名�
   assert.equal(urls[0].searchParams.get('categories'), 'catering.restaurant,catering.cafe');
   assert.equal(urls[0].searchParams.has('text'), false);
   assert.equal(result.places[0].id, 'category-target');
+});
+
+
+test('チャレンジは複数カテゴリ登録の酒類・成人向け施設も除外する', async () => {
+  const tagged = (id, categories) => ({ ...feature(id, 0.1), properties: {
+    ...feature(id, 0.1).properties, categories
+  }});
+  const c = fixture(async url => {
+    assert.equal(url.searchParams.get('limit'), '500');
+    return { ok: true, json: async () => ({ features: [
+      tagged('family', ['catering.restaurant', 'catering.restaurant.ramen']),
+      tagged('bar', ['catering.restaurant', 'catering.bar']),
+      tagged('pub', ['catering.pub']),
+      tagged('adult', ['entertainment', 'adult.nightclub']),
+      feature('unknown', 0.1)
+    ] }) };
+  });
+  const result = await c.searchGeoapify('challenge', {lat:0,lng:0}, 1000, 'ja', ['catering.restaurant']);
+  assert.equal(JSON.stringify(result.places.map(p => p.id)), '["family","unknown"]');
 });

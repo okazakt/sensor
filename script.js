@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081946";
+const BASE_JS_VERSION = "v0.26.101.082010";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -887,12 +887,60 @@ function playTreasureFanfare() {
 }
 
 const CHALLENGE_GROUPS = [
-  { id: 'gourmet', ja: 'グルメ', en: 'Gourmet', categories: ['catering.restaurant', 'catering.cafe', 'catering.fast_food', 'catering.bar'] },
-  { id: 'life', ja: 'ライフ', en: 'Life', categories: ['commercial.supermarket', 'commercial.convenience', 'public_transport', 'tourism.sights.city_hall', 'leisure.park'] },
-  { id: 'leisure', ja: 'レジャー', en: 'Leisure', categories: ['entertainment.theme_park', 'entertainment.zoo', 'entertainment.aquarium', 'beach', 'entertainment.water_park'] },
-  { id: 'deep', ja: 'ディープ', en: 'Deep', categories: ['tourism.sights.castle', 'tourism.sights.ruines', 'tourism.sights.archaeological_site'] },
+  { id: 'gourmet', ja: 'グルメ', en: 'Gourmet', categories: [
+    'catering.restaurant', 'catering.cafe', 'catering.fast_food',
+    'catering.food_court', 'catering.ice_cream', 'commercial.food_and_drink.bakery',
+    'commercial.food_and_drink.deli', 'commercial.food_and_drink.confectionery', 'commercial.food_and_drink.chocolate',
+    'commercial.food_and_drink.ice_cream', 'commercial.food_and_drink.coffee_and_tea', 'commercial.food_and_drink.fruit_and_vegetable',
+    'commercial.food_and_drink.seafood', 'commercial.food_and_drink.butcher', 'commercial.food_and_drink.cheese_and_dairy',
+    'commercial.food_and_drink.organic', 'commercial.food_and_drink.rice', 'commercial.food_and_drink.honey',
+    'commercial.food_and_drink.nuts', 'commercial.food_and_drink.spices', 'commercial.food_and_drink.pasta',
+    'commercial.food_and_drink.frozen_food', 'commercial.food_and_drink.health_food', 'commercial.food_and_drink.farm'
+  ] },
+  { id: 'life', ja: 'ライフ', en: 'Life', categories: [
+    'commercial.supermarket', 'commercial.convenience', 'commercial.marketplace',
+    'commercial.shopping_mall', 'commercial.department_store', 'commercial.discount_store',
+    'commercial.books', 'commercial.stationery', 'commercial.clothing',
+    'commercial.bag', 'commercial.baby_goods', 'commercial.houseware_and_hardware',
+    'commercial.florist', 'commercial.furniture_and_interior', 'commercial.chemist',
+    'commercial.health_and_beauty', 'commercial.toy_and_game', 'commercial.pet',
+    'commercial.elektronics', 'commercial.second_hand', 'commercial.kiosk',
+    'public_transport.train', 'public_transport.light_rail', 'public_transport.monorail',
+    'public_transport.subway', 'public_transport.tram', 'public_transport.bus',
+    'public_transport.ferry', 'tourism.sights.city_hall', 'leisure.park',
+    'education.library', 'healthcare.pharmacy', 'healthcare.hospital',
+    'healthcare.clinic_or_praxis', 'healthcare.dentist', 'service.post.office',
+    'service.financial.bank', 'service.financial.atm', 'service.cleaning',
+    'service.beauty.hairdresser'
+  ] },
+  { id: 'leisure', ja: 'レジャー', en: 'Leisure', categories: [
+    'entertainment', 'beach', 'leisure.park',
+    'leisure.playground', 'leisure.picnic.picnic_site', 'leisure.picnic.bbq',
+    'leisure.spa.public_bath', 'camping.camp_site', 'camping.summer_camp',
+    'camping.caravan_site', 'sport.stadium', 'sport.skateboard',
+    'sport.golf_course', 'sport.dojo', 'sport.horse_riding',
+    'sport.ice_rink', 'sport.pitch', 'sport.sports_centre',
+    'sport.sports_hall', 'sport.swimming_pool', 'sport.track',
+    'sport.fitness', 'tourism.attraction.viewpoint', 'national_park'
+  ] },
+  { id: 'deep', ja: 'ディープ', en: 'Deep', categories: [
+    'tourism.sights.castle', 'tourism.sights.ruines', 'tourism.sights.archaeological_site',
+    'tourism.sights.place_of_worship', 'tourism.sights.monastery', 'tourism.sights.lighthouse',
+    'tourism.sights.windmill', 'tourism.sights.tower', 'tourism.sights.battlefield',
+    'tourism.sights.fort', 'tourism.sights.building', 'tourism.sights.manor',
+    'tourism.sights.city_gate', 'tourism.sights.bridge', 'tourism.sights.square',
+    'tourism.sights.memorial.monument', 'tourism.sights.memorial.boundary_stone', 'tourism.sights.memorial.milestone',
+    'tourism.sights.memorial.tumulus', 'religion.place_of_worship', 'heritage',
+    'tourism.attraction.artwork', 'tourism.attraction.fountain', 'tourism.attraction.clock'
+  ] },
   { id: 'secret', ja: 'シークレット', en: 'Secret', categories: [] }
 ];
+
+function challengeCategoriesForGroup(groupId) {
+  return [...new Set(CHALLENGE_GROUPS.filter(group => groupId === 'secret' || group.id === groupId)
+    .flatMap(group => group.categories))];
+}
+
 const CHALLENGE_STAGES = [
   { id: 'nearest1', radius: 1000, mode: 'nearest' },
   { id: 'random1', radius: 1000, mode: 'random' },
@@ -1719,6 +1767,20 @@ function onPositionUpdate(pos) {
   evaluateSensorCycle();
 }
 
+// Apply to challenge results, including places tagged as both restaurants and bars.
+const CHALLENGE_EXCLUDED_CATEGORIES = [
+  'adult', 'catering.bar', 'catering.pub', 'catering.biergarten', 'catering.taproom',
+  'commercial.smoking', 'commercial.erotic', 'commercial.weapons',
+  'commercial.pyrotechnics', 'commercial.tickets_and_lottery',
+  'commercial.hobby.brewing', 'commercial.food_and_drink.drinks', 'service.bookmaker',
+  'public_transport.platform', 'public_transport.subway.entrance'
+];
+
+function isExcludedChallengePlace(categories = []) {
+  return categories.some(category => CHALLENGE_EXCLUDED_CATEGORIES.some(excluded =>
+    category === excluded || category.startsWith(excluded + '.')));
+}
+
 const CATEGORY_KEYWORDS = [
   { terms: ['カフェ', '喫茶店', 'コーヒー', 'cafe', 'café', 'coffee'], category: 'catering.cafe' },
   { terms: ['レストラン', '飲食店', 'restaurant'], category: 'catering.restaurant' },
@@ -1774,7 +1836,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   const requests = forcedCategories ? [] : [fetchGeoapify('/v1/geocode/search', { ...common, text, limit: 20 })];
   const categories = forcedCategories || categoriesForKeyword(text);
   if (categories.length) requests.push(fetchGeoapify('/v2/places', {
-    ...common, categories: categories.join(','), limit: 100
+    ...common, categories: categories.join(','), limit: forcedCategories ? 500 : 100
   }));
   const responses = await Promise.allSettled(requests);
   const successful = responses.filter(result => result.status === 'fulfilled');
@@ -1782,6 +1844,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   const places = new Map();
   for (const result of successful) for (const feature of result.value) {
     const p = feature.properties || {};
+    if (forcedCategories && isExcludedChallengePlace(p.categories)) continue;
     const lat = p.lat ?? feature.geometry?.coordinates?.[1];
     const lng = p.lon ?? feature.geometry?.coordinates?.[0];
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
@@ -1904,12 +1967,7 @@ function startChallenge(challenge) {
   appState.challengeSettings = { targetMode: appState.targetMode, sensorDetail: appState.sensorDetail,
     continuousSearch: appState.continuousSearch, radiusIndex };
   appState.activeChallenge = challenge;
-  let categories = CHALLENGE_GROUPS.find(g => g.id === challenge.group).categories;
-  if (challenge.group === 'secret') {
-    const all = CHALLENGE_GROUPS.flatMap(g => g.categories);
-    categories = [all[Math.floor(Math.random() * all.length)]];
-  }
-  appState.challengeCategories = [...categories];
+  appState.challengeCategories = challengeCategoriesForGroup(challenge.group);
   appState.targetMode = challenge.mode;
   appState.sensorDetail = challenge.sensor;
   appState.continuousSearch = false;
@@ -2077,10 +2135,10 @@ function renderChallenges() {
       status.className = 'list-item-sub';
       const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
       const descriptions = ja ? {
-        gourmet: '飲食店・カフェなど', life: 'スーパー・駅・市役所・公園など',
-        leisure: '遊園地・海岸など', deep: '城跡・遺跡など', secret: '全カテゴリからランダムに指定'
-      } : { gourmet: 'Restaurants and cafes', life: 'Supermarkets, stations, town halls and parks',
-        leisure: 'Theme parks and beaches', deep: 'Castles and archaeological sites', secret: 'A random category from all groups' };
+        gourmet: '飲食店・カフェ・パン屋・食品店など', life: '買い物・駅・図書館・郵便局・医療施設など',
+        leisure: '遊園地・文化施設・遊び場・スポーツ施設・海岸など', deep: '史跡・神社仏閣・文化遺産・地域の見どころなど', secret: 'グルメ・ライフ・レジャー・ディープの全対象'
+      } : { gourmet: 'Restaurants, cafes, bakeries and food shops', life: 'Shops, stations, libraries, post offices and healthcare',
+        leisure: 'Entertainment, playgrounds, sports facilities and beaches', deep: 'Historic sites, places of worship, heritage and local sights', secret: 'All places from the four groups' };
       row.title = descriptions[group.id];
       status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ' + (progress.completed.has(challenge.id)
         ? (ja ? 'クリア済み' : 'Completed') : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));

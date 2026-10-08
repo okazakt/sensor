@@ -63,3 +63,20 @@ test('チャレンジ到達一覧はIDと旧形式の日本語・英語の記録
   assert.equal(JSON.stringify(c.getChallengeArrivals(db, c.challenges[6]).map(x => x.id)),
     '["tagged","legacy-and-tagged"]');
 });
+
+
+test('シークレットは4分類の和集合を検索し、交通の不要な親指定と酒類カテゴリを含めない', () => {
+  const { context: c } = fixture();
+  const groups = vm.runInContext('CHALLENGE_GROUPS', c);
+  const union = [...new Set(groups.filter(g => g.id !== 'secret').flatMap(g => g.categories))];
+  assert.equal(JSON.stringify(c.challengeCategoriesForGroup('secret')), JSON.stringify(union));
+  assert.ok(union.length > 70);
+  assert.ok(!union.includes('public_transport'));
+  assert.ok(!union.includes('catering'));
+  for (const excluded of ['catering.bar', 'catering.pub', 'catering.biergarten', 'catering.taproom']) {
+    assert.ok(!union.includes(excluded));
+  }
+  for (const id of ['gourmet', 'life', 'leisure', 'deep']) {
+    assert.ok(c.challengeCategoriesForGroup(id).length > 15);
+  }
+});
