@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "47";
+  --css-rev: "48";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -39,7 +39,12 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
 }
 
+html { overflow: hidden; overscroll-behavior: none; }
+
 body {
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
   background-color: #080a0d;
   color: #e0f8ff;
   height: 100vh;

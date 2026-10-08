@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.082042";
+const BASE_JS_VERSION = "v0.26.101.082053";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -138,6 +138,26 @@ function initializeResponsiveLayout() {
   }
   standalone.addEventListener('change', updateDisplayMode);
   updateDisplayMode();
+  // Scroll offsets from the landscape controls must not survive rotation.
+  const orientation = window.matchMedia('(orientation: landscape)');
+  let rotationTimers = [];
+  function resetRotationOffsets() {
+    rotationTimers.forEach(clearTimeout);
+    const reset = () => {
+      document.scrollingElement?.scrollTo(0, 0);
+      window.scrollTo(0, 0);
+      for (const selector of ['#app-container', '#page-main-wrap', '.bottom-section']) {
+        const element = document.querySelector(selector);
+        if (element) { element.scrollTop = 0; element.scrollLeft = 0; }
+      }
+      schedule();
+    };
+    reset();
+    // Safari applies safe areas and viewport geometry after the rotation event.
+    rotationTimers = [150, 400].map(delay => setTimeout(reset, delay));
+  }
+  orientation.addEventListener('change', resetRotationOffsets);
+  window.addEventListener('orientationchange', resetRotationOffsets);
   const labels = [...document.querySelectorAll(
     '#label-sound-state, #label-wake-state, #label-continuous-state, .volume-label, .condition-label'
   )];
