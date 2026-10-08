@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081901";
+const BASE_JS_VERSION = "v0.26.101.081906";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -57,8 +57,11 @@ function initializeMapRenderer(global) {
           paint: { 'fill-color': day ? '#483b23' : '#081018' } },
         { id: 'building', type: 'fill', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
           paint: { 'fill-color': day ? '#453820' : '#081018', 'fill-outline-color': day ? '#483b23' : '#081018' } },
-        // Draw riverbanks, lakes and seas from polygon geometry; never invent a
-        // river width from a fixed-pixel centerline. Keep water above land/buildings.
+        // Preserve small waterways where riverbank polygons are unavailable.
+        // Paint polygon water above the fallback centerlines.
+        { id: 'waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': day ? '#38485c' : '#02070d', 'line-width': 5 } },
         { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water',
           filter: ['==', '$type', 'Polygon'],
           paint: { 'fill-color': day ? '#38485c' : '#02070d' } },

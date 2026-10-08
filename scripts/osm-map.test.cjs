@@ -187,7 +187,7 @@ test('通常ズームのゼルダ風地図は住宅街・細街路も太く描�
   assert.ok(matchWidth(roadAtNormalZoom(day), 'service') >= 6);
 });
 
-test('川幅は水面ポリゴンで描き、固定幅の中心線を重ねない', () => {
+test('水面ポリゴンを優先し、面のない川は5pxの補助線で表示する', () => {
   const { api } = fixture();
   for (const theme of ['botw', 'sheikah']) {
     const style = api.createStyle(theme);
@@ -195,7 +195,12 @@ test('川幅は水面ポリゴンで描き、固定幅の中心線を重ねな�
     assert.equal(water.type, 'fill');
     assert.equal(water['source-layer'], 'water');
     assert.equal(JSON.stringify(water.filter), '["==","$type","Polygon"]');
-    assert.equal(style.layers.some(layer => layer['source-layer'] === 'waterway'), false);
+    const fallback = style.layers.find(layer => layer.id === 'waterway');
+    assert.equal(fallback.type, 'line');
+    assert.equal(fallback['source-layer'], 'waterway');
+    assert.equal(fallback.paint['line-width'], 5);
+    assert.equal(fallback.paint['line-color'], water.paint['fill-color']);
+    assert.ok(style.layers.indexOf(fallback) < style.layers.indexOf(water));
     assert.ok(style.layers.indexOf(water) > style.layers.findIndex(layer => layer.id === 'building'));
     assert.ok(style.layers.indexOf(water) < style.layers.findIndex(layer => layer.id === 'road-fill'));
   }
