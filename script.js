@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081740";
+const BASE_JS_VERSION = "v0.26.101.081750";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -565,6 +565,7 @@ function applyLanguage(lang) {
   if (appState.selectedKeywordForHistory) renderHistoryList();
   renderAllHistoryList();
   renderChallenges();
+  if (appState.selectedChallengeForHistory) renderChallengeArrivals();
 }
 
 document.getElementById('pwa-lang-btn').addEventListener('click', () => {
@@ -953,6 +954,7 @@ let appState = {
   targetMode: challengeProgress().target ? readSensorSetting("target_mode", ["random", "nearest", "all"], "nearest") : "nearest",
   sensorDetail: challengeProgress().sensor ? readSensorSetting("sensor_detail", ["standard", "detailed"], "standard") : "standard",
   activeChallenge: null,
+  selectedChallengeForHistory: null,
   challengeSettings: null,
   challengeCategories: null,
   currentPos: null,
@@ -1426,6 +1428,8 @@ function updateArrivalRecordWithDetails(db, target, now) {
   const challenge = appState.activeChallenge;
   if (challenge) {
     db.completedChallenges = [...new Set([...(db.completedChallenges || []), challenge.id])];
+    const arrival = db.arrivals.find(item => item.id === target.id);
+    arrival.challengeIds = [...new Set([...(arrival.challengeIds || []), challenge.id])];
   }
   saveAppData(db);
 
@@ -1445,6 +1449,7 @@ function updateArrivalRecordWithDetails(db, target, now) {
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
     renderChallenges();
+    openChallengeArrivals(challenge);
     return;
   }
 
@@ -1908,11 +1913,94 @@ function requestChallengeStart(challenge) {
   dialog.showModal();
 }
 
+function getChallengeArrivals(db, challenge) {
+  const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
+  const legacyNames = [
+    `${group.ja}${challenge.radius / 1000}km${challenge.mode === 'nearest' ? '最寄り' : 'ランダム'}`,
+    `${group.en} ${challenge.radius / 1000}km ${challenge.mode === 'nearest' ? 'Nearest' : 'Random'}`
+  ];
+  return db.arrivals.filter(item => (Array.isArray(item.challengeIds) && item.challengeIds.includes(challenge.id))
+    || legacyNames.includes(item.keyword));
+}
+
+function openChallengeArrivals(challenge) {
+  appState.selectedChallengeForHistory = challenge.id;
+  appState.fromChallenge = true;
+  appState.fromAllHistory = false;
+  pageSpotDetail.classList.remove('open');
+  pageHistory.classList.remove('open');
+  pageKeywords.classList.remove('open');
+  pageAllHistory.classList.remove('open');
+  pageChallenges.classList.add('open');
+  renderChallengeArrivals();
+  pageChallengeKeywords.classList.add('open');
+  updateFooterActive(0);
+}
+
+function renderChallengeArrivals() {
+  const challenge = CHALLENGES.find(c => c.id === appState.selectedChallengeForHistory);
+  if (!challenge) return;
+  const db = loadSavedData();
+  const t = I18N[currentLang];
+  const container = document.getElementById('challenge-arrivals-list-container');
+  document.getElementById('back-to-challenges').textContent = currentLang === 'ja' ? '◀チャレンジ一覧' : '◀Challenges';
+  document.getElementById('challenge-arrivals-title').textContent = currentLang === 'ja' ? '到達スポット一覧' : 'Arrived spots';
+  document.getElementById('challenge-arrivals-name').textContent = challengeName(challenge);
+  container.replaceChildren();
+  const items = getChallengeArrivals(db, challenge).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'challenge-help';
+    empty.textContent = currentLang === 'ja' ? 'このチャレンジで到達したスポットはまだありません。' : 'No arrivals recorded for this challenge yet.';
+    container.append(empty);
+  }
+  for (const item of items) {
+    const date = new Date(item.date);
+    const dateStr = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const basePos = appState.currentPos || lastKnownPos;
+    const distance = getDistance(basePos.lat, basePos.lng, item.lat, item.lng);
+    const distStr = distance >= 1000 ? `${(distance/1000).toFixed(1)}km` : `${Math.round(distance)}m`;
+    const row = document.createElement('div');
+    row.className = 'list-item';
+    row.innerHTML = `
+      <div class="list-item-left">
+        <span class="list-item-title">${escapeHtml(item.name)}</span>
+        <div class="list-item-sub">${t.arrivalDate(dateStr, distStr)}</div>
+      </div>
+      <div class="action-button-row">
+        <button class="btn-sheikah-sm btn-pinpoint-set">SET</button>
+        <button class="btn-sheikah-sm btn-toggle-radar ${item.muted ? 'off' : 'active'}">${item.muted ? t.radarOff : t.radarOn}</button>
+        <button class="btn-sheikah-sm btn-copy-sm">${t.copyBtn}</button>
+      </div>`;
+    row.onclick = () => {
+      appState.fromChallenge = true;
+      appState.fromAllHistory = false;
+      openSpotDetailModal(item);
+    };
+    row.querySelector('.btn-pinpoint-set').onclick = event => {
+      event.stopPropagation();
+      setPinpointTargetAndStart(item);
+    };
+    row.querySelector('.btn-toggle-radar').onclick = event => {
+      event.stopPropagation();
+      item.muted = !item.muted;
+      saveAppData(db);
+      renderChallengeArrivals();
+    };
+    row.querySelector('.btn-copy-sm').onclick = event => {
+      event.stopPropagation();
+      copyPlaceNameToClipboard(item.name);
+    };
+    container.append(row);
+  }
+}
+
 function renderChallenges() {
   const container = document.getElementById('challenges-list-container');
   if (!container) return;
   const ja = currentLang === 'ja';
-  const progress = challengeProgress();
+  const db = loadSavedData();
+  const progress = challengeProgress(db);
   document.getElementById('title-page-challenges').textContent = ja ? 'チャレンジ一覧' : 'Challenges';
   document.getElementById('challenge-help').textContent = ja
     ? '指定カテゴリの対象に20m以内まで近づくとクリア。メインのSETで一時停止・再開できます。停止・終了後は、この画面から再度SETしてください。'
@@ -1943,7 +2031,10 @@ function renderChallenges() {
   for (const stage of CHALLENGE_STAGES) {
     for (const challenge of CHALLENGES.filter(c => c.stage === stage.id)) {
       const row = document.createElement('div');
-      row.className = 'list-item challenge-row';
+      const available = isChallengeAvailable(challenge, progress);
+      row.className = 'list-item challenge-row' + (available ? '' : ' challenge-locked');
+      const content = document.createElement('div');
+      content.className = 'list-item-row';
       const left = document.createElement('div');
       left.className = 'list-item-left';
       const title = document.createElement('span');
@@ -1951,35 +2042,56 @@ function renderChallenges() {
       title.textContent = challengeName(challenge);
       const status = document.createElement('div');
       status.className = 'list-item-sub';
-      const available = isChallengeAvailable(challenge, progress);
       const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
       const descriptions = ja ? {
         gourmet: '飲食店・カフェなど', life: 'スーパー・駅・市役所・公園など',
         leisure: '遊園地・海岸など', deep: '城跡・遺跡など', secret: '全カテゴリからランダムに指定'
       } : { gourmet: 'Restaurants and cafes', life: 'Supermarkets, stations, town halls and parks',
         leisure: 'Theme parks and beaches', deep: 'Castles and archaeological sites', secret: 'A random category from all groups' };
-      status.textContent = descriptions[group.id] + ' · ' + (progress.completed.has(challenge.id)
+      row.title = descriptions[group.id];
+      status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ' + (progress.completed.has(challenge.id)
         ? (ja ? 'クリア済み' : 'Completed') : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));
       left.append(title, status);
       const button = document.createElement('button');
-      button.className = 'btn-sheikah challenge-set';
+      button.className = 'btn-sheikah-sm challenge-set';
       button.textContent = 'SET';
       button.disabled = !available;
       button.setAttribute('aria-label', `${challengeName(challenge)} SET`);
-      button.onclick = () => requestChallengeStart(challenge);
-      row.append(left, button);
+      button.onclick = event => {
+        event.stopPropagation();
+        requestChallengeStart(challenge);
+      };
+      const actions = document.createElement('div');
+      actions.className = 'item-right-actions';
+      const arrow = document.createElement('span');
+      arrow.className = 'challenge-history-arrow';
+      arrow.textContent = '▶';
+      arrow.setAttribute('aria-hidden', 'true');
+      actions.append(button, arrow);
+      content.append(left, actions);
+      row.append(content);
+      row.tabIndex = 0;
+      row.setAttribute('role', 'group');
+      row.setAttribute('aria-label', ja ? `${challengeName(challenge)}の到達スポット一覧` : `${challengeName(challenge)} arrivals`);
+      row.onclick = () => openChallengeArrivals(challenge);
+      row.onkeydown = event => {
+        if (event.target === row && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          openChallengeArrivals(challenge);
+        }
+      };
       container.append(row);
     }
     if (stage.id === 'nearest1') {
-      milestone(ja ? '1km最寄りを3つクリア → 1kmランダムチャレンジ開放' : 'Complete 3 × 1km Nearest → unlock 1km Random challenges', progress.nearest, 3);
+      milestone(ja ? '1km最寄りチャレンジを3つクリアすると、1kmランダムチャレンジが開放されます。' : 'Complete 3 × 1km Nearest, then unlock 1km Random challenges', progress.nearest, 3);
     } else if (stage.id === 'random1') {
-      milestone(ja ? '1kmランダムを1つクリア → ターゲットロック切替開放' : 'Complete 1 × 1km Random → unlock target lock switching', progress.random, 1);
-      milestone(ja ? '1kmランダムを3つクリア → 3kmランダムチャレンジ開放' : 'Complete 3 × 1km Random → unlock 3km Random challenges', progress.random, 3);
-      milestone(ja ? '1kmランダムを5つクリア → センサー高精度機能開放' : 'Complete 5 × 1km Random → unlock HI-SENS', progress.random, 5);
+      milestone(ja ? '1kmランダムチャレンジを1つクリアすると、ターゲットロックを切り替えられるようになります。' : 'Complete 1 × 1km Random, then unlock target lock switching', progress.random, 1);
+      milestone(ja ? '1kmランダムチャレンジを3つクリアすると、3kmランダムチャレンジが開放されます。' : 'Complete 3 × 1km Random, then unlock 3km Random challenges', progress.random, 3);
+      milestone(ja ? '1kmランダムチャレンジを5つクリアすると、高精度センサー（HI-SENS）が使えるようになります。' : 'Complete 5 × 1km Random, then unlock HI-SENS', progress.random, 5);
     } else {
-      milestone(ja ? '3kmランダムを1つクリア → 範囲指定10km開放' : 'Complete 1 × 3km Random → unlock 10km', progress.wide, 1);
-      milestone(ja ? '3kmランダムを3つクリア → 範囲指定50km開放' : 'Complete 3 × 3km Random → unlock 50km', progress.wide, 3);
-      milestone(ja ? '全チャレンジクリア → 範囲指定100km開放' : 'Complete all challenges → unlock 100km', progress.completed.size, 15);
+      milestone(ja ? '3kmランダムチャレンジを1つクリアすると、検索範囲に10kmを選べるようになります。' : 'Complete 1 × 3km Random, then unlock 10km', progress.wide, 1);
+      milestone(ja ? '3kmランダムチャレンジを3つクリアすると、検索範囲に50kmを選べるようになります。' : 'Complete 3 × 3km Random, then unlock 50km', progress.wide, 3);
+      milestone(ja ? '15種類すべてのチャレンジをクリアすると、検索範囲に100kmを選べるようになります。' : 'Complete all challenges, then unlock 100km', progress.completed.size, 15);
     }
   }
 }
@@ -2531,6 +2643,7 @@ document.getElementById('keyword-input').addEventListener('keypress', (e) => {
 // ============================================================
 
 const pageChallenges = document.getElementById('page-challenges');
+const pageChallengeKeywords = document.getElementById('page-challenge-keywords');
 const pageMainWrap = document.getElementById('page-main-wrap');
 const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
@@ -2560,6 +2673,7 @@ function navigateToMain() {
   pageHistory.classList.remove('open');
   pageKeywords.classList.remove('open');
   pageChallenges.classList.remove('open');
+  pageChallengeKeywords.classList.remove('open');
   updateFooterActive(1);
   evaluateSensorCycle();
 }
@@ -2591,6 +2705,8 @@ function bindSwipe(el, onSwipeLeft, onSwipeRight) {
 function setupSwipeAndNavigationSystem() {
   // フッタータップ時の切り替え
   fnavBtnChallenges?.addEventListener('click', () => {
+    pageChallengeKeywords.classList.remove('open');
+    renderChallenges();
     pageAllHistory.classList.remove('open');
     pageSpotDetail.classList.remove('open');
     pageHistory.classList.remove('open');
@@ -2604,6 +2720,7 @@ function setupSwipeAndNavigationSystem() {
   });
 
   fnavBtnHistory?.addEventListener('click', () => {
+    pageChallengeKeywords.classList.remove('open');
     pageChallenges.classList.remove('open');
     pageAllHistory.classList.remove('open');
     pageSpotDetail.classList.remove('open');
@@ -2614,12 +2731,24 @@ function setupSwipeAndNavigationSystem() {
   });
 
   fnavBtnAll?.addEventListener('click', () => {
+    pageChallengeKeywords.classList.remove('open');
     pageChallenges.classList.remove('open');
     pageSpotDetail.classList.remove('open');
     pageHistory.classList.remove('open');
     renderAllHistoryList();
     pageAllHistory.classList.add('open');
     updateFooterActive(3);
+  });
+
+  document.getElementById('back-to-challenges').addEventListener('click', () => {
+    pageChallengeKeywords.classList.remove('open');
+    renderChallenges();
+    updateFooterActive(0);
+  });
+  bindSwipe(pageChallengeKeywords, () => navigateToMain(), () => {
+    pageChallengeKeywords.classList.remove('open');
+    renderChallenges();
+    updateFooterActive(0);
   });
 
   document.getElementById('back-to-keywords')?.addEventListener('click', () => {
@@ -2631,6 +2760,7 @@ function setupSwipeAndNavigationSystem() {
     if (appState.fromAllHistory) {
       updateFooterActive(3);
     } else if (appState.fromChallenge) {
+      renderChallengeArrivals();
       updateFooterActive(0);
     } else {
       updateFooterActive(2);
@@ -2696,6 +2826,7 @@ function setupSwipeAndNavigationSystem() {
     // 右スワイプ時
     if (appState.fromChallenge) {
       pageSpotDetail.classList.remove('open');
+      renderChallengeArrivals();
       updateFooterActive(0);
     } else if (appState.fromAllHistory) {
       pageSpotDetail.classList.remove('open');
@@ -3037,7 +3168,7 @@ function openSpotDetailModal(item) {
   if (appState.fromAllHistory) {
     backBtn.textContent = currentLang === 'ja' ? '◀図鑑一覧' : '◀Compendium';
   } else if (appState.fromChallenge) {
-    backBtn.textContent = currentLang === 'ja' ? '◀チャレンジ' : '◀Challenge';
+    backBtn.textContent = currentLang === 'ja' ? '◀到達スポット一覧' : '◀Challenge arrivals';
   } else {
     backBtn.textContent = currentLang === 'ja' ? '◀履歴図鑑' : '◀Places';
   }
@@ -3076,6 +3207,8 @@ function openSpotDetailModal(item) {
 
   radarBtn.onclick = () => {
     item.muted = !item.muted;
+    const savedItem = db.arrivals.find(arrival => arrival.id === item.id);
+    if (savedItem) savedItem.muted = item.muted;
     saveAppData(db);
     updateDetailRadarBtn();
   };
@@ -3087,6 +3220,9 @@ function openSpotDetailModal(item) {
       pageSpotDetail.classList.remove('open');
       if (appState.fromAllHistory) {
         renderAllHistoryList();
+      } else if (appState.fromChallenge) {
+        renderChallengeArrivals();
+        renderChallenges();
       } else {
         renderHistoryList();
       }

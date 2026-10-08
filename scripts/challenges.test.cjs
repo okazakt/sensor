@@ -47,3 +47,19 @@ test('機能開放の各境界と重複・不明IDの除外', () => {
   db.completedChallenges = c.challenges.map(x => x.id);
   assert.equal(c.challengeProgress().maxRadius, 100000);
 });
+
+test('チャレンジ到達一覧はIDと旧形式の日本語・英語の記録を参照する', () => {
+  const { context: c } = fixture();
+  vm.runInContext(source.slice(source.indexOf('function getChallengeArrivals'), source.indexOf('function openChallengeArrivals')), c);
+  const db = { arrivals: [
+    { id: 'ja', keyword: 'グルメ1km最寄り' },
+    { id: 'en', keyword: 'Gourmet 1km Nearest' },
+    { id: 'tagged', keyword: 'restaurant', challengeIds: ['nearest1-gourmet', 'random1-life'] },
+    { id: 'legacy-and-tagged', keyword: 'グルメ1km最寄り', challengeIds: ['random1-life'] },
+    { id: 'other', keyword: 'cafe' }
+  ] };
+  assert.equal(JSON.stringify(c.getChallengeArrivals(db, c.challenges[0]).map(x => x.id)),
+    '["ja","en","tagged","legacy-and-tagged"]');
+  assert.equal(JSON.stringify(c.getChallengeArrivals(db, c.challenges[6]).map(x => x.id)),
+    '["tagged","legacy-and-tagged"]');
+});
