@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="37">
+  <meta name="html-rev" content="38">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -131,9 +131,8 @@
     <!-- 第1画面：チャレンジ一覧画面 -->
     <div class="slide-page" id="page-challenges">
       <div class="page-header header-flex">
-        <div class="page-title-text" id="title-page-challenges">チャレンジ一覧</div>
+        <div class="page-title-text" id="title-page-challenges" tabindex="-1">チャレンジ一覧</div>
       </div>
-      <div class="challenge-help" id="challenge-help"></div>
       <div class="list-scroll" id="challenges-list-container"></div>
     </div>
 
@@ -150,7 +149,7 @@
 
     <dialog id="challenge-start-dialog" class="challenge-dialog" aria-labelledby="challenge-start-question" aria-describedby="challenge-start-name">
       <div>
-        <p id="challenge-start-question"></p>
+        <p id="challenge-start-question" tabindex="-1" autofocus></p>
         <p id="challenge-start-name"></p>
         <div class="challenge-dialog-actions">
           <button type="button" id="challenge-start-no" class="btn-sheikah">いいえ</button>

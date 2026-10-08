@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.081926";
+const BASE_JS_VERSION = "v0.26.101.081946";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1891,6 +1891,7 @@ function releaseChallengeSettings() {
   appState.continuousSearch = saved.continuousSearch;
   radiusIndex = saved.radiusIndex;
   document.getElementById('keyword-input').readOnly = false;
+  document.getElementById('keyword-input').disabled = false;
   document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'false');
   document.getElementById('continuous-toggle-btn').classList.remove('feature-locked');
   applyFeatureAccess();
@@ -1915,7 +1916,9 @@ function startChallenge(challenge) {
   radiusIndex = RADIUS_OPTIONS.indexOf(challenge.radius);
   const input = document.getElementById('keyword-input');
   input.value = challengeName(challenge);
+  input.blur();
   input.readOnly = true;
+  input.disabled = true;
   document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'true');
   document.getElementById('continuous-toggle-btn').classList.add('feature-locked');
   checkMainInputClearState();
@@ -1939,6 +1942,7 @@ function requestChallengeStart(challenge) {
   document.getElementById('challenge-start-yes').textContent = ja ? 'はい' : 'Yes';
   document.getElementById('challenge-start-no').textContent = ja ? 'いいえ' : 'No';
   dialog.showModal();
+  document.getElementById('challenge-start-question').focus({ preventScroll: true });
 }
 
 function getChallengeArrivals(db, challenge) {
@@ -2031,9 +2035,6 @@ function renderChallenges() {
   const db = loadSavedData();
   const progress = challengeProgress(db);
   document.getElementById('title-page-challenges').textContent = ja ? 'チャレンジ一覧' : 'Challenges';
-  document.getElementById('challenge-help').textContent = ja
-    ? '指定カテゴリの対象に20m以内まで近づくとクリア。メインのSETで一時停止・再開できます。停止・終了後は、この画面から再度SETしてください。'
-    : 'Reach a target within 20m to complete. Use SET on the main screen to pause/resume. After stopping, SET a challenge here to start again.';
   container.replaceChildren();
   if (appState.activeChallenge) {
     const row = document.createElement('div');
@@ -2198,7 +2199,10 @@ btnInputClearEl.addEventListener('click', (e) => {
 });
 
 keywordInputEl.addEventListener('focus', () => {
-  if (appState.activeChallenge) return;
+  if (appState.activeChallenge) {
+    keywordInputEl.blur();
+    return;
+  }
   if (appState.isTracking && keywordInputEl.value.trim() !== "") {
     const t = I18N[currentLang];
     if (confirm(t.confirmEndSearch)) {
@@ -3376,6 +3380,12 @@ document.getElementById('challenge-start-yes').addEventListener('click', () => {
   pendingChallenge = null;
   document.getElementById('challenge-start-dialog').close();
   if (challenge) startChallenge(challenge);
+});
+document.getElementById('challenge-start-dialog').addEventListener('close', () => {
+  // Cancel returns to a neutral heading instead of outlining the opening card.
+  if (!document.getElementById('challenge-start-dialog').open && pageChallenges.classList.contains('open')) {
+    document.getElementById('title-page-challenges').focus({ preventScroll: true });
+  }
 });
 document.getElementById('challenge-start-dialog').addEventListener('cancel', () => {
   pendingChallenge = null;
