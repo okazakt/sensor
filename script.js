@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092049";
+const BASE_JS_VERSION = "v0.26.101.092117";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1262,9 +1262,10 @@ function updateMapPositionSmoothly(coords, now) {
   const position = { lat: coords.latitude, lng: coords.longitude };
   if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
   const accuracy = Number.isFinite(coords.accuracy) ? Math.max(0, coords.accuracy) : 10;
-  // Hold the display when the GPS uncertainty becomes too large.
-  if (accuracy > 50) {
-    if (typeof traceLocation === 'function') traceLocation('map.fix.rejected', 'accuracy > 50m', 2000);
+  // Coarse fixes can still keep the map useful during transport. Only the
+  // display uses this tolerance; arrival calculations retain the measured fix.
+  if (accuracy > 1000) {
+    if (typeof traceLocation === 'function') traceLocation('map.fix.rejected', 'accuracy > 1000m', 2000);
     mapPositionJump = null;
     mapCenterMotion = null;
     return;
@@ -1278,7 +1279,8 @@ function updateMapPositionSmoothly(coords, now) {
   }
 
   const speed = coords.speed;
-  const moving = appState.isWalking || (Number.isFinite(speed) && speed > 0.4);
+  const moving = appState.isWalking || (Number.isFinite(speed) && speed > 0.4) ||
+    (!Number.isFinite(speed) && lastMapPositionFix.speed > 0.4);
   mapCenterIsMoving = moving;
   // A reported stop or rejected fix must immediately end prediction.
   mapCenterMotion = null;
@@ -1291,11 +1293,16 @@ function updateMapPositionSmoothly(coords, now) {
   }
 
   const elapsed = Math.max(0, (now - lastMapPositionFix.time) / 1000);
-  const expectedTravel = Number.isFinite(speed) ? Math.max(0, speed) * elapsed : (moving ? 2 * elapsed : 0);
+  const expectedTravel = Number.isFinite(speed) ? Math.max(0, speed) * elapsed :
+    Math.max(moving ? 2 : 0, Math.min(120, lastMapPositionFix.speed || 0)) * elapsed;
   const jumpThreshold = Math.max(15, accuracy + lastMapPositionFix.accuracy + expectedTravel * 3);
   if (distance > jumpThreshold) {
     const candidate = mapPositionJump;
-    const confirmationRadius = Math.max(3, Math.min(10, accuracy * 0.4));
+    // Two consecutive fixes need not be at the same spot: trains can travel
+    // well beyond ten metres between fixes, and Safari may omit speed.
+    const candidateElapsed = candidate ? Math.max(0, (now - candidate.time) / 1000) : 0;
+    const confirmationRadius = Math.max(10, accuracy + lastMapPositionFix.accuracy,
+      Math.min(5, candidateElapsed) * 120);
     if (!candidate || now - candidate.time > 5000 ||
         getDistance(candidate.lat, candidate.lng, position.lat, position.lng) > confirmationRadius) {
       if (typeof traceLocation === 'function') traceLocation('map.fix.pending', 'waiting for jump confirmation', 2000);
@@ -1314,13 +1321,13 @@ function updateMapPositionSmoothly(coords, now) {
       getBearing(previousFix.lat, previousFix.lng, position.lat, position.lng) : null);
   // Predict only fast travel with recent, credible fixes. Walking retains its
   // noise filtering; prediction never changes the measured application position.
-  if (travelSpeed >= 5 && travelSpeed <= 120 && heading !== null && elapsed > 0 && elapsed <= 5) {
+  if (accuracy <= 50 && travelSpeed >= 5 && travelSpeed <= 120 && heading !== null && elapsed > 0 && elapsed <= 5) {
     mapCenterMotion = {
       speed: travelSpeed, heading, startedAt: performance.now(),
       horizon: Math.max(1, Math.min(3, elapsed * 1.5))
     };
   }
-  lastMapPositionFix = { ...position, accuracy, time: now };
+  lastMapPositionFix = { ...position, accuracy, time: now, speed: Math.min(120, travelSpeed) };
   mapCenterTarget = position;
   if (mapCenterFrame !== null) return;
 
