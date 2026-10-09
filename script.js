@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090938";
+const BASE_JS_VERSION = "v0.26.101.090945";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -44,7 +44,6 @@ function initializeMapRenderer(global) {
     return {
       version: 8,
       sources: {
-        'destination-outlines': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
         openmaptiles: {
           type: 'vector', url: 'https://tiles.openfreemap.org/planet/latest',
           attribution: ATTRIBUTION
@@ -69,16 +68,7 @@ function initializeMapRenderer(global) {
         line('road-casing', minor, day ? '#2c2415' : '#142433', casingWidth(roadWidth, 1.2)),
         line('road-fill', minor, day ? '#e4d5a8' : '#142433', roadWidth),
         line('highway-casing', major, day ? '#221b0e' : '#142433', casingWidth(majorWidth, 1.5)),
-        line('highway-fill', major, day ? '#f0e3bc' : '#142433', majorWidth),
-        { id: 'destination-fill', type: 'fill', source: 'destination-outlines',
-          paint: { 'fill-color': day ? '#f5ce70' : '#00e5f5', 'fill-opacity': day ? 0.07 : 0.05 } },
-        { id: 'destination-halo', type: 'line', source: 'destination-outlines',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': day ? '#251b0c' : '#00e5f5', 'line-width': day ? 5 : 7,
-            'line-opacity': day ? 0.8 : 0.25, 'line-blur': day ? 0 : 2 } },
-        { id: 'destination-edge', type: 'line', source: 'destination-outlines',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': day ? '#f5ce70' : '#8af5ff', 'line-width': 2, 'line-opacity': 0.95 } }
+        line('highway-fill', major, day ? '#f0e3bc' : '#142433', majorWidth)
       ]
     };
   }
@@ -95,12 +85,6 @@ function initializeMapRenderer(global) {
   function createMap(container, position, mode, statusElement) {
     let theme = mode;
     let styleReady = false;
-    let outlines = [];
-    let outlinesSignature = '[]';
-    function repaintOutlines() {
-      instance.getSource('destination-outlines').setData({ type: 'FeatureCollection',
-        features: outlines.map(geometry => ({ type: 'Feature', properties: {}, geometry })) });
-    }
     const instance = new global.maplibregl.Map({
       container, style: createStyle(mode), center: [position.lng, position.lat],
       // MapLibre uses 512px tiles; Google zoom 17 has the same scale as zoom 16.
@@ -123,21 +107,9 @@ function initializeMapRenderer(global) {
     }
     instance.once('load', () => {
       styleReady = true;
-      if (outlines.length) repaintOutlines();
       if (theme !== mode) repaintTheme();
     });
     return {
-      // MapLibre clips these native layers to the canvas; never fit the camera to the area.
-      setOutlines(places) {
-        const next = places.map(place => place.geometry).filter(geometry =>
-          geometry && ['Polygon', 'MultiPolygon'].includes(geometry.type));
-        if (next.length === outlines.length && next.every((geometry, index) => geometry === outlines[index])) return;
-        const signature = JSON.stringify(next);
-        outlines = next;
-        if (signature === outlinesSignature) return;
-        outlinesSignature = signature;
-        if (styleReady) repaintOutlines();
-      },
       setCenter: position => instance.setCenter([position.lng, position.lat]),
       setStyle: mode => {
         // Both themes have identical layers and data. Repaint without reloading tiles.
@@ -354,8 +326,6 @@ document.addEventListener('visibilitychange', () => {
       return;
     }
 
-    if (watchId === null || lastGpsError || Date.now() - lastPositionUpdateTime > 30000) startLocationWatch();
-
     // 復帰後は現在の位置・方角情報から探知状態を再判定する。
     if (appState.isTracking && !appState.isPaused) {
       evaluateSensorCycle();
@@ -558,30 +528,9 @@ function redrawMarkersWithFade() {
   const db = loadSavedData();
   const sortedArrivals = [...(db.arrivals || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
   sortedArrivals.slice(0, 10).forEach((item, index) => {
-    markersList.push(map.addMarker(arrivalPinPosition(item), currentMapStyleMode === 'botw',
+    markersList.push(map.addMarker(item, currentMapStyleMode === 'botw',
       Math.max(0.15, 1.0 - index * 0.09), item.name));
   });
-  updateDestinationOutlines();
-}
-
-function arrivalPinPosition(item) {
-  const pin = item.arrivalPosition;
-  return pin && Number.isFinite(pin.lat) && Number.isFinite(pin.lng) &&
-    Math.abs(pin.lat) <= 90 && Math.abs(pin.lng) <= 180 ? pin : item;
-}
-
-function updateDestinationOutlines() {
-  if (!map) return;
-  const saved = [...(loadSavedData().arrivals || [])]
-    .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-  const active = appState.isTracking && !appState.isPaused
-    ? (appState.pinpointTarget || appState.randomTarget
-      ? [appState.pinpointTarget || appState.randomTarget] : appState.places) : [];
-  const areas = new Map();
-  [...saved, ...active].forEach(place => {
-    if (validDestinationGeometry(place.geometry)) areas.set(place.id, place);
-  });
-  map.setOutlines([...areas.values()]);
 }
 
 function escapeHtml(value) {
@@ -1120,9 +1069,6 @@ let appState = {
 
 let wakeLockSentinel = null;
 let watchId = null;
-let locationWatchGeneration = 0;
-let lastPositionUpdateTime = 0;
-let lastGpsError = null;
 let compassActive = false;
 let compassPermissionPending = false;
 
@@ -1328,26 +1274,19 @@ function bootstrapMapAndLocation() {
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
-  startLocationWatch();
-}
-
-function startLocationWatch() {
-  if (!('geolocation' in navigator)) return;
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  watchId = null;
-  const generation = ++locationWatchGeneration;
-  watchId = navigator.geolocation.watchPosition(
-    position => { if (generation === locationWatchGeneration) onPositionUpdate(position); },
-    error => {
-      if (generation !== locationWatchGeneration) return;
-      reportGpsError(error);
-      if (error.code === 1 && watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
+  if ('geolocation' in navigator) {
+    watchId = navigator.geolocation.watchPosition(
+      onPositionUpdate,
+      (err) => {
+        console.warn("位置情報監視エラー:", err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
       }
-    },
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-  );
+    );
+  }
 }
 
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -1403,102 +1342,13 @@ function readSensorSetting(key, modes, fallback) {
   return modes.includes(value) ? value : fallback;
 }
 
-// Only the destination's own area is used; containing buildings may host other places.
-function validDestinationGeometry(geometry) {
-  if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return false;
-  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
-  return Array.isArray(polygons) && polygons.length > 0 && polygons.every(polygon =>
-    Array.isArray(polygon) && polygon.length > 0 && polygon.every(ring =>
-      Array.isArray(ring) && ring.length >= 4 && ring.every(point =>
-        Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]) &&
-        Math.abs(point[0]) <= 180 && Math.abs(point[1]) <= 90) &&
-      ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]));
-}
-
-function destinationGeometryReading(position, target) {
-  if (!validDestinationGeometry(target.geometry)) return null;
-  const polygons = target.geometry.type === 'Polygon' ? [target.geometry.coordinates] : target.geometry.coordinates;
-  const scale = Math.PI / 180 * 6371000;
-  const project = point => [
-    ((point[0] - position.lng + 540) % 360 - 180) * scale * Math.cos(position.lat * Math.PI / 180),
-    (point[1] - position.lat) * scale
-  ];
-  let nearest = Infinity;
-  let boundary = null;
-  let insideArea = false;
-  for (const polygon of polygons) {
-    const insideRings = polygon.map(ring => {
-      let inside = false;
-      for (let i = 1; i < ring.length; i++) {
-        const [ax, ay] = project(ring[i - 1]);
-        const [bx, by] = project(ring[i]);
-        if ((ay > 0) !== (by > 0) && 0 < ax + (bx - ax) * -ay / (by - ay)) inside = !inside;
-        const dx = bx - ax, dy = by - ay;
-        const lengthSquared = dx * dx + dy * dy;
-        const t = lengthSquared ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared)) : 0;
-        const distance = Math.hypot(ax + t * dx, ay + t * dy);
-        if (distance < nearest) {
-          nearest = distance;
-          const start = ring[i - 1], end = ring[i];
-          const longitudeDelta = (end[0] - start[0] + 540) % 360 - 180;
-          boundary = { lat: start[1] + t * (end[1] - start[1]),
-            lng: (start[0] + t * longitudeDelta + 540) % 360 - 180 };
-        }
-      }
-      return inside;
-    });
-    if (insideRings[0] && !insideRings.slice(1).some(Boolean)) insideArea = true;
-  }
-  return { distance: insideArea ? 0 : nearest, boundary };
-}
-
-function destinationDistance(position, target) {
-  return destinationGeometryReading(position, target)?.distance ??
-    getDistance(position.lat, position.lng, target.lat, target.lng);
-}
-
-function requestDestinationGeometry(target) {
-  if (validDestinationGeometry(target.geometry)) return;
-  if (typeof fetchGeoapify !== 'function' || typeof target.id !== 'string' || target.id.startsWith('geo:')) return;
-  const state = requestDestinationGeometry.state ||= { cache: new Map(), queue: [], running: 0 };
-  let entry = state.cache.get(target.id);
-  if (!entry) {
-    entry = { targets: new Set(), geometry: null, done: false };
-    state.cache.set(target.id, entry);
-    state.queue.push({ id: target.id, entry });
-  }
-  if (entry.done) {
-    target.geometry = entry.geometry;
-    return;
-  }
-  entry.targets.add(target);
-  while (state.running < 4 && state.queue.length) {
-    const task = state.queue.shift();
-    state.running++;
-    fetchGeoapify('/v2/place-details', { id: task.id, features: 'details', lang: currentLang })
-      .then(features => {
-        const details = features.find(feature => feature.properties?.feature_type === 'details');
-        if (validDestinationGeometry(details?.geometry)) task.entry.geometry = details.geometry;
-      })
-      .catch(() => { /* Missing details retain point-based arrival detection. */ })
-      .finally(() => {
-        task.entry.done = true;
-        for (const place of task.entry.targets) place.geometry = task.entry.geometry;
-        task.entry.targets.clear();
-        state.running--;
-        if (state.queue.length) requestDestinationGeometry({ id: state.queue[0].id });
-        if (appState.isTracking && !appState.isPaused) evaluateSensorCycle();
-      });
-  }
-}
-
 function getSearchCandidates() {
   if (!appState.currentPos) return [];
   const db = loadSavedData();
   const radius = RADIUS_OPTIONS[radiusIndex];
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
   return appState.places.filter(place => !mutedIds.has(place.id) &&
-    destinationDistance(appState.currentPos, place) <= radius);
+    getDistance(appState.currentPos.lat, appState.currentPos.lng, place.lat, place.lng) <= radius);
 }
 
 function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos) {
@@ -1564,22 +1414,17 @@ function updateDetectionLabel() {
 }
 
 function evaluateSensorCycle() {
-  if (typeof updateDestinationOutlines === 'function') updateDestinationOutlines();
   updateDetectionLabel();
   const countEl = document.getElementById('unknown-count');
   const distInfoEl = document.getElementById('distance-info');
   const t = I18N[currentLang];
 
-  if (!appState.isTracking || appState.isPaused || !appState.currentPos ||
-      (typeof lastGpsError !== 'undefined' && lastGpsError)) {
+  if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
     if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
     scheduledInterval = null;
     updateVisualRing('idle');
     countEl.textContent = "--";
     if (appState.isPaused) distInfoEl.textContent = "--";
-    else if (appState.isTracking) distInfoEl.textContent =
-      (typeof lastGpsError !== 'undefined' && lastGpsError) ||
-      (currentLang === 'ja' ? '位置情報を取得中...' : 'Waiting for location...');
     return;
   }
 
@@ -1600,9 +1445,6 @@ function evaluateSensorCycle() {
   countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
   updateDetectionLabel();
 
-  const geometryTargets = lockedTarget ? [lockedTarget] : appState.places;
-  geometryTargets.forEach(requestDestinationGeometry);
-
   if (activeTargets.length === 0) {
     if (!distInfoEl.textContent.includes("API")) {
       distInfoEl.textContent = t.noSpotsInRange;
@@ -1619,7 +1461,7 @@ function evaluateSensorCycle() {
     const angle = Math.abs(headingDelta(appState.currentHeading, bearing));
     return { target, distance, ...sensorReaction(distance, angle) };
   });
-  const arrival = readings.filter(reading => destinationDistance(appState.currentPos, reading.target) <= 20)
+  const arrival = readings.filter(reading => reading.distance <= 20)
     .sort((a, b) => a.distance - b.distance)[0];
   if (arrival) {
     if (arrivalInProgressId === arrival.target.id) return;
@@ -1699,20 +1541,15 @@ function handleArrival(target) {
 function updateArrivalRecordWithDetails(db, target, now) {
   arrivalInProgressId = null;
   const existing = db.arrivals.find(a => a.id === target.id);
-  const area = appState.currentPos ? destinationGeometryReading(appState.currentPos, target) : null;
-  const arrivalPosition = area?.boundary || { lat: target.lat, lng: target.lng };
   if (!existing) {
     db.arrivals.push({
       id: target.id, name: target.name, keyword: '', keywords: [],
       lat: target.lat, lng: target.lng, date: now, muted: true,
-      arrivalPosition, geometry: area ? target.geometry : null,
       formatted_address: target.formatted_address || '',
       phone: target.phone || null, website: target.website || null
     });
   } else {
     existing.muted = true;
-    existing.arrivalPosition = arrivalPosition;
-    if (area) existing.geometry = target.geometry;
     if (target.formatted_address) existing.formatted_address = target.formatted_address;
   }
 
@@ -1733,9 +1570,14 @@ function updateArrivalRecordWithDetails(db, target, now) {
   }, 5000);
 
   if (challenge) {
+    document.getElementById('toast-text').textContent = currentLang === 'ja'
+      ? `${challengeName(challenge)}クリア！ ${target.name}への到達を記録しました。`
+      : `${challengeName(challenge)} completed! Arrival at ${target.name} recorded.`;
     stopSearchAndReset();
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
+    renderChallenges();
+    openChallengeArrivals(challenge);
     return;
   }
 
@@ -1952,18 +1794,7 @@ function onDeviceOrientation(e) {
   }
 }
 
-function reportGpsError(error) {
-  lastGpsError = window.isSecureContext === false
-    ? (currentLang === 'ja' ? '位置情報を使うにはHTTPSで開いてください。' : 'Open this site over HTTPS to use location.')
-    : error.code === 1
-    ? (currentLang === 'ja' ? '位置情報の許可を確認してください。' : 'Check location permission.')
-    : (currentLang === 'ja' ? '位置情報を取得できません。再度探索を開始してください。' : 'Location unavailable. Start the search again.');
-  document.getElementById('distance-info').textContent = lastGpsError;
-}
-
 function onPositionUpdate(pos) {
-  lastPositionUpdateTime = Date.now();
-  lastGpsError = null;
   const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
   appState.currentPos = newPos;
   lastKnownPos = newPos;
@@ -2042,11 +1873,7 @@ async function fetchGeoapify(path, parameters) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
-    if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}`);
-      error.status = response.status;
-      throw error;
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid search response');
     return data.features;
@@ -2068,7 +1895,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   }));
   const responses = await Promise.allSettled(requests);
   const successful = responses.filter(result => result.status === 'fulfilled');
-  if (!successful.length) throw responses.find(result => result.status === 'rejected')?.reason || new Error('Search unavailable');
+  if (!successful.length) throw new Error('Search unavailable');
   const places = new Map();
   for (const result of successful) for (const feature of result.value) {
     const p = feature.properties || {};
@@ -2117,17 +1944,13 @@ async function executeSearch(refreshCandidates = false) {
     else chooseSearchTarget(position);
   } catch (error) {
     if (generation !== searchGeneration || !appState.isTracking) return;
-    console.warn('Geoapify search unavailable.', error.status || error.code || 'network');
+    console.warn('Geoapify search unavailable.');
     if (!refreshCandidates) {
       appState.places = [];
       appState.randomTarget = null;
     }
     document.getElementById('target-meta-info').textContent = error.code === 'SEARCH_NOT_CONFIGURED'
       ? (currentLang === 'ja' ? '検索設定が未完了です。' : 'Search is not configured.')
-      : error.status === 429
-        ? (currentLang === 'ja' ? '検索APIの利用制限に達しました。時間をおいて再試行してください。' : 'Search API limit reached. Please try again later.')
-      : error.status === 401 || error.status === 403
-        ? (currentLang === 'ja' ? '検索APIの認証・利用設定を確認してください。' : 'Check search API access settings.')
       : (currentLang === 'ja' ? '検索に失敗しました。時間をおいて再試行してください。'
         : 'Search failed. Please try again later.');
   } finally {
@@ -2984,20 +2807,20 @@ async function startSearchFromSet(fromChallenge = false) {
   }
   saveAppData(db);
 
-  const needsLocation = lastGpsError || !appState.currentPos || Date.now() - lastPositionUpdateTime > 30000;
-  if (needsLocation) {
-    appState.currentPos = null;
-    lastGpsError = null;
-  }
   updateButtonStateUI();
   evaluateSensorCycle();
-  if (needsLocation && 'geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition(onPositionUpdate, reportGpsError,
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
-  }
 
-  if (needsLocation || watchId === null) startLocationWatch();
-  executeSearch();
+  if (!watchId && 'geolocation' in navigator) {
+    watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
+      document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    });
+  } else {
+    executeSearch();
+  }
 }
 
 document.getElementById('set-btn').addEventListener('click', () => {
@@ -3557,8 +3380,7 @@ function setPinpointTargetAndStart(item) {
     id: item.id,
     name: item.name,
     lat: item.lat,
-    lng: item.lng,
-    geometry: item.geometry || null
+    lng: item.lng
   };
   appState.activeKeyword = item.keyword || item.name;
   document.getElementById('keyword-input').value = appState.activeKeyword;
@@ -3682,9 +3504,8 @@ function renderDetailMap(item, gallery, detailMapBox) {
     return;
   }
   try {
-    detailMinimapInstance = SensorMap.createMap(mapContainer, arrivalPinPosition(item), currentMapStyleMode, statusElement);
-    detailMinimapInstance.setOutlines(validDestinationGeometry(item.geometry) ? [item] : []);
-    detailMinimapInstance.addMarker(arrivalPinPosition(item), currentMapStyleMode === 'botw', 1, item.name);
+    detailMinimapInstance = SensorMap.createMap(mapContainer, item, currentMapStyleMode, statusElement);
+    detailMinimapInstance.addMarker(item, currentMapStyleMode === 'botw', 1, item.name);
     mapContainer.dataset.initialized = 'true';
   } catch (error) {
     statusElement.hidden = false;

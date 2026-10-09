@@ -95,10 +95,3 @@ test('チャレンジは複数カテゴリ登録の酒類・成人向け施設�
   const result = await c.searchGeoapify('challenge', {lat:0,lng:0}, 1000, 'ja', ['catering.restaurant']);
   assert.equal(JSON.stringify(result.places.map(p => p.id)), '["family","unknown"]');
 });
-
-test('全API失敗時は利用制限・認証エラーのHTTPステータスを保持する', async () => {
-  for (const status of [429, 403, 401]) {
-    const c = fixture(async () => ({ok:false,status}));
-    await assert.rejects(c.searchGeoapify('cafe',{lat:0,lng:0},1000,'ja'), error => error.status === status);
-  }
-});

@@ -227,33 +227,3 @@ test('最寄り・ランダムのロック時だけ件数に対象1件の説明�
   c.evaluateSensorCycle();
   assert.equal(elements['label-detecting'].textContent, '件探知中');
 });
-
-test('代表座標が遠くても敷地内なら全件・固定対象のどちらでも到着する', () => {
-  for (const mode of ['all', 'nearest']) {
-    const { context: c } = sensorFixture();
-    const place = { id:'large-park', lat:1000, lng:0, geometry:{type:'Polygon',coordinates:[
-      [[-0.01,-0.01],[0.01,-0.01],[0.01,0.01],[-0.01,0.01],[-0.01,-0.01]]
-    ]}};
-    c.appState.targetMode = mode;
-    c.appState.places = [place];
-    c.appState.randomTarget = mode === 'all' ? null : place;
-    let arrived;
-    c.handleArrival = target => { arrived = target.id; };
-    c.evaluateSensorCycle();
-    assert.equal(arrived,'large-park');
-  }
-});
-
-test('位置未取得は検索0件と区別して待機・GPSエラーを表示する', () => {
-  const {context:c,elements} = sensorFixture();
-  c.appState.currentPos = null;
-  c.evaluateSensorCycle();
-  assert.equal(elements['distance-info'].textContent,'位置情報を取得中...');
-  c.lastGpsError = '位置情報の許可を確認してください。';
-  c.evaluateSensorCycle();
-  assert.equal(elements['distance-info'].textContent,c.lastGpsError);
-  assert.equal(elements['unknown-count'].textContent,'--');
-  c.appState.currentPos = {lat:0,lng:0};
-  c.evaluateSensorCycle();
-  assert.equal(elements['distance-info'].textContent,c.lastGpsError);
-});
