@@ -14,6 +14,7 @@ function fixture() {
     on(name, callback) { this.events[name] = callback; }
     once(name, callback) { this.on(name, callback); }
     getContainer() { return {}; }
+    getSource() { return { setData: data => { this.outlines = data; } }; }
     setCenter(center) { this.center = center; }
     isStyleLoaded() { return !!this.ready; }
     areTilesLoaded() { return !!this.ready; }
@@ -204,4 +205,24 @@ test('水面ポリゴンを優先し、面のない川は5pxの補助線で表�
     assert.ok(style.layers.indexOf(water) > style.layers.findIndex(layer => layer.id === 'building'));
     assert.ok(style.layers.indexOf(water) < style.layers.findIndex(layer => layer.id === 'road-fill'));
   }
+});
+
+
+test('輪郭は読み込み後に描画し、更新・消去しても中心や倍率を変えない', () => {
+  const { api, maps } = fixture();
+  const map = api.createMap('map', { lat:35, lng:139 }, 'botw');
+  const geometry = { type:'Polygon', coordinates:[[[139,35],[139.01,35],[139.01,35.01],[139,35]]] };
+  map.setOutlines([{geometry}]);
+  assert.equal(maps[0].outlines, undefined);
+  maps[0].ready = true;
+  maps[0].events.load();
+  assert.equal(maps[0].outlines.features[0].geometry, geometry);
+  assert.equal(maps[0].center, undefined);
+  assert.equal(maps[0].options.zoom,16);
+  map.setStyle('sheikah');
+  assert.equal(maps[0].paint['destination-edge:line-color'],'#8af5ff');
+  map.setStyle('botw');
+  assert.equal(maps[0].paint['destination-edge:line-color'],'#f5ce70');
+  map.setOutlines([]);
+  assert.equal(maps[0].outlines.features.length,0);
 });
