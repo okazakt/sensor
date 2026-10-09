@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092207";
+const BASE_JS_VERSION = "v0.26.101.092213";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2500,9 +2500,9 @@ function renderChallenges() {
       left.append(title, status);
       const button = document.createElement('button');
       button.className = 'btn-sheikah-sm challenge-set';
-      button.textContent = 'SET';
+      button.textContent = ja ? 'チャレンジ開始' : 'START';
       button.disabled = !available;
-      button.setAttribute('aria-label', `${challengeName(challenge)} SET`);
+      button.setAttribute('aria-label', `${challengeName(challenge)} ${button.textContent}`);
       button.onclick = event => {
         event.stopPropagation();
         requestChallengeStart(challenge);
