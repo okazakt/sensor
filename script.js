@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.091002";
+const BASE_JS_VERSION = "v0.26.101.091014";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -304,39 +304,40 @@ window.addEventListener('error', function(event) {
 
 const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-if (isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed')) {
-  sessionStorage.setItem('sheikah_pwa_refreshed', 'true');
-  if ('caches' in window) {
-    caches.keys().then((names) => {
-      Promise.all(names.map(name => caches.delete(name))).then(() => {
-        window.location.reload(true);
-      });
-    }).catch(() => {
-      window.location.reload(true);
-    });
-  } else {
-    window.location.reload(true);
-  }
+const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+let startupRefreshPending = false;
+
+function showStartupRefresh() {
+  document.getElementById('pwa-prompt-overlay').classList.remove('show');
+  document.getElementById('safety-prompt-overlay').classList.add('show');
+  document.getElementById('safety-prompt-title').textContent = '更新を確認中 / Checking for updates';
+  document.getElementById('safety-prompt-desc').textContent = '準備ができるまで少しお待ちください。 / Please wait a moment.';
+  document.getElementById('btn-safety-ok').textContent = '準備中… / Loading…';
+  document.getElementById('btn-safety-ok').disabled = true;
 }
 
-const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
+function reloadForUpdate() {
+  if (startupRefreshPending) return;
+  startupRefreshPending = true;
+  showStartupRefresh();
+  traceLocation('update.reload.pending');
+  const clearCaches = 'caches' in window
+    ? caches.keys().then(names => Promise.all(names.map(name => caches.delete(name))))
+    : Promise.resolve();
+  clearCaches.catch(() => {}).then(() => {
+    traceLocation('update.reload');
+    window.location.reload();
+  });
+}
+
 const nowTime = Date.now();
 const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-
-if (!lastCacheTime) {
-  localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
-} else if (nowTime - lastCacheTime > TWENTY_FOUR_HOURS) {
-  localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
-  if ('caches' in window) {
-    caches.keys().then((names) => {
-      for (let name of names) {
-        caches.delete(name);
-      }
-    }).catch(() => {});
-  }
-  window.location.reload(true);
-}
+const firstStandaloneLaunch = isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed');
+const cacheExpired = lastCacheTime && nowTime - lastCacheTime > TWENTY_FOUR_HOURS;
+if (firstStandaloneLaunch) sessionStorage.setItem('sheikah_pwa_refreshed', 'true');
+if (!lastCacheTime || firstStandaloneLaunch || cacheExpired) localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
+if (firstStandaloneLaunch || cacheExpired) reloadForUpdate();
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
@@ -352,16 +353,9 @@ document.addEventListener('visibilitychange', () => {
 
   if (document.visibilityState === 'visible') {
     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
-    if (Date.now() - storedTime > TWENTY_FOUR_HOURS) {
+    if (Date.now() - storedTime > TWENTY_FOUR_HOURS && !compassPermissionPending && locationAccessState !== 'waiting') {
       localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          for (let name of names) {
-            caches.delete(name);
-          }
-        }).catch(() => {});
-      }
-      window.location.reload(true);
+      reloadForUpdate();
       return;
     }
 
@@ -633,6 +627,7 @@ function applyLanguage(lang) {
   document.getElementById('btn-safety-ok').textContent = currentLang === 'ja' ? '許可を確認して始める' : 'Allow access and start';
   renderLocationAccess();
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
+  if (startupRefreshPending) showStartupRefresh();
   updateCompassStatus();
 
   updateButtonStateUI();
@@ -820,6 +815,7 @@ function startCompassListening() {
 }
 
 async function requestCompassPermissionIfNeeded() {
+  if (startupRefreshPending) return;
   if (compassPermissionPending) return;
   if (compassActive) {
     startCompassListening();
@@ -1353,6 +1349,7 @@ function renderLocationAccess() {
 }
 
 function requestLocationAccess() {
+  if (startupRefreshPending) return;
   traceLocation('requestLocationAccess');
   locationAccessRequested = true;
   const generation = ++locationWatchGeneration;
@@ -3618,6 +3615,8 @@ document.getElementById('history-filter').addEventListener('input', renderHistor
 document.getElementById('sort-history').addEventListener('change', renderHistoryList);
 
 function checkAndShowStartupModals() {
+  if (startupRefreshPending) return;
+  document.getElementById('btn-safety-ok').disabled = false;
   const pwaOverlay = document.getElementById('pwa-prompt-overlay');
   const safetyOverlay = document.getElementById('safety-prompt-overlay');
 
@@ -3642,6 +3641,7 @@ document.getElementById('compass-status-btn').addEventListener('click', () => {
 document.getElementById('location-access-retry').addEventListener('click', requestLocationAccess);
 
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
+  if (startupRefreshPending) return;
   // Both permission APIs run directly in the tap, before audio/wake-lock awaits.
   const compassPermission = requestCompassPermissionIfNeeded();
   requestLocationAccess();
@@ -3674,6 +3674,7 @@ document.getElementById('challenge-start-dialog').addEventListener('cancel', () 
 });
 applyLanguage(currentLang);
 window.addEventListener('load', () => {
+  if (startupRefreshPending) return;
   bootstrapMapAndLocation();
   checkAndShowStartupModals();
 });

@@ -7,7 +7,7 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../script.js'),'utf8');
 function fixture(){
  const elements={};const watches=[],cleared=[],positions=[];
- const c={window:{isSecureContext:true},navigator:{geolocation:{
+ const c={startupRefreshPending:false,window:{isSecureContext:true},navigator:{geolocation:{
   watchPosition(success,error,options){watches.push({success,error,options});return watches.length-1;},
   clearWatch(id){cleared.push(id);}
  }}, document:{getElementById:id=>elements[id] ||= {}},currentLang:'ja',
@@ -47,7 +47,7 @@ test('位置情報APIがない場合や安全でない接続では要求せず�
 });
 test('起動の同じクリック内で方向と位置の許可を要求し、非同期処理を待たない',async()=>{
  const handlers={},calls=[];
- const c={document:{getElementById:id=>({addEventListener:(event,fn)=>handlers[id]=fn,classList:{remove(){}}})},
+ const c={startupRefreshPending:false,document:{getElementById:id=>({addEventListener:(event,fn)=>handlers[id]=fn,classList:{remove(){}}})},
  requestCompassPermissionIfNeeded(){calls.push('compass');return new Promise(()=>{});},
  requestLocationAccess(){calls.push('location');},initAudio(){calls.push('audio');},
  appState:{wakeLockActive:true},requestWakeLock(){calls.push('wake');return new Promise(()=>{});}};
