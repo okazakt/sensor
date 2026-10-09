@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "55";
+  --css-rev: "56";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1735,7 +1735,6 @@ body {
 .challenge-row.challenge-locked .list-item-title { color: #929ca6; }
 .challenge-row.challenge-locked .list-item-sub { color: #78838e; }
 .challenge-row.challenge-locked .challenge-set { border-color: #63707c; color: #929ca6; background: rgba(99, 112, 124, .08); }
-.challenge-row.challenge-completed { border-left-color: #75bd93; }
 .challenge-completed-check, .challenge-completed-label { color: #75bd93; }
 .challenge-history-arrow { color: var(--sheikah-gold); font-size: 1.3rem; }
 .challenge-row.challenge-locked .challenge-history-arrow { color: #63707c; }
