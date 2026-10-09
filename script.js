@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092133";
+const BASE_JS_VERSION = "v0.26.101.092142";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2433,7 +2433,8 @@ function renderChallenges() {
     for (const challenge of CHALLENGES.filter(c => c.stage === stage.id)) {
       const row = document.createElement('div');
       const available = isChallengeAvailable(challenge, progress);
-      row.className = 'list-item challenge-row' + (available ? '' : ' challenge-locked');
+      const completed = progress.completed.has(challenge.id);
+      row.className = 'list-item challenge-row' + (available ? '' : ' challenge-locked') + (completed ? ' challenge-completed' : '');
       const content = document.createElement('div');
       content.className = 'list-item-row';
       const left = document.createElement('div');
@@ -2450,7 +2451,7 @@ function renderChallenges() {
       } : { gourmet: 'Restaurants, cafes, bakeries and food shops', life: 'Shops, stations, libraries, post offices and healthcare',
         leisure: 'Entertainment, playgrounds, sports facilities and beaches', deep: 'Historic sites, places of worship, heritage and local sights', secret: 'All places from the four groups' };
       row.title = descriptions[group.id];
-      status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ' + (progress.completed.has(challenge.id)
+      status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ' + (completed
         ? (ja ? 'クリア済み' : 'Completed') : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));
       left.append(title, status);
       const button = document.createElement('button');
