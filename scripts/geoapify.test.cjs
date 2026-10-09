@@ -9,10 +9,74 @@ function fixture(fetch) {
     window: {SENSOR_CONFIG: {geoapifyApiKey: 'test-only-placeholder'}},
     getDistance: (_a, _b, lat) => Math.abs(lat) * 1000 };
   vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('const CHALLENGE_GROUPS'), source.indexOf('const RADIUS_OPTIONS')), c);
+  c.loadSavedData = () => ({ arrivals: [] });
   vm.runInContext(source.slice(source.indexOf('const CHALLENGE_EXCLUDED_CATEGORIES'), source.indexOf('async function executeSearch')), c);
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
+test('シークレットは4分類を個別検索し、各分類から先頭以外もランダムに5件抽出する', async () => {
+  const urls = [];
+  const c = fixture(async url => {
+    urls.push(url);
+    const group = urls.length;
+    return { ok: true, json: async () => ({ features:
+      Array.from({ length: 10 }, (_, i) => feature(`${group}-${i}`, (i + 1) / 100))
+    }) };
+  });
+  vm.runInContext('Math.random = () => 0.999', c);
+  const result = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
+  assert.equal(urls.length, 4);
+  const groups = vm.runInContext("CHALLENGE_GROUPS.filter(g => g.id !== 'secret')", c);
+  urls.forEach((url, i) => {
+    assert.equal(url.pathname, '/v2/places');
+    assert.equal(url.searchParams.get('categories'), groups[i].categories.join(','));
+    assert.equal(url.searchParams.get('limit'), '500');
+  });
+  assert.equal(result.places.length, 20);
+  for (let group = 1; group <= 4; group++) {
+    assert.equal(result.places.filter(p => p.id.startsWith(`${group}-`)).length, 5);
+    assert.ok(result.places.some(p => p.id === `${group}-9`));
+  }
+  assert.equal(result.partial, false);
+});
+
+test('シークレットは少数・0件・分類間重複・ミュートを扱い、一部失敗でも検索を継続する', async () => {
+  let calls = 0;
+  const c = fixture(async () => {
+    const group = calls++;
+    if (group === 3) throw new Error('network');
+    return { ok: true, json: async () => ({ features: group === 2 ? [] :
+      [feature('shared', 0.1), feature(`group-${group}`, 0.2), feature('muted', 0.1)]
+    }) };
+  });
+  c.loadSavedData = () => ({ arrivals: [{ id: 'muted', muted: true }] });
+  const result = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
+  assert.equal(result.places.length, 3);
+  assert.equal(new Set(result.places.map(p => p.id)).size, 3);
+  assert.ok(!result.places.some(p => p.id === 'muted'));
+  assert.equal(result.partial, true);
+});
+
+test('最寄りシークレットは5件に絞らず、全失敗と正常な0件を区別する', async () => {
+  let calls = 0;
+  const c = fixture(async () => {
+    const group = calls++;
+    return { ok: true, json: async () => ({ features:
+      Array.from({ length: 8 }, (_, i) => feature(`${group}-${i}`, (i + 1) / 100))
+    }) };
+  });
+  assert.equal((await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'nearest')).places.length, 32);
+  c.fetch = async () => ({ ok: false, status: 400 });
+  await assert.rejects(c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random'));
+  c.fetch = async () => ({ ok: true, json: async () => ({ features: [] }) });
+  const result = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
+  assert.equal(result.places.length, 0);
+  assert.equal(result.partial, false);
+  c.window.SENSOR_CONFIG.geoapifyApiKey = '';
+  await assert.rejects(c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random'),
+    error => error.code === 'SEARCH_NOT_CONFIGURED');
+});
 test('文字とカテゴリを同時検索し、ID重複・範囲外・無効座標を除く', async () => {
   const urls = [];
   const c = fixture(async url => {

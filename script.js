@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092156";
+const BASE_JS_VERSION = "v0.26.101.092207";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2175,6 +2175,35 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   };
 }
 
+async function searchSecretChallenge(position, radius, language, mode) {
+  const groups = CHALLENGE_GROUPS.filter(group => group.id !== 'secret');
+  const responses = await Promise.allSettled(groups.map(group =>
+    searchGeoapify('', position, radius, language, group.categories)));
+  const successful = responses.filter(result => result.status === 'fulfilled');
+  if (!successful.length) {
+    throw responses.find(result => result.status === 'rejected').reason;
+  }
+  const mutedIds = new Set(loadSavedData().arrivals.filter(item => item.muted).map(item => item.id));
+  const places = new Map();
+  for (const result of successful) {
+    const candidates = result.value.places.filter(place => !mutedIds.has(place.id));
+    if (mode === 'random') {
+      // Partial Fisher-Yates: sample without replacement from each group's results.
+      const count = Math.min(5, candidates.length);
+      for (let i = 0; i < count; i++) {
+        const j = i + Math.floor(Math.random() * (candidates.length - i));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+      candidates.length = count;
+    }
+    for (const place of candidates) places.set(place.id, place);
+  }
+  return {
+    places: [...places.values()],
+    partial: successful.length !== responses.length || successful.some(result => result.value.partial)
+  };
+}
+
 async function executeSearch(refreshCandidates = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
@@ -2188,7 +2217,9 @@ async function executeSearch(refreshCandidates = false) {
   const rText = radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
   document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta(appState.activeKeyword, rText);
   try {
-    const result = await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang, appState.challengeCategories);
+    const result = appState.activeChallenge?.group === 'secret'
+      ? await searchSecretChallenge(position, radius, currentLang, appState.targetMode)
+      : await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang, appState.challengeCategories);
     if (generation !== searchGeneration || !appState.isTracking) return;
     if (result.partial) console.warn('One search source is unavailable; using available results.');
     appState.places = result.places;
