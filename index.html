@@ -2,6 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <script>
+    // Location access requires HTTPS. Preserve paths and installed-app entry URLs.
+    if (location.protocol === 'http:' && location.hostname === 'sensorchallenge.xyz') {
+      const secureUrl = new URL(location.href);
+      secureUrl.protocol = 'https:';
+      location.replace(secureUrl.href);
+    }
+  </script>
   
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-KNSDVDXHGZ"></script>
@@ -20,7 +28,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="40">
+  <meta name="html-rev" content="41">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>

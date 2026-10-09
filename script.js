@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090925";
+const BASE_JS_VERSION = "v0.26.101.090938";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -353,6 +353,8 @@ document.addEventListener('visibilitychange', () => {
       window.location.reload(true);
       return;
     }
+
+    if (watchId === null || lastGpsError || Date.now() - lastPositionUpdateTime > 30000) startLocationWatch();
 
     // 復帰後は現在の位置・方角情報から探知状態を再判定する。
     if (appState.isTracking && !appState.isPaused) {
@@ -1118,6 +1120,7 @@ let appState = {
 
 let wakeLockSentinel = null;
 let watchId = null;
+let locationWatchGeneration = 0;
 let lastPositionUpdateTime = 0;
 let lastGpsError = null;
 let compassActive = false;
@@ -1325,19 +1328,26 @@ function bootstrapMapAndLocation() {
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
-  if ('geolocation' in navigator) {
-    watchId = navigator.geolocation.watchPosition(
-      onPositionUpdate,
-      (err) => {
-        reportGpsError(err);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
+  startLocationWatch();
+}
+
+function startLocationWatch() {
+  if (!('geolocation' in navigator)) return;
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  const generation = ++locationWatchGeneration;
+  watchId = navigator.geolocation.watchPosition(
+    position => { if (generation === locationWatchGeneration) onPositionUpdate(position); },
+    error => {
+      if (generation !== locationWatchGeneration) return;
+      reportGpsError(error);
+      if (error.code === 1 && watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
       }
-    );
-  }
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+  );
 }
 
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -1943,7 +1953,9 @@ function onDeviceOrientation(e) {
 }
 
 function reportGpsError(error) {
-  lastGpsError = error.code === 1
+  lastGpsError = window.isSecureContext === false
+    ? (currentLang === 'ja' ? '位置情報を使うにはHTTPSで開いてください。' : 'Open this site over HTTPS to use location.')
+    : error.code === 1
     ? (currentLang === 'ja' ? '位置情報の許可を確認してください。' : 'Check location permission.')
     : (currentLang === 'ja' ? '位置情報を取得できません。再度探索を開始してください。' : 'Location unavailable. Start the search again.');
   document.getElementById('distance-info').textContent = lastGpsError;
@@ -2984,17 +2996,8 @@ async function startSearchFromSet(fromChallenge = false) {
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
   }
 
-  if (!watchId && 'geolocation' in navigator) {
-    watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-      reportGpsError(err);
-    }, { 
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 10000
-    });
-  } else {
-    executeSearch();
-  }
+  if (needsLocation || watchId === null) startLocationWatch();
+  executeSearch();
 }
 
 document.getElementById('set-btn').addEventListener('click', () => {
