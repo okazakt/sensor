@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092117";
+const BASE_JS_VERSION = "v0.26.101.092133";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -607,11 +607,8 @@ function updateDestinationOutlines() {
   if (!map) return;
   const saved = [...(loadSavedData().arrivals || [])]
     .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-  const active = appState.isTracking && !appState.isPaused
-    ? (appState.pinpointTarget || appState.randomTarget
-      ? [appState.pinpointTarget || appState.randomTarget] : appState.places) : [];
   const areas = new Map();
-  [...saved, ...active].forEach(place => {
+  saved.forEach(place => {
     if (validDestinationGeometry(place.geometry)) areas.set(place.id, place);
   });
   map.setOutlines([...areas.values()]);
