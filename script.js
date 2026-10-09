@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090924";
+const BASE_JS_VERSION = "v0.26.101.090925";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1560,13 +1560,14 @@ function evaluateSensorCycle() {
   const distInfoEl = document.getElementById('distance-info');
   const t = I18N[currentLang];
 
-  if (!appState.isTracking || appState.isPaused || !appState.currentPos) {
+  if (!appState.isTracking || appState.isPaused || !appState.currentPos ||
+      (typeof lastGpsError !== 'undefined' && lastGpsError)) {
     if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
     scheduledInterval = null;
     updateVisualRing('idle');
     countEl.textContent = "--";
     if (appState.isPaused) distInfoEl.textContent = "--";
-    else if (appState.isTracking && !appState.currentPos) distInfoEl.textContent =
+    else if (appState.isTracking) distInfoEl.textContent =
       (typeof lastGpsError !== 'undefined' && lastGpsError) ||
       (currentLang === 'ja' ? '位置情報を取得中...' : 'Waiting for location...');
     return;
@@ -1945,7 +1946,7 @@ function reportGpsError(error) {
   lastGpsError = error.code === 1
     ? (currentLang === 'ja' ? '位置情報の許可を確認してください。' : 'Check location permission.')
     : (currentLang === 'ja' ? '位置情報を取得できません。再度探索を開始してください。' : 'Location unavailable. Start the search again.');
-  if (!appState.currentPos) document.getElementById('distance-info').textContent = lastGpsError;
+  document.getElementById('distance-info').textContent = lastGpsError;
 }
 
 function onPositionUpdate(pos) {
@@ -2971,7 +2972,7 @@ async function startSearchFromSet(fromChallenge = false) {
   }
   saveAppData(db);
 
-  const needsLocation = !appState.currentPos || Date.now() - lastPositionUpdateTime > 30000;
+  const needsLocation = lastGpsError || !appState.currentPos || Date.now() - lastPositionUpdateTime > 30000;
   if (needsLocation) {
     appState.currentPos = null;
     lastGpsError = null;

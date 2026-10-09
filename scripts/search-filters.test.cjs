@@ -253,4 +253,7 @@ test('位置未取得は検索0件と区別して待機・GPSエラーを表示�
   c.evaluateSensorCycle();
   assert.equal(elements['distance-info'].textContent,c.lastGpsError);
   assert.equal(elements['unknown-count'].textContent,'--');
+  c.appState.currentPos = {lat:0,lng:0};
+  c.evaluateSensorCycle();
+  assert.equal(elements['distance-info'].textContent,c.lastGpsError);
 });
