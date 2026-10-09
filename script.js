@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092142";
+const BASE_JS_VERSION = "v0.26.101.092152";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2442,6 +2442,13 @@ function renderChallenges() {
       const title = document.createElement('span');
       title.className = 'list-item-title';
       title.textContent = challengeName(challenge);
+      if (completed) {
+        const check = document.createElement('span');
+        check.className = 'challenge-completed-check';
+        check.textContent = '✓ ';
+        check.setAttribute('aria-hidden', 'true');
+        title.prepend(check);
+      }
       const status = document.createElement('div');
       status.className = 'list-item-sub';
       const group = CHALLENGE_GROUPS.find(g => g.id === challenge.group);
@@ -2451,8 +2458,12 @@ function renderChallenges() {
       } : { gourmet: 'Restaurants, cafes, bakeries and food shops', life: 'Shops, stations, libraries, post offices and healthcare',
         leisure: 'Entertainment, playgrounds, sports facilities and beaches', deep: 'Historic sites, places of worship, heritage and local sights', secret: 'All places from the four groups' };
       row.title = descriptions[group.id];
-      status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ' + (completed
-        ? (ja ? 'クリア済み' : 'Completed') : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));
+      status.textContent = I18N[currentLang].arrivalCount(getChallengeArrivals(db, challenge).length) + ' · ';
+      const stateLabel = document.createElement('span');
+      if (completed) stateLabel.className = 'challenge-completed-label';
+      stateLabel.textContent = completed ? (ja ? 'クリア済み' : 'Completed')
+        : available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked');
+      status.append(stateLabel);
       left.append(title, status);
       const button = document.createElement('button');
       button.className = 'btn-sheikah-sm challenge-set';
