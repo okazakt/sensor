@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090949";
+const BASE_JS_VERSION = "v0.26.101.091002";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -365,6 +365,8 @@ document.addEventListener('visibilitychange', () => {
       return;
     }
 
+    if (locationAccessRequested && watchId === null && locationAccessState !== 'denied') requestLocationAccess();
+
     // 復帰後は現在の位置・方角情報から探知状態を再判定する。
     if (appState.isTracking && !appState.isPaused) {
       evaluateSensorCycle();
@@ -625,8 +627,11 @@ function applyLanguage(lang) {
   document.getElementById('pwa-lang-label').textContent = t.langSwitchLabel;
 
   document.getElementById('safety-prompt-title').textContent = t.safetyTitle;
-  document.getElementById('safety-prompt-desc').textContent = t.safetyDesc;
-  document.getElementById('btn-safety-ok').textContent = t.safetyOk;
+  document.getElementById('safety-prompt-desc').textContent = t.safetyDesc + (currentLang === 'ja'
+    ? '\n開始時に位置情報と動作・方向へのアクセスを求めます。地図と探知を使うには、位置情報を許可してください。'
+    : '\nStarting requests location and motion/orientation access. Allow location to use the map and detection.');
+  document.getElementById('btn-safety-ok').textContent = currentLang === 'ja' ? '許可を確認して始める' : 'Allow access and start';
+  renderLocationAccess();
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
   updateCompassStatus();
 
@@ -1108,6 +1113,10 @@ let appState = {
 
 let wakeLockSentinel = null;
 let watchId = null;
+let locationAccessRequested = false;
+let locationAccessState = 'idle';
+let locationWatchGeneration = 0;
+let lastLocationFixTime = 0;
 let compassActive = false;
 let compassPermissionPending = false;
 
@@ -1317,22 +1326,71 @@ function bootstrapMapAndLocation() {
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
-  if ('geolocation' in navigator) {
-    traceLocation('gps.watch.start');
-    watchId = navigator.geolocation.watchPosition(
-      onPositionUpdate,
-      (err) => {
-        traceLocation('gps.error', `code=${err.code} ${err.message}`);
-        console.warn("位置情報監視エラー:", err.message);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      }
-    );
-  }
+  // Permission requests start from a tap on the startup or search controls.
 }
+
+function renderLocationAccess() {
+  const notice = document.getElementById('location-access-notice');
+  const message = document.getElementById('location-access-message');
+  const retry = document.getElementById('location-access-retry');
+  notice.hidden = locationAccessState === 'idle' || locationAccessState === 'ready';
+  retry.hidden = locationAccessState === 'waiting' || notice.hidden || locationAccessState === 'unsupported';
+  retry.textContent = currentLang === 'ja' ? '位置情報を再取得' : 'Retry location';
+  const messages = currentLang === 'ja' ? {
+    waiting: '位置情報を取得中です。許可の確認が出たら「許可」を選んでください。',
+    denied: '位置情報へのアクセスが拒否されました。Safariのページメニューで、このサイトの「位置情報」を「許可」にしてから再取得してください。',
+    error: '位置情報を取得できませんでした。通信や位置情報の設定を確認して、再取得してください。',
+    insecure: '位置情報を使うには、このサイトをHTTPSで開いてください。',
+    unsupported: 'このブラウザでは位置情報を利用できません。Safariで開いてください。'
+  } : {
+    waiting: 'Getting your location. Choose Allow if permission is requested.',
+    denied: 'Location access was denied. In Safari’s page menu, set Location for this site to Allow, then retry.',
+    error: 'Location unavailable. Check connectivity and location settings, then retry.',
+    insecure: 'Open this site over HTTPS to use location.',
+    unsupported: 'Location is unavailable in this browser. Open the site in Safari.'
+  };
+  message.textContent = messages[locationAccessState] || '';
+}
+
+function requestLocationAccess() {
+  traceLocation('requestLocationAccess');
+  locationAccessRequested = true;
+  const generation = ++locationWatchGeneration;
+  if (watchId !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  if (window.isSecureContext === false || !('geolocation' in navigator)) {
+    locationAccessState = window.isSecureContext === false ? 'insecure' : 'unsupported';
+    renderLocationAccess();
+    return;
+  }
+  locationAccessState = 'waiting';
+  appState.currentPos = null;
+  renderLocationAccess();
+  traceLocation('gps.watch.start');
+  watchId = navigator.geolocation.watchPosition(
+    position => {
+      if (generation !== locationWatchGeneration) return;
+      locationAccessState = 'ready';
+      lastLocationFixTime = Date.now();
+      renderLocationAccess();
+      onPositionUpdate(position);
+    },
+    error => {
+      if (generation !== locationWatchGeneration) return;
+      traceLocation('gps.error', `code=${error.code} ${error.message}`);
+      locationAccessState = error.code === 1 ? 'denied' : 'error';
+      if (error.code === 1) {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        appState.currentPos = null;
+      }
+      renderLocationAccess();
+      evaluateSensorCycle();
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+  );
+}
+
 
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -2860,17 +2918,8 @@ async function startSearchFromSet(fromChallenge = false) {
   updateButtonStateUI();
   evaluateSensorCycle();
 
-  if (!watchId && 'geolocation' in navigator) {
-    watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-      document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 10000
-    });
-  } else {
-    executeSearch();
-  }
+  if (watchId === null || locationAccessState !== 'ready' || Date.now() - lastLocationFixTime > 30000) requestLocationAccess();
+  executeSearch();
 }
 
 document.getElementById('set-btn').addEventListener('click', () => {
@@ -3590,22 +3639,15 @@ document.getElementById('compass-status-btn').addEventListener('click', () => {
   requestCompassPermissionIfNeeded();
 });
 
+document.getElementById('location-access-retry').addEventListener('click', requestLocationAccess);
+
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
+  // Both permission APIs run directly in the tap, before audio/wake-lock awaits.
   const compassPermission = requestCompassPermissionIfNeeded();
+  requestLocationAccess();
   document.getElementById('safety-prompt-overlay').classList.remove('show');
   initAudio();
-
-  if (appState.wakeLockActive) {
-    await requestWakeLock();
-  }
-
-  if ('geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      onPositionUpdate,
-      (err) => { console.warn("位置情報許可拒否またはエラー:", err.message); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
+  if (appState.wakeLockActive) requestWakeLock();
   await compassPermission;
 });
 

@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "52";
+  --css-rev: "53";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1754,3 +1754,26 @@ body {
 
 /* Let the radius control receive taps while challenge settings are fixed. */
 .dial-select-overlay:disabled { pointer-events: none; }
+
+.location-access-notice {
+  padding: 10px 12px;
+  border: 1px solid var(--sheikah-cyan);
+  border-radius: 8px;
+  color: var(--sheikah-cyan);
+  background: rgba(0, 243, 255, 0.06);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.location-access-notice[hidden] { display: none; }
+.location-access-notice button {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--sheikah-cyan);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.location-access-notice button[hidden] { display: none; }
