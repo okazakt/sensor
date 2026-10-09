@@ -20,7 +20,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="44">
+  <meta name="html-rev" content="45">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -344,6 +344,7 @@
     <div class="slide-page" id="page-all-history">
       <div class="page-header header-flex">
         <div class="page-title-text" id="all-header-title">図鑑一覧</div>
+        <span id="all-history-count" aria-live="polite"></span>
       </div>
       <div class="filter-bar">
         <div class="sheikah-input-wrap">
@@ -402,6 +403,7 @@
           <div class="spot-address-text" id="detail-spot-address">--</div>
           <div class="spot-address-text" id="detail-spot-meta" style="margin-top: 6px; color: #99aabb;">--</div>
           <div class="spot-address-text" id="detail-spot-keyword" style="margin-top: 4px; color: #99aabb;">--</div>
+          <div class="spot-address-text" id="detail-spot-challenges" style="margin-top: 4px;" hidden></div>
           
           <div class="action-button-row" style="margin-top: 14px; border-top: none;">
             <button class="btn-sheikah-sm" id="detail-btn-pinpoint-set">SET</button>
@@ -418,6 +420,10 @@
         </div>
         <div id="detail-map-container">
           <div class="no-photos-box" id="detail-loading-box">地図を準備中...</div>
+        </div>
+        <div class="detail-navigation">
+          <button class="btn-sheikah-sm" id="detail-btn-previous" aria-label="前の図鑑詳細" disabled>▲</button>
+          <button class="btn-sheikah-sm" id="detail-btn-next" aria-label="次の図鑑詳細" disabled>▼</button>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092213";
+const BASE_JS_VERSION = "v0.26.101.092239";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2407,7 +2407,7 @@ function renderChallengeArrivals() {
     row.onclick = () => {
       appState.fromChallenge = true;
       appState.fromAllHistory = false;
-      openSpotDetailModal(item);
+      openSpotDetailModal(item, items);
     };
     row.querySelector('.btn-pinpoint-set').onclick = event => {
       event.stopPropagation();
@@ -3515,7 +3515,7 @@ function renderHistoryList() {
         if (e.target.tagName === 'BUTTON') return;
         appState.fromAllHistory = false;
         appState.fromChallenge = false;
-        openSpotDetailModal(item);
+        openSpotDetailModal(item, items);
       });
 
       div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
@@ -3542,6 +3542,7 @@ function renderHistoryList() {
 
 function renderAllHistoryList() {
   const db = loadSavedData();
+  document.getElementById('all-history-count').textContent = currentLang === 'ja' ? `現在の図鑑件数 ${db.arrivals.length}件` : `${db.arrivals.length} spots in compendium`;
   const container = document.getElementById('all-history-list-container');
   container.innerHTML = '';
   const t = I18N[currentLang];
@@ -3611,7 +3612,7 @@ function renderAllHistoryList() {
         if (e.target.tagName === 'BUTTON') return;
         appState.fromAllHistory = true;
         appState.fromChallenge = false;
-        openSpotDetailModal(item);
+        openSpotDetailModal(item, items);
       });
 
       div.querySelector('.btn-pinpoint-set').addEventListener('click', (e) => {
@@ -3688,7 +3689,18 @@ function setPinpointTargetAndStart(item) {
   evaluateSensorCycle();
 }
 
-function openSpotDetailModal(item) {
+let detailNavigationIds = [];
+
+function moveSpotDetail(offset) {
+  const db = loadSavedData();
+  const items = detailNavigationIds.map(id => db.arrivals.find(item => item.id === id)).filter(Boolean);
+  const index = items.findIndex(item => item.id === appState.selectedSpotForDetail?.id);
+  if (index < 0 || index + offset < 0 || index + offset >= items.length) return;
+  openSpotDetailModal(items[index + offset], items);
+}
+
+function openSpotDetailModal(item, orderedItems) {
+  if (orderedItems) detailNavigationIds = orderedItems.map(spot => spot.id);
   hideOtherSettingToasts();
   appState.selectedSpotForDetail = item;
   const t = I18N[currentLang];
@@ -3715,7 +3727,23 @@ function openSpotDetailModal(item) {
     distStr = calcDist >= 1000 ? `${(calcDist/1000).toFixed(1)}km` : `${Math.round(calcDist)}m`;
   }
   document.getElementById('detail-spot-meta').textContent = t.arrivalDate(dateStr, distStr);
-  document.getElementById('detail-spot-keyword').textContent = t.targetKeywordLabel(item.keyword || '-');
+  document.getElementById('detail-spot-keyword').textContent =
+    (currentLang === 'ja' ? '到達キーワード: ' : 'Arrival keywords: ') + (item.keywords || []).join(' / ');
+  const challengeNames = (item.challengeIds || []).map(id => CHALLENGES.find(challenge => challenge.id === id))
+    .filter(Boolean).map(challengeName);
+  const challengeInfo = document.getElementById('detail-spot-challenges');
+  challengeInfo.textContent = (currentLang === 'ja' ? '到達チャレンジ: ' : 'Arrival challenges: ') + challengeNames.join(' / ');
+  challengeInfo.hidden = challengeNames.length === 0;
+  document.getElementById('detail-spot-keyword').hidden = !(item.keywords || []).length;
+  const index = detailNavigationIds.indexOf(item.id);
+  const previous = document.getElementById('detail-btn-previous');
+  const next = document.getElementById('detail-btn-next');
+  previous.disabled = index <= 0;
+  next.disabled = index < 0 || index >= detailNavigationIds.length - 1;
+  previous.setAttribute('aria-label', currentLang === 'ja' ? '前の図鑑詳細' : 'Previous spot');
+  next.setAttribute('aria-label', currentLang === 'ja' ? '次の図鑑詳細' : 'Next spot');
+  previous.onclick = () => moveSpotDetail(-1);
+  next.onclick = () => moveSpotDetail(1);
 
   const detailMapBox = document.getElementById('detail-map-container');
   detailMapBox.innerHTML = `<div class="no-photos-box">${currentLang === 'ja' ? '地図を準備中...' : 'Preparing map...'}</div>`;
@@ -3773,7 +3801,7 @@ function openSpotDetailModal(item) {
   mapWrap.innerHTML = `
     <div id="detail-minimap"></div>
     <div class="minimap-badge">${t.minimapBadge}</div>
-    <div class="map-attribution detail-map-attribution">${SensorMap.attribution}</div>
+    <div class="map-attribution detail-map-attribution">${document.querySelector('.main-map-attribution').innerHTML.trim()}</div>
     <div class="map-load-status detail-map-status" hidden>地図を読み込めません / Map unavailable</div>
   `;
   gallery.appendChild(mapWrap);
