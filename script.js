@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092259";
+const BASE_JS_VERSION = "v0.26.101.092313";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1017,7 +1017,24 @@ const CHALLENGE_GROUPS = [
     'education.library', 'healthcare.pharmacy', 'healthcare.hospital',
     'healthcare.clinic_or_praxis', 'healthcare.dentist', 'service.post.office',
     'service.financial.bank', 'service.financial.atm', 'service.cleaning',
-    'service.beauty.hairdresser'
+    'service.beauty.hairdresser',
+    // Broad daily services include repairs, beauty, postal facilities and utilities.
+    'service', 'commercial.agrarian', 'commercial.antiques', 'commercial.art',
+    'commercial.energy', 'commercial.garden', 'commercial.gas',
+    'commercial.gift_and_souvenir', 'commercial.hobby', 'commercial.jewelry',
+    'commercial.newsagent', 'commercial.outdoor_and_sport', 'commercial.trade',
+    'commercial.vehicle', 'commercial.video_and_music', 'commercial.watches', 'commercial.wedding',
+    'education', 'childcare', 'healthcare', 'pet', 'rental', 'parking',
+    'activity.community_center', 'activity.events_venue',
+    'office.government', 'office.insurance', 'office.water_utility',
+    'office.telecommunication', 'office.energy_supplier', 'office.estate_agent',
+    'office.employment_agency', 'office.accountant', 'office.lawyer',
+    'office.notary', 'office.tax_advisor', 'office.financial', 'office.financial_advisor',
+    'office.charity', 'office.non_profit', 'office.association', 'office.travel_agent',
+    'office.educational_institution',
+    'leisure.playground', 'leisure.picnic', 'leisure.spa', 'sport.fitness',
+    'amenity', 'emergency.defibrillator', 'emergency.phone', 'emergency.first_aid',
+    'emergency.disaster_help_point', 'emergency.assembly_point', 'emergency.drinking_water'
   ] },
   { id: 'leisure', ja: 'レジャー', en: 'Leisure', categories: [
     'entertainment', 'beach', 'leisure.park',
@@ -2132,9 +2149,13 @@ const CHALLENGE_EXCLUDED_CATEGORIES = [
   'public_transport.platform', 'public_transport.subway.entrance'
 ];
 
-function isExcludedChallengePlace(categories = []) {
-  return categories.some(category => CHALLENGE_EXCLUDED_CATEGORIES.some(excluded =>
-    category === excluded || category.startsWith(excluded + '.')));
+function isExcludedChallengePlace(categories = [], properties = {}) {
+  if (Array.isArray(categories) && categories.some(category => CHALLENGE_EXCLUDED_CATEGORIES.some(excluded =>
+    category === excluded || category.startsWith(excluded + '.')))) return true;
+  // Source tags can identify adult venues even when also tagged as ordinary services.
+  const raw = properties.datasource?.raw || {};
+  const adultTypes = new Set(['brothel', 'stripclub', 'swingerclub', 'swingers', 'erotic', 'adult']);
+  return ['amenity', 'shop', 'club'].some(key => adultTypes.has(String(raw[key] || '').toLowerCase()));
 }
 
 const CATEGORY_KEYWORDS = [
@@ -2202,7 +2223,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   const places = new Map();
   for (const result of successful) for (const feature of result.value) {
     const p = feature.properties || {};
-    if (forcedCategories && isExcludedChallengePlace(p.categories)) continue;
+    if (forcedCategories && isExcludedChallengePlace(p.categories, p)) continue;
     const lat = p.lat ?? feature.geometry?.coordinates?.[1];
     const lng = p.lon ?? feature.geometry?.coordinates?.[0];
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;

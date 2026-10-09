@@ -80,3 +80,21 @@ test('シークレットは4分類の和集合を検索し、交通の不要な�
     assert.ok(c.challengeCategoriesForGroup(id).length > 15);
   }
 });
+
+test('ライフは生活サービス・小設備・子育て・公共施設とレジャーとの重複を含む', () => {
+  const {context:c} = fixture();
+  const categories = c.challengeCategoriesForGroup('life');
+  const covers = key => categories.some(category => key === category || key.startsWith(category + '.'));
+  for (const key of ['service.beauty.hairdresser','service.beauty.massage','service.post.box',
+    'service.post.parcel_locker','service.recycling.bin','service.key_cutter','service.shoemaker',
+    'service.tailor','service.vehicle.fuel','service.vehicle.charging_station','service.vehicle.repair',
+    'commercial.outdoor_and_sport.bicycle','commercial.garden','commercial.watches',
+    'education.school','childcare.kindergarten','pet.veterinary','rental.storage',
+    'parking.bicycles','activity.community_center','office.government.public_service',
+    'leisure.spa.public_bath','leisure.spa.sauna','sport.fitness.gym',
+    'amenity.toilet.changing_table','amenity.drinking_water','emergency.defibrillator']) {
+    assert.ok(covers(key),key);
+  }
+  assert.ok(!covers('adult.brothel'));
+  assert.ok(!covers('commercial.erotic'));
+});

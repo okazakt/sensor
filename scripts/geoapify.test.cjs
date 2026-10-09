@@ -163,3 +163,14 @@ test('チャレンジは複数カテゴリ登録の酒類・成人向け施設�
   const result = await c.searchGeoapify('challenge', {lat:0,lng:0}, 1000, 'ja', ['catering.restaurant']);
   assert.equal(JSON.stringify(result.places.map(p => p.id)), '["family","unknown"]');
 });
+
+test('生活サービスを広く検索しても成人向けの複合カテゴリ・元データタグを除外する', async () => {
+  const c = fixture(async () => ({ok:true,json:async()=>({features:[
+    {...feature('salon',0.1),properties:{...feature('salon',0.1).properties,categories:['service.beauty.hairdresser']}},
+    {...feature('adult',0.1),properties:{...feature('adult',0.1).properties,categories:['service.beauty.massage','adult.brothel']}},
+    {...feature('raw-adult',0.1),properties:{...feature('raw-adult',0.1).properties,categories:['service'],datasource:{raw:{amenity:'brothel'}}}},
+    {...feature('erotic',0.1),properties:{...feature('erotic',0.1).properties,categories:['commercial.erotic']}}
+  ]})}));
+  const result = await c.searchGeoapify('',{lat:0,lng:0},1000,'ja',['service','amenity']);
+  assert.deepEqual(Array.from(result.places,p=>p.id),['salon']);
+});
