@@ -11,7 +11,7 @@ function fixture() {
     {id:'b', name:'B', date:'2026-10-09', keywords:[]}, {id:'c', name:'C', date:'2026-10-09', keywords:[]}];
   const c = {appState:{}, currentLang:'ja', CHALLENGES:[{id:'challenge'}], challengeName:()=> 'チャレンジ名',
     I18N:{ja:{arrivalDate:()=> 'date'}}, loadSavedData:()=>({arrivals:items}), hideOtherSettingToasts(){},
-    lastKnownPos:null, detailMinimapInstance:null, pageSpotDetail:element(), renderDetailMap(){},
+    requestDestinationGeometry(){}, lastKnownPos:null, detailMinimapInstance:null, pageSpotDetail:element(), renderDetailMap(){},
     document:{getElementById(id){if(!elements.has(id)) elements.set(id,element());return elements.get(id);},
       querySelector:()=>element(), createElement:element}};
   vm.createContext(c);

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092239";
+const BASE_JS_VERSION = "v0.26.101.092251";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1549,18 +1549,51 @@ function destinationDistance(position, target) {
     getDistance(position.lat, position.lng, target.lat, target.lng);
 }
 
+function geoapifyPlaceIdentity(properties, fallbackName = '') {
+  const raw = properties.datasource?.raw || {};
+  const text = value => typeof value === 'string' ? value.trim() : '';
+  let name = text(properties.name_international?.[currentLang]) || text(raw[`name:${currentLang}`])
+    || text(properties.name) || text(raw.name) || fallbackName;
+  const branch = text(properties.branch) || text(raw.branch);
+  const brand = text(properties.brand) || text(raw.brand);
+  const normalized = value => value.normalize('NFKC').replace(/\s/g, '').toLowerCase();
+  if (!branch && fallbackName && normalized(fallbackName).includes(normalized(name)) && fallbackName.length > name.length) name = fallbackName;
+  const fullName = branch && !normalized(name).includes(normalized(branch)) ? `${name} ${branch}` : name;
+  return { name: fullName, branch, brand };
+}
+
+function applyDestinationDetails(place, metadata) {
+  if (!metadata) return;
+  const identity = geoapifyPlaceIdentity(metadata, place.name);
+  if (place.placeDetailsVersion === 1 && place.name === identity.name && place.branch === identity.branch && place.brand === identity.brand) return;
+  Object.assign(place, identity);
+  place.placeDetailsVersion = 1;
+  if (typeof loadSavedData === 'function' && typeof saveAppData === 'function') {
+    const db = loadSavedData();
+    const saved = db.arrivals.find(item => item.id === place.id);
+    if (saved) {
+      Object.assign(saved, { name: place.name, branch: place.branch, brand: place.brand, placeDetailsVersion: 1 });
+      saveAppData(db);
+    }
+  }
+  if (typeof document !== 'undefined' && appState.selectedSpotForDetail?.id === place.id) {
+    document.getElementById('detail-spot-name').textContent = place.name;
+  }
+}
+
 function requestDestinationGeometry(target) {
-  if (validDestinationGeometry(target.geometry)) return;
+  if (validDestinationGeometry(target.geometry) && target.placeDetailsVersion === 1) return;
   if (typeof fetchGeoapify !== 'function' || typeof target.id !== 'string' || target.id.startsWith('geo:')) return;
   const state = requestDestinationGeometry.state ||= { cache: new Map(), queue: [], running: 0 };
   let entry = state.cache.get(target.id);
   if (!entry) {
-    entry = { targets: new Set(), geometry: null, done: false };
+    entry = { targets: new Set(), geometry: null, metadata: null, done: false };
     state.cache.set(target.id, entry);
     state.queue.push({ id: target.id, entry });
   }
   if (entry.done) {
-    target.geometry = entry.geometry;
+    if (entry.geometry) target.geometry = entry.geometry;
+    applyDestinationDetails(target, entry.metadata);
     return;
   }
   entry.targets.add(target);
@@ -1571,11 +1604,15 @@ function requestDestinationGeometry(target) {
       .then(features => {
         const details = features.find(feature => feature.properties?.feature_type === 'details');
         if (validDestinationGeometry(details?.geometry)) task.entry.geometry = details.geometry;
+        task.entry.metadata = details?.properties || null;
       })
       .catch(() => { /* Missing details retain point-based arrival detection. */ })
       .finally(() => {
         task.entry.done = true;
-        for (const place of task.entry.targets) place.geometry = task.entry.geometry;
+        for (const place of task.entry.targets) {
+          if (task.entry.geometry) place.geometry = task.entry.geometry;
+          applyDestinationDetails(place, task.entry.metadata);
+        }
         task.entry.targets.clear();
         state.running--;
         if (state.queue.length) requestDestinationGeometry({ id: state.queue[0].id });
@@ -1791,7 +1828,8 @@ function updateArrivalRecordWithDetails(db, target, now) {
   const arrivalPosition = area?.boundary || { lat: target.lat, lng: target.lng };
   if (!existing) {
     db.arrivals.push({
-      id: target.id, name: target.name, keyword: '', keywords: [],
+      id: target.id, name: target.name, branch: target.branch || '', brand: target.brand || '',
+      placeDetailsVersion: target.placeDetailsVersion || 0, keyword: '', keywords: [],
       lat: target.lat, lng: target.lng, date: now, muted: true,
       arrivalPosition, geometry: area ? target.geometry : null,
       formatted_address: target.formatted_address || '',
@@ -1799,6 +1837,10 @@ function updateArrivalRecordWithDetails(db, target, now) {
     });
   } else {
     existing.muted = true;
+    if (target.name) existing.name = target.name;
+    if (target.branch) existing.branch = target.branch;
+    if (target.brand) existing.brand = target.brand;
+    if (target.placeDetailsVersion) existing.placeDetailsVersion = target.placeDetailsVersion;
     existing.arrivalPosition = arrivalPosition;
     if (area) existing.geometry = target.geometry;
     if (target.formatted_address) existing.formatted_address = target.formatted_address;
@@ -2158,12 +2200,13 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
     const lng = p.lon ?? feature.geometry?.coordinates?.[0];
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
     if (getDistance(position.lat, position.lng, lat, lng) > radius) continue;
-    const name = p.name || p.address_line1 || p.formatted;
+    const identity = geoapifyPlaceIdentity(p, p.address_line1 || p.formatted);
+    const name = identity.name;
     if (!name) continue;
     const id = p.place_id || `geo:${lat}:${lng}:${name}`;
     const previous = places.get(id);
     places.set(id, {
-      id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
+      ...identity, id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
       phone: p.contact?.phone || previous?.phone || null,
       website: p.website || previous?.website || null
     });
@@ -3765,6 +3808,7 @@ function openSpotDetailModal(item, orderedItems) {
 
   radarBtn.onclick = () => {
     item.muted = !item.muted;
+    const db = loadSavedData();
     const savedItem = db.arrivals.find(arrival => arrival.id === item.id);
     if (savedItem) savedItem.muted = item.muted;
     saveAppData(db);
@@ -3773,6 +3817,7 @@ function openSpotDetailModal(item, orderedItems) {
 
   document.getElementById('detail-btn-delete-single').onclick = () => {
     if (confirm(t.confirmDeleteSingle(item.name))) {
+      const db = loadSavedData();
       db.arrivals = db.arrivals.filter(a => a.id !== item.id);
       saveAppData(db);
       pageSpotDetail.classList.remove('open');
@@ -3811,6 +3856,7 @@ function openSpotDetailModal(item, orderedItems) {
 
 
   document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
+  if (item.placeDetailsVersion !== 1) requestDestinationGeometry(item);
 }
 
 function renderDetailMap(item, gallery, detailMapBox) {

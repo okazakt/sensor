@@ -101,3 +101,29 @@ test('図鑑・到着ピンは保存した輪郭位置を使用し、旧履歴�
   assert.equal(c.arrivalPinPosition(target),target);
   assert.equal(c.arrivalPinPosition({...target,arrivalPosition:{lat:NaN,lng:0}}).id,target.id);
 });
+
+test('支店名を結合し、既に含まれる場合は重複せず、欠損時は既存の店名を保持する', () => {
+  const c = fixture();
+  assert.equal(c.geoapifyPlaceIdentity({name:'マクドナルド',branch:'八王子店'}).name,'マクドナルド 八王子店');
+  assert.equal(c.geoapifyPlaceIdentity({name:'マクドナルド 八王子店',branch:'八王子店'}).name,'マクドナルド 八王子店');
+  assert.equal(c.geoapifyPlaceIdentity({name:'マクドナルド'},'マクドナルド 八王子店').name,'マクドナルド 八王子店');
+  assert.equal(c.geoapifyPlaceIdentity({name:'マクドナルド',datasource:{raw:{branch:'八王子店'}}}).branch,'八王子店');
+  assert.equal(c.geoapifyPlaceIdentity({name:'McDonald’s',name_international:{ja:'マクドナルド'},branch:'八王子店'}).name,'マクドナルド 八王子店');
+});
+test('旧図鑑の支店名を更新し、到達日・関連・座標を保持して同じIDで保存する', async () => {
+  const c = fixture(async () => [{properties:{feature_type:'details',name:'マクドナルド',branch:'八王子店',brand:'マクドナルド'}}]);
+  const item = {id:'place-id',name:'マクドナルド',date:'2026-10-09',keywords:['カフェ'],challengeIds:['challenge'],lat:1,lng:2};
+  let saved = JSON.parse(JSON.stringify(item));
+  c.loadSavedData = () => ({arrivals:[JSON.parse(JSON.stringify(saved))]});
+  c.saveAppData = db => {saved = JSON.parse(JSON.stringify(db.arrivals[0]));};
+  c.requestDestinationGeometry(item);
+  await new Promise(setImmediate);
+  assert.equal(item.name,'マクドナルド 八王子店');
+  assert.equal(saved.name,item.name);
+  assert.equal(saved.branch,'八王子店');
+  assert.equal(saved.date,'2026-10-09');
+  assert.deepEqual(saved.keywords,['カフェ']);
+  assert.deepEqual(saved.challengeIds,['challenge']);
+  assert.equal(saved.lat,1);
+  assert.equal(saved.lng,2);
+});

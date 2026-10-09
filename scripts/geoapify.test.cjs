@@ -10,6 +10,8 @@ function fixture(fetch) {
     getDistance: (_a, _b, lat) => Math.abs(lat) * 1000 };
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('const CHALLENGE_GROUPS'), source.indexOf('const RADIUS_OPTIONS')), c);
+  c.currentLang = 'ja';
+  vm.runInContext(source.slice(source.indexOf('function geoapifyPlaceIdentity'), source.indexOf('function applyDestinationDetails')), c);
   c.loadSavedData = () => ({ arrivals: [] });
   vm.runInContext(source.slice(source.indexOf('const CHALLENGE_EXCLUDED_CATEGORIES'), source.indexOf('async function executeSearch')), c);
   return c;
@@ -50,6 +52,8 @@ test('シークレットは少数・0件・分類間重複・ミュートを扱�
       [feature('shared', 0.1), feature(`group-${group}`, 0.2), feature('muted', 0.1)]
     }) };
   });
+  c.currentLang = 'ja';
+  vm.runInContext(source.slice(source.indexOf('function geoapifyPlaceIdentity'), source.indexOf('function applyDestinationDetails')), c);
   c.loadSavedData = () => ({ arrivals: [{ id: 'muted', muted: true }] });
   const result = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
   assert.equal(result.places.length, 3);
