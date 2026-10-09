@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092251";
+const BASE_JS_VERSION = "v0.26.101.092259";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1576,8 +1576,15 @@ function applyDestinationDetails(place, metadata) {
       saveAppData(db);
     }
   }
-  if (typeof document !== 'undefined' && appState.selectedSpotForDetail?.id === place.id) {
-    document.getElementById('detail-spot-name').textContent = place.name;
+  if (typeof document !== 'undefined') {
+    if (appState.selectedSpotForDetail?.id === place.id) {
+      Object.assign(appState.selectedSpotForDetail, identity);
+      document.getElementById('detail-spot-name').textContent = place.name;
+    }
+    // Update every already-rendered list without changing its order or scroll position.
+    for (const row of document.querySelectorAll?.('.list-item[data-spot-id]') || []) {
+      if (row.dataset.spotId === place.id) row.querySelector('.list-item-title').textContent = place.name;
+    }
   }
 }
 
@@ -2437,6 +2444,7 @@ function renderChallengeArrivals() {
     const distStr = distance >= 1000 ? `${(distance/1000).toFixed(1)}km` : `${Math.round(distance)}m`;
     const row = document.createElement('div');
     row.className = 'list-item';
+    row.dataset.spotId = item.id;
     row.innerHTML = `
       <div class="list-item-left">
         <span class="list-item-title">${escapeHtml(item.name)}</span>
@@ -3540,6 +3548,7 @@ function renderHistoryList() {
 
       const div = document.createElement('div');
       div.className = 'list-item';
+      div.dataset.spotId = item.id;
       div.innerHTML = `
         <div class="list-item-left">
           <span class="list-item-title">${escapeHtml(item.name)}</span>
@@ -3636,6 +3645,7 @@ function renderAllHistoryList() {
 
       const div = document.createElement('div');
       div.className = 'list-item';
+      div.dataset.spotId = item.id;
       div.innerHTML = `
         <div class="list-item-left">
           <span class="list-item-title">${escapeHtml(item.name)}</span>
@@ -3743,6 +3753,7 @@ function moveSpotDetail(offset) {
 }
 
 function openSpotDetailModal(item, orderedItems) {
+  item = loadSavedData().arrivals.find(saved => saved.id === item.id) || item;
   if (orderedItems) detailNavigationIds = orderedItems.map(spot => spot.id);
   hideOtherSettingToasts();
   appState.selectedSpotForDetail = item;

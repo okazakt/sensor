@@ -127,3 +127,15 @@ test('旧図鑑の支店名を更新し、到達日・関連・座標を保持�
   assert.equal(saved.lat,1);
   assert.equal(saved.lng,2);
 });
+
+test('店舗詳細の更新を各一覧にも反映し、別の店舗の表示は維持する', () => {
+  const c = fixture();
+  const item = {id:'place-id',name:'マクドナルド'};
+  const titles = [{textContent:'マクドナルド'}, {textContent:'マクドナルド'}, {textContent:'バーミヤン'}];
+  const rows = titles.map((title,i)=>({dataset:{spotId:i===2?'another-id':item.id},querySelector:()=>title}));
+  c.document = {querySelectorAll:()=>rows,getElementById:()=>({})};
+  c.applyDestinationDetails(item,{name:'マクドナルド',branch:'八王子店'});
+  assert.equal(titles[0].textContent,'マクドナルド 八王子店');
+  assert.equal(titles[1].textContent,'マクドナルド 八王子店');
+  assert.equal(titles[2].textContent,'バーミヤン');
+});
