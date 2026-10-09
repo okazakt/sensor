@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "58";
+  --css-rev: "59";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1787,7 +1787,7 @@ body {
 #detail-map-container .photo-gallery-scroll { flex: 1; min-width: 0; padding-bottom: 0; }
 #detail-map-container .gallery-minimap-wrap { height: auto; min-height: 260px; box-sizing: border-box; }
 .detail-navigation { display: flex; gap: 16px; justify-content: center; flex: 0 0 auto; }
-.detail-navigation button { min-width: 80px; min-height: 48px; font-size: 1.35rem; }
+.detail-navigation button { min-width: 80px; min-height: 48px; font-size: 1.35rem; justify-content: center; text-align: center; }
 .detail-navigation button:disabled { opacity: 0.3; cursor: default; box-shadow: none; }
 #all-history-count { color: #99aabb; font-size: 0.8rem; margin-left: 12px; }
 #page-all-history .page-header { justify-content: flex-start; flex-wrap: wrap; }
