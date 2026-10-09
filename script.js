@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090909";
+const BASE_JS_VERSION = "v0.26.101.090924";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1118,6 +1118,8 @@ let appState = {
 
 let wakeLockSentinel = null;
 let watchId = null;
+let lastPositionUpdateTime = 0;
+let lastGpsError = null;
 let compassActive = false;
 let compassPermissionPending = false;
 
@@ -1327,7 +1329,7 @@ function bootstrapMapAndLocation() {
     watchId = navigator.geolocation.watchPosition(
       onPositionUpdate,
       (err) => {
-        console.warn("位置情報監視エラー:", err.message);
+        reportGpsError(err);
       },
       {
         enableHighAccuracy: true,
@@ -1564,6 +1566,9 @@ function evaluateSensorCycle() {
     updateVisualRing('idle');
     countEl.textContent = "--";
     if (appState.isPaused) distInfoEl.textContent = "--";
+    else if (appState.isTracking && !appState.currentPos) distInfoEl.textContent =
+      (typeof lastGpsError !== 'undefined' && lastGpsError) ||
+      (currentLang === 'ja' ? '位置情報を取得中...' : 'Waiting for location...');
     return;
   }
 
@@ -1936,7 +1941,16 @@ function onDeviceOrientation(e) {
   }
 }
 
+function reportGpsError(error) {
+  lastGpsError = error.code === 1
+    ? (currentLang === 'ja' ? '位置情報の許可を確認してください。' : 'Check location permission.')
+    : (currentLang === 'ja' ? '位置情報を取得できません。再度探索を開始してください。' : 'Location unavailable. Start the search again.');
+  if (!appState.currentPos) document.getElementById('distance-info').textContent = lastGpsError;
+}
+
 function onPositionUpdate(pos) {
+  lastPositionUpdateTime = Date.now();
+  lastGpsError = null;
   const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
   appState.currentPos = newPos;
   lastKnownPos = newPos;
@@ -2015,7 +2029,11 @@ async function fetchGeoapify(path, parameters) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid search response');
     return data.features;
@@ -2037,7 +2055,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   }));
   const responses = await Promise.allSettled(requests);
   const successful = responses.filter(result => result.status === 'fulfilled');
-  if (!successful.length) throw new Error('Search unavailable');
+  if (!successful.length) throw responses.find(result => result.status === 'rejected')?.reason || new Error('Search unavailable');
   const places = new Map();
   for (const result of successful) for (const feature of result.value) {
     const p = feature.properties || {};
@@ -2086,13 +2104,17 @@ async function executeSearch(refreshCandidates = false) {
     else chooseSearchTarget(position);
   } catch (error) {
     if (generation !== searchGeneration || !appState.isTracking) return;
-    console.warn('Geoapify search unavailable.');
+    console.warn('Geoapify search unavailable.', error.status || error.code || 'network');
     if (!refreshCandidates) {
       appState.places = [];
       appState.randomTarget = null;
     }
     document.getElementById('target-meta-info').textContent = error.code === 'SEARCH_NOT_CONFIGURED'
       ? (currentLang === 'ja' ? '検索設定が未完了です。' : 'Search is not configured.')
+      : error.status === 429
+        ? (currentLang === 'ja' ? '検索APIの利用制限に達しました。時間をおいて再試行してください。' : 'Search API limit reached. Please try again later.')
+      : error.status === 401 || error.status === 403
+        ? (currentLang === 'ja' ? '検索APIの認証・利用設定を確認してください。' : 'Check search API access settings.')
       : (currentLang === 'ja' ? '検索に失敗しました。時間をおいて再試行してください。'
         : 'Search failed. Please try again later.');
   } finally {
@@ -2949,12 +2971,21 @@ async function startSearchFromSet(fromChallenge = false) {
   }
   saveAppData(db);
 
+  const needsLocation = !appState.currentPos || Date.now() - lastPositionUpdateTime > 30000;
+  if (needsLocation) {
+    appState.currentPos = null;
+    lastGpsError = null;
+  }
   updateButtonStateUI();
   evaluateSensorCycle();
+  if (needsLocation && 'geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(onPositionUpdate, reportGpsError,
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+  }
 
   if (!watchId && 'geolocation' in navigator) {
     watchId = navigator.geolocation.watchPosition(onPositionUpdate, (err) => {
-      document.getElementById('distance-info').textContent = "GPS Error: " + err.message;
+      reportGpsError(err);
     }, { 
       enableHighAccuracy: true,
       maximumAge: 0,

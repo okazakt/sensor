@@ -243,3 +243,14 @@ test('代表座標が遠くても敷地内なら全件・固定対象のどち�
     assert.equal(arrived,'large-park');
   }
 });
+
+test('位置未取得は検索0件と区別して待機・GPSエラーを表示する', () => {
+  const {context:c,elements} = sensorFixture();
+  c.appState.currentPos = null;
+  c.evaluateSensorCycle();
+  assert.equal(elements['distance-info'].textContent,'位置情報を取得中...');
+  c.lastGpsError = '位置情報の許可を確認してください。';
+  c.evaluateSensorCycle();
+  assert.equal(elements['distance-info'].textContent,c.lastGpsError);
+  assert.equal(elements['unknown-count'].textContent,'--');
+});
