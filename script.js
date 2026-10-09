@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092313";
+const BASE_JS_VERSION = "v0.26.101.092328";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1044,7 +1044,9 @@ const CHALLENGE_GROUPS = [
     'sport.golf_course', 'sport.dojo', 'sport.horse_riding',
     'sport.ice_rink', 'sport.pitch', 'sport.sports_centre',
     'sport.sports_hall', 'sport.swimming_pool', 'sport.track',
-    'sport.fitness', 'tourism.attraction.viewpoint', 'national_park'
+    'sport.fitness', 'tourism.attraction.viewpoint', 'national_park',
+    'sport.fishing', 'sport.dive_centre', 'ski', 'maritime.marina',
+    'tourism.information.office', 'accommodation'
   ] },
   { id: 'deep', ja: 'ディープ', en: 'Deep', categories: [
     'tourism.sights.castle', 'tourism.sights.ruines', 'tourism.sights.archaeological_site',
