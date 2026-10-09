@@ -6,7 +6,45 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090945";
+const BASE_JS_VERSION = "v0.26.101.090949";
+// Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
+(function initializeDiagnostics(global) {
+  if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
+  const lines = [];
+  const last = new Map();
+  let output;
+  global.SensorDiagnostics = {
+    record(event, detail = '', throttle = 0) {
+      const now = Date.now();
+      if (throttle && now - (last.get(event) || 0) < throttle) return;
+      last.set(event, now);
+      lines.push(`${new Date(now).toLocaleTimeString()} ${event} ${detail}`);
+      if (lines.length > 60) lines.shift();
+      if (output) output.textContent = lines.join('\n');
+    }
+  };
+  function show() {
+    const panel = document.createElement('details');
+    panel.open = true;
+    panel.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:10000;background:#081018f5;color:#a7f3ff;border:1px solid #00cddb;border-radius:8px;padding:8px;font:12px monospace;max-height:38vh;overflow:auto';
+    const title = document.createElement('summary');
+    title.textContent = '診断ログ / Diagnostics';
+    output = document.createElement('pre');
+    output.style.cssText = 'white-space:pre-wrap;margin:8px 0;overflow-wrap:anywhere';
+    panel.append(title, output);
+    document.body.append(panel);
+    output.textContent = lines.join('\n');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show, { once:true });
+  else show();
+  global.SensorDiagnostics.record('startup', `secure=${global.isSecureContext} gps=${'geolocation' in navigator}`);
+  global.addEventListener('error', event => global.SensorDiagnostics.record('js.error', event.message));
+})(window);
+
+function traceLocation(event, detail = '', throttle = 0) {
+  window.SensorDiagnostics?.record(event, detail, throttle);
+}
+
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -91,10 +129,10 @@ function initializeMapRenderer(global) {
       zoom: 16, interactive: false, attributionControl: false
     });
     if (statusElement) {
-      instance.on('error', () => { statusElement.hidden = false; });
+      instance.on('error', event => { statusElement.hidden = false; global.SensorDiagnostics?.record('map.error', event.error?.message || 'tile/render error', 2000); });
       instance.on('sourcedata', event => {
         if (event.sourceId === 'openmaptiles' && event.sourceDataType === 'content' &&
-            instance.areTilesLoaded()) statusElement.hidden = true;
+            instance.areTilesLoaded()) { statusElement.hidden = true; global.SensorDiagnostics?.record('map.tiles.loaded', '', 3000); }
       });
     }
     const resizeObserver = new ResizeObserver(() => instance.resize());
@@ -107,10 +145,11 @@ function initializeMapRenderer(global) {
     }
     instance.once('load', () => {
       styleReady = true;
+      global.SensorDiagnostics?.record('map.loaded');
       if (theme !== mode) repaintTheme();
     });
     return {
-      setCenter: position => instance.setCenter([position.lng, position.lat]),
+      setCenter: position => { global.SensorDiagnostics?.record('map.setCenter', '', 2000); instance.setCenter([position.lng, position.lat]); },
       setStyle: mode => {
         // Both themes have identical layers and data. Repaint without reloading tiles.
         theme = mode;
@@ -1164,12 +1203,14 @@ function initMap(lat, lng) {
 }
 
 function updateMapPositionSmoothly(coords, now) {
+  if (typeof traceLocation === 'function') traceLocation('updateMapPositionSmoothly', '', 2000);
   if (!map) return;
   const position = { lat: coords.latitude, lng: coords.longitude };
   if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
   const accuracy = Number.isFinite(coords.accuracy) ? Math.max(0, coords.accuracy) : 10;
   // Hold the display when the GPS uncertainty becomes too large.
   if (accuracy > 50) {
+    if (typeof traceLocation === 'function') traceLocation('map.fix.rejected', 'accuracy > 50m', 2000);
     mapPositionJump = null;
     mapCenterMotion = null;
     return;
@@ -1203,6 +1244,7 @@ function updateMapPositionSmoothly(coords, now) {
     const confirmationRadius = Math.max(3, Math.min(10, accuracy * 0.4));
     if (!candidate || now - candidate.time > 5000 ||
         getDistance(candidate.lat, candidate.lng, position.lat, position.lng) > confirmationRadius) {
+      if (typeof traceLocation === 'function') traceLocation('map.fix.pending', 'waiting for jump confirmation', 2000);
       mapPositionJump = { ...position, time: now };
       return;
     }
@@ -1271,13 +1313,16 @@ function updateMapPositionSmoothly(coords, now) {
 }
 
 function bootstrapMapAndLocation() {
+  traceLocation('bootstrapMapAndLocation');
   initMap(lastKnownPos.lat, lastKnownPos.lng);
   updateMapStyleUI();
 
   if ('geolocation' in navigator) {
+    traceLocation('gps.watch.start');
     watchId = navigator.geolocation.watchPosition(
       onPositionUpdate,
       (err) => {
+        traceLocation('gps.error', `code=${err.code} ${err.message}`);
         console.warn("位置情報監視エラー:", err.message);
       },
       {
@@ -1795,6 +1840,7 @@ function onDeviceOrientation(e) {
 }
 
 function onPositionUpdate(pos) {
+  traceLocation('onPositionUpdate', `accuracy=${Math.round(pos.coords.accuracy)}m`);
   const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
   appState.currentPos = newPos;
   lastKnownPos = newPos;
@@ -1866,6 +1912,7 @@ function getGeoapifyApiKey() {
 }
 
 async function fetchGeoapify(path, parameters) {
+  if (typeof traceLocation === 'function') traceLocation('search.request', path);
   const url = new URL(path, 'https://api.geoapify.com');
   for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
   url.searchParams.set('apiKey', getGeoapifyApiKey());
@@ -1873,6 +1920,7 @@ async function fetchGeoapify(path, parameters) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    if (typeof traceLocation === 'function') traceLocation('search.response', `status=${response.status}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid search response');
@@ -1922,6 +1970,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
 }
 
 async function executeSearch(refreshCandidates = false) {
+  if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
       appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return;
   scheduleCandidateRefresh();
@@ -2776,6 +2825,7 @@ function stopSearchAndReset() {
 }
 
 async function startSearchFromSet(fromChallenge = false) {
+  traceLocation('startSearchFromSet');
   if (appState.activeChallenge && !fromChallenge) {
     showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
     return;
