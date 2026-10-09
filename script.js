@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.090905";
+const BASE_JS_VERSION = "v0.26.101.090909";
 // Enable only when diagnosing compass acquisition or heading.
 const COMPASS_DEBUG_ENABLED = false;
 
@@ -1717,14 +1717,9 @@ function updateArrivalRecordWithDetails(db, target, now) {
   }, 5000);
 
   if (challenge) {
-    document.getElementById('toast-text').textContent = currentLang === 'ja'
-      ? `${challengeName(challenge)}クリア！ ${target.name}への到達を記録しました。`
-      : `${challengeName(challenge)} completed! Arrival at ${target.name} recorded.`;
     stopSearchAndReset();
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
-    renderChallenges();
-    openChallengeArrivals(challenge);
     return;
   }
 
