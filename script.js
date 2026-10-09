@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092328";
+const BASE_JS_VERSION = "v0.26.101.092343";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1031,7 +1031,7 @@ const CHALLENGE_GROUPS = [
     'office.employment_agency', 'office.accountant', 'office.lawyer',
     'office.notary', 'office.tax_advisor', 'office.financial', 'office.financial_advisor',
     'office.charity', 'office.non_profit', 'office.association', 'office.travel_agent',
-    'office.educational_institution',
+    'office.educational_institution', 'airport',
     'leisure.playground', 'leisure.picnic', 'leisure.spa', 'sport.fitness',
     'amenity', 'emergency.defibrillator', 'emergency.phone', 'emergency.first_aid',
     'emergency.disaster_help_point', 'emergency.assembly_point', 'emergency.drinking_water'
@@ -1046,7 +1046,7 @@ const CHALLENGE_GROUPS = [
     'sport.sports_hall', 'sport.swimming_pool', 'sport.track',
     'sport.fitness', 'tourism.attraction.viewpoint', 'national_park',
     'sport.fishing', 'sport.dive_centre', 'ski', 'maritime.marina',
-    'tourism.information.office', 'accommodation'
+    'tourism.information.office', 'accommodation', 'public_transport.aerialway'
   ] },
   { id: 'deep', ja: 'ディープ', en: 'Deep', categories: [
     'tourism.sights.castle', 'tourism.sights.ruines', 'tourism.sights.archaeological_site',
@@ -1056,7 +1056,8 @@ const CHALLENGE_GROUPS = [
     'tourism.sights.city_gate', 'tourism.sights.bridge', 'tourism.sights.square',
     'tourism.sights.memorial.monument', 'tourism.sights.memorial.boundary_stone', 'tourism.sights.memorial.milestone',
     'tourism.sights.memorial.tumulus', 'religion.place_of_worship', 'heritage',
-    'tourism.attraction.artwork', 'tourism.attraction.fountain', 'tourism.attraction.clock'
+    'tourism.attraction.artwork', 'tourism.attraction.fountain', 'tourism.attraction.clock',
+    'tourism.sights.memorial', 'man_made', 'tourism.information.map', 'tourism.information.ranger_station'
   ] },
   { id: 'secret', ja: 'シークレット', en: 'Secret', categories: [] }
 ];
