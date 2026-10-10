@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.101154";
+const BASE_JS_VERSION = "v0.26.101.101345";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1886,7 +1886,7 @@ function updateArrivalRecordWithDetails(db, target, now) {
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
     renderChallenges();
-    openChallengeArrivals(challenge);
+    navigateToMain();
     showChallengePresentation(challenge, true, target);
     return;
   }
@@ -2374,27 +2374,41 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
   const banner = document.getElementById('challenge-presentation');
   if (!banner) return;
   clearTimeout(challengePresentationTimer);
-  banner.classList.remove('is-visible');
+  banner.classList.remove('is-visible', 'is-leaving');
   banner.classList.toggle('is-complete', completed);
   banner.classList.toggle('is-arrival', !!arrival);
   const ja = currentLang === 'ja';
   document.getElementById('challenge-presentation-label').textContent = challenge
     ? (ja ? 'チャレンジ' : 'CHALLENGE') : (ja ? '到着' : 'ARRIVAL');
-  document.getElementById('challenge-presentation-name').textContent = challenge
-    ? challengeName(challenge) : arrival.name;
-  document.getElementById('challenge-presentation-state').textContent = completed ? 'COMPLETE'
+  const name = document.getElementById('challenge-presentation-name');
+  name.textContent = challenge ? challengeName(challenge) : '';
+  name.hidden = !challenge;
+  const state = document.getElementById('challenge-presentation-state');
+  state.textContent = completed ? 'COMPLETE'
     : arrival ? (ja ? '到達を記録しました' : 'ARRIVAL RECORDED') : 'CHALLENGE START';
+  state.hidden = !challenge;
   const place = document.getElementById('challenge-presentation-place');
-  place.textContent = arrival && challenge
+  place.textContent = arrival && !completed
     ? (ja ? `${arrival.name}への到達を記録しました` : `Arrival at ${arrival.name} recorded`) : '';
   place.hidden = !place.textContent;
   // Restart the animation even when a new event replaces an existing banner.
   void banner.offsetWidth;
   banner.classList.add('is-visible');
+  // Let COMPLETE stand on its own, then give the arrival message time to be read.
+  const readingTime = arrival && !completed
+    ? Math.min(11000, Math.max(6500, Array.from(place.textContent).length * 140))
+    : completed ? 4400 : 2800;
   challengePresentationTimer = setTimeout(() => {
-    banner.classList.remove('is-visible');
-    challengePresentationTimer = null;
-  }, arrival ? 5000 : completed ? 3600 : 2800);
+    if (completed && arrival) {
+      showChallengePresentation(null, false, arrival);
+      return;
+    }
+    banner.classList.add('is-leaving');
+    challengePresentationTimer = setTimeout(() => {
+      banner.classList.remove('is-visible', 'is-leaving');
+      challengePresentationTimer = null;
+    }, 1400);
+  }, readingTime);
   if (challenge) playChallengeFanfare(completed);
 }
 

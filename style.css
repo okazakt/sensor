@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "62";
+  --css-rev: "63";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1811,10 +1811,10 @@ body {
 }
 .challenge-presentation.is-visible {
   visibility: visible;
-  animation: challenge-announcement 2.8s ease both;
+  opacity: 1;
+  animation: challenge-announcement .6s ease both;
 }
-.challenge-presentation.is-visible.is-complete { animation-duration: 3.6s; }
-.challenge-presentation.is-visible.is-arrival { animation-duration: 5s; }
+.challenge-presentation.is-visible.is-leaving { animation: challenge-announcement-fade 1.4s ease both; }
 .challenge-presentation-band {
   position: relative;
   overflow: hidden;
@@ -1863,11 +1863,16 @@ body {
 }
 .is-visible .challenge-presentation-state { animation: challenge-state-reveal .4s .35s both; }
 .challenge-presentation-place {
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  margin: 10px 0;
+  font-size: clamp(18px, 5cqw, 22px);
+  font-weight: 800;
+  line-height: 1.6;
+  color: #252317;
   overflow-wrap: anywhere;
 }
+.challenge-presentation-name[hidden],
+.challenge-presentation-state[hidden],
+.challenge-presentation-place[hidden] { display: none; }
 .is-complete .challenge-presentation-band::after {
   content: '';
   position: absolute;
@@ -1878,9 +1883,9 @@ body {
 .is-visible.is-complete .challenge-presentation-band::after { animation: challenge-state-reveal .8s .25s both; }
 @keyframes challenge-announcement {
   0% { opacity: 0; clip-path: inset(0 50%); }
-  15%, 80% { opacity: 1; clip-path: inset(0); }
-  100% { opacity: 0; clip-path: inset(0); }
+  100% { opacity: 1; clip-path: inset(0); }
 }
+@keyframes challenge-announcement-fade { from { opacity: 1; } to { opacity: 0; } }
 @keyframes challenge-light-sweep { to { transform: translateX(110%); } }
 @keyframes challenge-state-reveal {
   from { opacity: 0; transform: translateY(6px); }
@@ -1888,6 +1893,7 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .challenge-presentation.is-visible { animation: none; opacity: 1; }
+  .challenge-presentation.is-visible.is-leaving { animation: none; opacity: 0; }
   .is-visible .challenge-presentation-state,
   .is-visible .challenge-presentation-band::before,
   .is-visible.is-complete .challenge-presentation-band::after { animation: none; }
