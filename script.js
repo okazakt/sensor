@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.101345";
+const BASE_JS_VERSION = "v0.26.101.101400";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2374,7 +2374,7 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
   const banner = document.getElementById('challenge-presentation');
   if (!banner) return;
   clearTimeout(challengePresentationTimer);
-  banner.classList.remove('is-visible', 'is-leaving');
+  banner.classList.remove('is-visible', 'is-leaving', 'is-place-visible');
   banner.classList.toggle('is-complete', completed);
   banner.classList.toggle('is-arrival', !!arrival);
   const ja = currentLang === 'ja';
@@ -2388,27 +2388,33 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
     : arrival ? (ja ? '到達を記録しました' : 'ARRIVAL RECORDED') : 'CHALLENGE START';
   state.hidden = !challenge;
   const place = document.getElementById('challenge-presentation-place');
-  place.textContent = arrival && !completed
+  const arrivalMessage = arrival
     ? (ja ? `${arrival.name}への到達を記録しました` : `Arrival at ${arrival.name} recorded`) : '';
+  place.textContent = arrival && !completed
+    ? arrivalMessage : '';
   place.hidden = !place.textContent;
   // Restart the animation even when a new event replaces an existing banner.
   void banner.offsetWidth;
   banner.classList.add('is-visible');
-  // Let COMPLETE stand on its own, then give the arrival message time to be read.
-  const readingTime = arrival && !completed
-    ? Math.min(11000, Math.max(6500, Array.from(place.textContent).length * 140))
-    : completed ? 4400 : 2800;
-  challengePresentationTimer = setTimeout(() => {
-    if (completed && arrival) {
-      showChallengePresentation(null, false, arrival);
-      return;
-    }
+  const readingTime = Math.min(11000, Math.max(6500, Array.from(arrivalMessage).length * 140));
+  const fadeOut = () => {
     banner.classList.add('is-leaving');
     challengePresentationTimer = setTimeout(() => {
       banner.classList.remove('is-visible', 'is-leaving');
       challengePresentationTimer = null;
     }, 1400);
-  }, readingTime);
+  };
+  // Keep the challenge heading and COMPLETE in place while revealing the arrival below.
+  challengePresentationTimer = setTimeout(() => {
+    if (completed && arrival) {
+      place.textContent = arrivalMessage;
+      place.hidden = false;
+      banner.classList.add('is-place-visible');
+      challengePresentationTimer = setTimeout(fadeOut, readingTime);
+      return;
+    }
+    fadeOut();
+  }, completed ? 4400 : arrival ? readingTime : 2800);
   if (challenge) playChallengeFanfare(completed);
 }
 

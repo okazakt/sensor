@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "63";
+  --css-rev: "64";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1870,6 +1870,7 @@ body {
   color: #252317;
   overflow-wrap: anywhere;
 }
+.is-place-visible .challenge-presentation-place { animation: challenge-state-reveal .6s ease both; }
 .challenge-presentation-name[hidden],
 .challenge-presentation-state[hidden],
 .challenge-presentation-place[hidden] { display: none; }
@@ -1895,6 +1896,7 @@ body {
   .challenge-presentation.is-visible { animation: none; opacity: 1; }
   .challenge-presentation.is-visible.is-leaving { animation: none; opacity: 0; }
   .is-visible .challenge-presentation-state,
+  .is-place-visible .challenge-presentation-place,
   .is-visible .challenge-presentation-band::before,
   .is-visible.is-complete .challenge-presentation-band::after { animation: none; }
 }

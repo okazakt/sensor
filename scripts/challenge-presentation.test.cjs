@@ -38,8 +38,12 @@ test('COMPLETEを先に表示し、到着文を読む時間を確保してから
   assert.equal(elements['challenge-presentation-state'].textContent, 'COMPLETE');
   assert.equal(elements['challenge-presentation-place'].hidden, true);
   assert.equal(next(), 4400);
-  assert.equal(elements['challenge-presentation-state'].hidden, true);
-  assert.equal(elements['challenge-presentation-name'].hidden, true);
+  assert.equal(elements['challenge-presentation-state'].hidden, false);
+  assert.equal(elements['challenge-presentation-state'].textContent, 'COMPLETE');
+  assert.equal(elements['challenge-presentation-name'].hidden, false);
+  assert.equal(elements['challenge-presentation-name'].textContent, 'グルメ1km最寄り');
+  assert.equal(elements['challenge-presentation-label'].textContent, 'チャレンジ');
+  assert(classes.has('is-complete'));
   assert.equal(elements['challenge-presentation-place'].textContent, 'トワサンクへの到達を記録しました');
   assert.equal(elements['challenge-presentation-place'].hidden, false);
   assert.equal(next(), 6500);
