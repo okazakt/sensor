@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.101400";
+const BASE_JS_VERSION = "v0.26.101.101414";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2390,9 +2390,9 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
   const place = document.getElementById('challenge-presentation-place');
   const arrivalMessage = arrival
     ? (ja ? `${arrival.name}への到達を記録しました` : `Arrival at ${arrival.name} recorded`) : '';
-  place.textContent = arrival && !completed
-    ? arrivalMessage : '';
-  place.hidden = !place.textContent;
+  // Lay out the actual arrival text from the start, including its wrapped lines.
+  place.textContent = arrivalMessage;
+  place.hidden = !arrivalMessage || completed;
   // Restart the animation even when a new event replaces an existing banner.
   void banner.offsetWidth;
   banner.classList.add('is-visible');
