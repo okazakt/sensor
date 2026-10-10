@@ -74,7 +74,11 @@ test('到着地点に最も近い輪郭上の点を求め、内部でも輪郭�
 test('到着位置と輪郭を永続記録し、探索用代表座標を維持する', () => {
   const c = fixture();
   Object.assign(c, { arrivalInProgressId:null, toastBannerTimer:null,
-    I18N:{ja:{toastRecorded: name => name}},
+    showChallengePresentation: (challenge, completed, arrival) => {
+      assert.equal(challenge, null);
+      assert.equal(completed, false);
+      assert.equal(arrival, target);
+    },
     document:{getElementById: () => ({classList:{add(){},remove(){}}})},
     recordArrivalAssociation(){}, saveAppData(db){ c.saved = JSON.parse(JSON.stringify(db)); },
     redrawMarkersWithFade(){}, hideOtherSettingToasts(){}, setTimeout(){}, stopSearchAndReset(){} });

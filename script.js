@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.101139";
+const BASE_JS_VERSION = "v0.26.101.101154";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1879,28 +1879,19 @@ function updateArrivalRecordWithDetails(db, target, now) {
 
   redrawMarkersWithFade();
 
-  const t = I18N[currentLang];
-  const toast = document.getElementById('toast-banner');
-  document.getElementById('toast-text').textContent = t.toastRecorded(target.name);
-  hideOtherSettingToasts('toast-banner');
-  toast.classList.add('show');
-  toastBannerTimer = setTimeout(() => {
-    toast.classList.remove('show');
-    toastBannerTimer = null;
-  }, 5000);
+  hideOtherSettingToasts();
 
   if (challenge) {
-    document.getElementById('toast-text').textContent = currentLang === 'ja'
-      ? `${challengeName(challenge)}クリア！ ${target.name}への到達を記録しました。`
-      : `${challengeName(challenge)} completed! Arrival at ${target.name} recorded.`;
     stopSearchAndReset();
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
     renderChallenges();
     openChallengeArrivals(challenge);
-    showChallengePresentation(challenge, true);
+    showChallengePresentation(challenge, true, target);
     return;
   }
+
+  showChallengePresentation(null, false, target);
 
   if (!appState.continuousSearch) {
     appState.pinpointTarget = null;
@@ -2379,24 +2370,32 @@ function releaseChallengeSettings() {
 
 let challengePresentationTimer = null;
 
-function showChallengePresentation(challenge, completed = false) {
+function showChallengePresentation(challenge, completed = false, arrival = null) {
   const banner = document.getElementById('challenge-presentation');
   if (!banner) return;
   clearTimeout(challengePresentationTimer);
   banner.classList.remove('is-visible');
   banner.classList.toggle('is-complete', completed);
-  document.getElementById('challenge-presentation-label').textContent = currentLang === 'ja'
-    ? 'チャレンジ' : 'CHALLENGE';
-  document.getElementById('challenge-presentation-name').textContent = challengeName(challenge);
-  document.getElementById('challenge-presentation-state').textContent = completed ? 'COMPLETE' : 'CHALLENGE START';
+  banner.classList.toggle('is-arrival', !!arrival);
+  const ja = currentLang === 'ja';
+  document.getElementById('challenge-presentation-label').textContent = challenge
+    ? (ja ? 'チャレンジ' : 'CHALLENGE') : (ja ? '到着' : 'ARRIVAL');
+  document.getElementById('challenge-presentation-name').textContent = challenge
+    ? challengeName(challenge) : arrival.name;
+  document.getElementById('challenge-presentation-state').textContent = completed ? 'COMPLETE'
+    : arrival ? (ja ? '到達を記録しました' : 'ARRIVAL RECORDED') : 'CHALLENGE START';
+  const place = document.getElementById('challenge-presentation-place');
+  place.textContent = arrival && challenge
+    ? (ja ? `${arrival.name}への到達を記録しました` : `Arrival at ${arrival.name} recorded`) : '';
+  place.hidden = !place.textContent;
   // Restart the animation even when a new event replaces an existing banner.
   void banner.offsetWidth;
   banner.classList.add('is-visible');
   challengePresentationTimer = setTimeout(() => {
     banner.classList.remove('is-visible');
     challengePresentationTimer = null;
-  }, completed ? 3600 : 2800);
-  playChallengeFanfare(completed);
+  }, arrival ? 5000 : completed ? 3600 : 2800);
+  if (challenge) playChallengeFanfare(completed);
 }
 
 function playChallengeFanfare(completed) {

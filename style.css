@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "61";
+  --css-rev: "62";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1814,6 +1814,7 @@ body {
   animation: challenge-announcement 2.8s ease both;
 }
 .challenge-presentation.is-visible.is-complete { animation-duration: 3.6s; }
+.challenge-presentation.is-visible.is-arrival { animation-duration: 5s; }
 .challenge-presentation-band {
   position: relative;
   overflow: hidden;
@@ -1861,6 +1862,12 @@ body {
   letter-spacing: .06em;
 }
 .is-visible .challenge-presentation-state { animation: challenge-state-reveal .4s .35s both; }
+.challenge-presentation-place {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 .is-complete .challenge-presentation-band::after {
   content: '';
   position: absolute;
