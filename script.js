@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.092343";
+const BASE_JS_VERSION = "v0.26.101.101139";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1898,6 +1898,7 @@ function updateArrivalRecordWithDetails(db, target, now) {
     checkMainInputClearState();
     renderChallenges();
     openChallengeArrivals(challenge);
+    showChallengePresentation(challenge, true);
     return;
   }
 
@@ -2376,6 +2377,52 @@ function releaseChallengeSettings() {
   renderChallenges();
 }
 
+let challengePresentationTimer = null;
+
+function showChallengePresentation(challenge, completed = false) {
+  const banner = document.getElementById('challenge-presentation');
+  if (!banner) return;
+  clearTimeout(challengePresentationTimer);
+  banner.classList.remove('is-visible');
+  banner.classList.toggle('is-complete', completed);
+  document.getElementById('challenge-presentation-label').textContent = currentLang === 'ja'
+    ? 'チャレンジ' : 'CHALLENGE';
+  document.getElementById('challenge-presentation-name').textContent = challengeName(challenge);
+  document.getElementById('challenge-presentation-state').textContent = completed ? 'COMPLETE' : 'CHALLENGE START';
+  // Restart the animation even when a new event replaces an existing banner.
+  void banner.offsetWidth;
+  banner.classList.add('is-visible');
+  challengePresentationTimer = setTimeout(() => {
+    banner.classList.remove('is-visible');
+    challengePresentationTimer = null;
+  }, completed ? 3600 : 2800);
+  playChallengeFanfare(completed);
+}
+
+function playChallengeFanfare(completed) {
+  if (appState.isMuted) return;
+  try {
+    if (!audioCtx) initAudio();
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const notes = completed ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 783.99];
+    notes.forEach((frequency, index) => {
+      const start = audioCtx.currentTime + index * 0.12;
+      const oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.16 * (appState.soundVolume / 7), start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+      oscillator.start(start);
+      oscillator.stop(start + 0.5);
+    });
+  } catch (error) { /* Visual feedback remains available without audio support. */ }
+}
+
 function startChallenge(challenge) {
   if (!isChallengeAvailable(challenge)) return;
   stopSearchAndReset();
@@ -2399,6 +2446,7 @@ function startChallenge(challenge) {
   startSearchFromSet(true);
   renderChallenges();
   navigateToMain();
+  showChallengePresentation(challenge);
 }
 
 let pendingChallenge = null;

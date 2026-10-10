@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "59";
+  --css-rev: "61";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1791,3 +1791,97 @@ body {
 .detail-navigation button:disabled { opacity: 0.3; cursor: default; box-shadow: none; }
 #all-history-count { color: #99aabb; font-size: 0.8rem; margin-left: 12px; }
 #page-all-history .page-header { justify-content: flex-start; flex-wrap: wrap; }
+
+/* Challenge announcements float above navigation without blocking map gestures. */
+.challenge-presentation {
+  --announcement-color: #e9dda0;
+  --announcement-tint: rgba(218, 207, 145, .58);
+  --announcement-center: rgba(239, 228, 171, .76);
+  position: absolute;
+  inset: calc(env(safe-area-inset-top, 0px) + 76px) 0 auto;
+  z-index: 450;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+.challenge-presentation.is-complete {
+  --announcement-color: #ffe9a2;
+  --announcement-tint: rgba(224, 193, 98, .65);
+  --announcement-center: rgba(248, 224, 139, .8);
+}
+.challenge-presentation.is-visible {
+  visibility: visible;
+  animation: challenge-announcement 2.8s ease both;
+}
+.challenge-presentation.is-visible.is-complete { animation-duration: 3.6s; }
+.challenge-presentation-band {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 24px 18px;
+  text-align: center;
+  color: #252317;
+  background: linear-gradient(90deg, transparent, var(--announcement-tint) 14%, var(--announcement-center) 50%, var(--announcement-tint) 86%, transparent);
+  border-block: 1px solid var(--announcement-color);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--announcement-color) 20%, transparent);
+  text-shadow: 0 1px 2px rgba(255, 249, 211, .5);
+}
+.challenge-presentation-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 225, .45) 50%, transparent 65%);
+  transform: translateX(-110%);
+}
+.is-visible .challenge-presentation-band::before { animation: challenge-light-sweep 1.1s .12s ease-out both; }
+.challenge-presentation-label {
+  color: #595032;
+  font-size: 11px;
+  letter-spacing: .18em;
+  margin-bottom: 8px;
+}
+.challenge-presentation-label::before { content: '◇'; margin-right: 8px; }
+.challenge-presentation-name {
+  font-size: clamp(20px, 6cqw, 30px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.challenge-presentation-state {
+  color: #595032;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  letter-spacing: .14em;
+  margin-top: 10px;
+}
+.is-complete .challenge-presentation-state {
+  color: #fff9df;
+  text-shadow: 0 1px 4px rgba(100, 73, 19, .8);
+  font-size: 27px;
+  letter-spacing: .06em;
+}
+.is-visible .challenge-presentation-state { animation: challenge-state-reveal .4s .35s both; }
+.is-complete .challenge-presentation-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 10% 30%, #ffe9a2 0 1px, transparent 3px), radial-gradient(circle at 80% 20%, #fff6d7 0 1px, transparent 3px), radial-gradient(circle at 90% 75%, #ffe9a2 0 1px, transparent 3px), radial-gradient(circle at 20% 85%, #fff6d7 0 1px, transparent 3px);
+}
+.is-visible.is-complete .challenge-presentation-band::after { animation: challenge-state-reveal .8s .25s both; }
+@keyframes challenge-announcement {
+  0% { opacity: 0; clip-path: inset(0 50%); }
+  15%, 80% { opacity: 1; clip-path: inset(0); }
+  100% { opacity: 0; clip-path: inset(0); }
+}
+@keyframes challenge-light-sweep { to { transform: translateX(110%); } }
+@keyframes challenge-state-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .challenge-presentation.is-visible { animation: none; opacity: 1; }
+  .is-visible .challenge-presentation-state,
+  .is-visible .challenge-presentation-band::before,
+  .is-visible.is-complete .challenge-presentation-band::after { animation: none; }
+}
