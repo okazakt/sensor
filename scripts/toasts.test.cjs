@@ -39,3 +39,45 @@ test('タップの捕捉時に旧通知を消し、ボタンが表示する新�
   elements['volume-mode-toast'].classList.add('show');
   assert.deepEqual(Object.entries(elements).filter(([, el]) => el.classList.has('show')).map(([id]) => id), ['volume-mode-toast']);
 });
+
+test('音量ボタン連打は音量通知を閉じず、他の通知を閉じる', () => {
+  const {context: c, elements} = fixture();
+  const toast = elements['volume-mode-toast'];
+  let removals = 0;
+  toast.classList.remove = () => { removals++; };
+  for (let i = 0; i < 3; i++) {
+    c.dismissToastsOnOutsideTap({target: {closest: selector =>
+      selector.includes('#volume-down-btn') ? {disabled: false} : null}});
+  }
+  assert.equal(removals, 0);
+  assert.ok(toast.classList.has('show'));
+  assert.ok(Object.entries(elements).every(([id, el]) => id === 'volume-mode-toast' || !el.classList.has('show')));
+});
+
+test('音量更新は20本の棒を再利用し、最後の操作から1秒で消える', () => {
+  const {context: c, elements} = fixture();
+  const bars = Array.from({length: 20}, () => ({classList: {toggle(_, active) { this.active = active; }}}));
+  const value = {};
+  const toast = elements['volume-mode-toast'];
+  toast.querySelectorAll = () => bars;
+  toast.querySelector = () => value;
+  const timers = new Map();
+  let nextId = 10;
+  c.setTimeout = (callback, delay) => { timers.set(++nextId, {callback, delay}); return nextId; };
+  c.clearTimeout = id => timers.delete(id);
+  c.appState = {soundVolume: 1};
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  vm.runInContext(source.slice(source.indexOf('function showVolumeModeToast()'), source.indexOf('function changeSoundVolume')), c);
+  for (const volume of [0, 1, 9, 10]) {
+    c.appState.soundVolume = volume;
+    c.showVolumeModeToast();
+    assert.equal(value.textContent, `${volume * 10}%`);
+    assert.equal(bars.filter(bar => bar.classList.active).length, volume * 2);
+    assert.equal(timers.size, 1);
+    assert.ok(toast.classList.has('show'));
+  }
+  const timer = [...timers.values()][0];
+  assert.equal(timer.delay, 1000);
+  timer.callback();
+  assert.ok(!toast.classList.has('show'));
+});

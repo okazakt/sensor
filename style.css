@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "72";
+  --css-rev: "73";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1940,4 +1940,33 @@ body {
   .is-place-visible .challenge-presentation-place,
   .is-visible .challenge-presentation-band::before,
   .is-visible.is-complete .challenge-presentation-band::after { animation: none; }
+}
+
+/* Stable volume layout: only bar brightness and the numeric value change. */
+#volume-mode-toast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 4ch;
+  gap: 10px;
+  font-size: clamp(8px, 2.5vw, 13px);
+  white-space: nowrap;
+}
+.volume-toast-label { text-align: left; }
+.volume-toast-bars {
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  gap: 3px;
+  height: 18px;
+  align-items: stretch;
+}
+.volume-toast-bars > span {
+  width: 2px;
+  max-width: 100%;
+  justify-self: center;
+  background: var(--sheikah-cyan);
+  opacity: 0.18;
+}
+.volume-toast-bars > span.active { opacity: 1; }
+.volume-toast-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }

@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="53">
+  <meta name="html-rev" content="54">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -263,7 +263,11 @@
               <span class="volume-label">SOUND VOLUME</span>
               <button class="volume-step-btn" id="volume-up-btn" type="button" aria-label="Volume up">▲</button>
             </div>
-            <div class="sound-mode-toast" id="volume-mode-toast" role="status" aria-live="polite"></div>
+            <div class="sound-mode-toast" id="volume-mode-toast" role="status" aria-live="polite">
+              <span class="volume-toast-label">SOUND VOLUME</span>
+              <span class="volume-toast-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="volume-toast-value">70%</span>
+            </div>
           
             <button class="btn-sheikah btn-sub-control active continuous-mode-btn" id="continuous-toggle-btn">
               <span class="continuous-mode-icons" aria-hidden="true">

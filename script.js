@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111302";
+const BASE_JS_VERSION = "v0.26.101.111333";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -228,7 +228,7 @@ function initializeResponsiveLayout() {
   const labels = [...document.querySelectorAll(
     '#label-sound-state, #label-wake-state, #label-continuous-state, .volume-label, .condition-label'
   )];
-  const toasts = [...document.querySelectorAll('.sound-mode-toast, #toast-text')];
+  const toasts = [...document.querySelectorAll('.sound-mode-toast:not(#volume-mode-toast), #toast-text')];
   let pending = false;
   function fit(element, maximum, heightLimit) {
     if (!element.clientWidth || !element.textContent.trim()) return;
@@ -2969,7 +2969,8 @@ function hideOtherSettingToasts(activeToastId = null) {
 // Clear the old toast before the tapped control handles the event and shows a new one.
 function dismissToastsOnOutsideTap(event) {
   if (event.target.closest?.('.sound-mode-toast, #toast-banner')) return;
-  hideOtherSettingToasts();
+  const volumeButton = event.target.closest?.('#volume-down-btn, #volume-up-btn');
+  hideOtherSettingToasts(volumeButton && !volumeButton.disabled ? 'volume-mode-toast' : null);
 }
 document.addEventListener('pointerdown', dismissToastsOnOutsideTap, true);
 document.addEventListener('click', dismissToastsOnOutsideTap, true);
@@ -3070,8 +3071,10 @@ function showVolumeModeToast() {
 
   hideOtherSettingToasts('volume-mode-toast');
 
-  const bars = '■'.repeat(appState.soundVolume) + '□'.repeat(10 - appState.soundVolume);
-  toast.textContent = `SOUND VOLUME　${bars}　${appState.soundVolume * 10}%`;
+  toast.querySelectorAll('.volume-toast-bars > span').forEach((bar, index) => {
+    bar.classList.toggle('active', index < appState.soundVolume * 2);
+  });
+  toast.querySelector('.volume-toast-value').textContent = `${appState.soundVolume * 10}%`;
   toast.classList.add('show');
 
   if (volumeModeToastTimer) {
@@ -3081,7 +3084,7 @@ function showVolumeModeToast() {
   volumeModeToastTimer = setTimeout(() => {
     toast.classList.remove('show');
     volumeModeToastTimer = null;
-  }, 2800);
+  }, 1000);
 }
 
 function changeSoundVolume(step) {
