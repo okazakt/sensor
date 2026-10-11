@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111457";
+const BASE_JS_VERSION = "v0.26.101.111511";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2896,7 +2896,7 @@ function updateButtonStateUI() {
   pulseButton.querySelectorAll('[data-pulse-rate]').forEach(icon => {
     icon.classList.toggle('active', icon.dataset.pulseRate === appState.pulseRate);
   });
-  pulseLabel.textContent = `PULSE ${appState.pulseRate.toUpperCase()}`;
+  pulseLabel.textContent = `${appState.pulseRate.toUpperCase()} PULSE`;
   pulseButton.setAttribute('aria-label', t.pulseRateDescriptions[appState.pulseRate]);
 
   const wakeBtn = document.getElementById('wakelock-toggle-btn');
