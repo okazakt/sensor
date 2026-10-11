@@ -721,6 +721,8 @@ body {
 }
 
 .status-panel {
+  position: relative;
+  min-height: 58px;
   background: rgba(3, 8, 14, 0.65);
   border: 1px solid #334;
   border-radius: 6px;
@@ -906,12 +908,13 @@ body {
 }
 
 .sound-mode-toast {
-  position: fixed;
+  position: absolute;
   left: 50%;
-  bottom: calc(316px + env(safe-area-inset-bottom));
+  top: 0;
+  bottom: 0;
   z-index: 1000;
-  width: min(calc(100vw - 32px), 420px);
-  height: 58px;
+  width: 100%;
+  height: 100%;
   padding: 8px 12px;
   box-sizing: border-box;
   border: 1px solid var(--sheikah-cyan);
@@ -1634,7 +1637,6 @@ body {
 }
 .bottom-section .btn-sub-control { overflow: hidden; padding-block: 4px; }
 .sound-mode-toast {
-  width: min(calc(100vw - 32px), 420px);
   overflow: hidden;
 }
 .overlay-modal { overflow-y: auto; }
@@ -1696,10 +1698,6 @@ body {
   }
   .slide-page .list-scroll { padding-bottom: 16px; }
   .overlay-modal { justify-content: flex-start; padding-block: 16px; }
-  .sound-mode-toast {
-    bottom: calc(66px + env(safe-area-inset-bottom));
-    width: min(calc(100vw - 32px), 420px);
-  }
 }
 
 /* Compact standalone navigation; browser spacing remains unchanged. */
