@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111606";
+const BASE_JS_VERSION = "v0.26.101.111622";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1663,7 +1663,15 @@ function getSearchCandidates() {
 }
 
 function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos) {
-  const candidates = getSearchCandidates();
+  const available = getSearchCandidates();
+  const outsideArrivalRange = appState.activeChallenge?.mode === 'random'
+    ? available.filter(place => destinationDistance(appState.currentPos, place) > 20)
+    : available;
+  const candidates = outsideArrivalRange.length ? outsideArrivalRange : available;
+  appState.randomTargetArrivalFallback = !outsideArrivalRange.length;
+  // Retain the selection position so late-arriving area details cannot award
+  // a spot that was already within arrival range when an alternative existed.
+  appState.randomTargetOrigin = appState.currentPos ? { ...appState.currentPos } : null;
   if (appState.targetMode === 'all' || !candidates.length) {
     appState.randomTarget = null;
   } else if (appState.targetMode === 'nearest') {
@@ -1680,7 +1688,9 @@ function maintainSearchTarget() {
     appState.randomTarget = null;
     return;
   }
-  if (!appState.randomTarget || !getSearchCandidates().some(place => place.id === appState.randomTarget.id)) {
+  if (!appState.randomTarget || !getSearchCandidates().some(place => place.id === appState.randomTarget.id) ||
+      (appState.activeChallenge?.mode === 'random' && !appState.randomTargetArrivalFallback && appState.randomTargetOrigin &&
+        destinationDistance(appState.randomTargetOrigin, appState.randomTarget) <= 20)) {
     chooseSearchTarget();
   }
 }
@@ -1759,6 +1769,12 @@ function evaluateSensorCycle() {
 
   const geometryTargets = lockedTarget ? [lockedTarget] : appState.places;
   geometryTargets.forEach(requestDestinationGeometry);
+  if (lockedTarget && !appState.pinpointTarget && appState.activeChallenge?.mode === 'random' && !appState.randomTargetArrivalFallback &&
+      appState.randomTargetOrigin && destinationDistance(appState.randomTargetOrigin, lockedTarget) <= 20) {
+    chooseSearchTarget();
+    evaluateSensorCycle();
+    return;
+  }
 
   if (activeTargets.length === 0) {
     if (!distInfoEl.textContent.includes("API")) {
@@ -2249,9 +2265,12 @@ async function searchSecretChallenge(position, radius, language, mode) {
     throw responses.find(result => result.status === 'rejected').reason;
   }
   const mutedIds = new Set(loadSavedData().arrivals.filter(item => item.muted).map(item => item.id));
+  const hasOutsideCandidate = mode === 'random' && successful.some(result =>
+    result.value.places.some(place => !mutedIds.has(place.id) && destinationDistance(position, place) > 20));
   const places = new Map();
   for (const result of successful) {
-    const candidates = result.value.places.filter(place => !mutedIds.has(place.id));
+    const candidates = result.value.places.filter(place => !mutedIds.has(place.id) &&
+      (!hasOutsideCandidate || destinationDistance(position, place) > 20));
     if (mode === 'random') {
       // Partial Fisher-Yates: sample without replacement from each group's results.
       const count = Math.min(5, candidates.length);

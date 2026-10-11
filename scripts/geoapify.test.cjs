@@ -11,12 +11,27 @@ function fixture(fetch) {
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('const CHALLENGE_GROUPS'), source.indexOf('const RADIUS_OPTIONS')), c);
   c.currentLang = 'ja';
+  vm.runInContext(source.slice(source.indexOf('function validDestinationGeometry'), source.indexOf('function geoapifyPlaceIdentity')), c);
   vm.runInContext(source.slice(source.indexOf('function geoapifyPlaceIdentity'), source.indexOf('function applyDestinationDetails')), c);
   c.loadSavedData = () => ({ arrivals: [] });
   vm.runInContext(source.slice(source.indexOf('const CHALLENGE_EXCLUDED_CATEGORIES'), source.indexOf('async function executeSearch')), c);
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
+test('ランダムシークレットは各分類の抽出前に到着圏内を除外する', async () => {
+  const c = fixture(async () => ({ ok: true, json: async () => ({ features: [
+    feature('inside', 0), feature('boundary', 0.02), feature('outside', 0.021)
+  ] }) }));
+  const random = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
+  assert.equal(JSON.stringify(random.places.map(p => p.id)), '["outside"]');
+  const nearest = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'nearest');
+  assert.equal(nearest.places.length, 3);
+  c.fetch = async () => ({ ok: true, json: async () => ({ features: [
+    feature('inside', 0), feature('boundary', 0.02)
+  ] }) });
+  const fallback = await c.searchSecretChallenge({lat:0,lng:0}, 1000, 'ja', 'random');
+  assert.equal(fallback.places.length, 2);
+});
 test('シークレットは4分類を個別検索し、各分類から先頭以外もランダムに5件抽出する', async () => {
   const urls = [];
   const c = fixture(async url => {

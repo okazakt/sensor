@@ -38,6 +38,67 @@ function sensorFixture() {
   return { context, elements, records };
 }
 
+test('ランダムチャレンジは圏外を優先し、候補がなければ到着圏内から抽選する', () => {
+  const { context: c } = sensorFixture();
+  c.appState.activeChallenge = { mode: 'random' };
+  c.appState.places = [0, 19, 20, 20.01].map(lat => ({ id: String(lat), lat, lng: 0 }));
+  vm.runInContext('Math.random = () => 0', c);
+  for (let i = 0; i < 10; i++) {
+    c.appState.randomTarget = null;
+    c.chooseSearchTarget();
+    assert.equal(c.appState.randomTarget.id, '20.01');
+  }
+  c.appState.places.pop();
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget.id, '0');
+  vm.runInContext('Math.random = () => 0.999', c);
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget.id, '20');
+  let arrived = false;
+  c.handleArrival = () => { arrived = true; };
+  c.evaluateSensorCycle();
+  assert.equal(arrived, true);
+  c.appState.places = [];
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget, null);
+});
+
+test('選択後の移動では到着でき、後から判明した開始時点の敷地内は選び直す', () => {
+  const { context: c } = sensorFixture();
+  c.appState.activeChallenge = { mode: 'random' };
+  c.getDistance = (lat, _lng, otherLat) => Math.abs(otherLat - lat);
+  const place = { id: 'park', lat: 100, lng: 0 };
+  c.appState.places = [place, { id: 'other', lat: 200, lng: 0 }];
+  vm.runInContext('Math.random = () => 0', c);
+  c.chooseSearchTarget();
+  c.appState.currentPos = { lat: 90, lng: 0 };
+  let arrived;
+  c.handleArrival = target => { arrived = target.id; };
+  c.evaluateSensorCycle();
+  assert.equal(arrived, 'park');
+  c.appState.currentPos = { lat: 0, lng: 0 };
+  place.geometry = { type: 'Polygon', coordinates: [
+    [[-0.01,-0.01],[0.01,-0.01],[0.01,0.01],[-0.01,0.01],[-0.01,-0.01]]
+  ] };
+  c.maintainSearchTarget();
+  assert.equal(c.appState.randomTarget.id, 'other');
+  c.appState.places = [place];
+  c.chooseSearchTarget();
+  c.evaluateSensorCycle();
+  assert.equal(arrived, 'park');
+});
+
+test('通常のランダム探索と最寄りチャレンジは到着圏内も選択できる', () => {
+  const { context: c } = sensorFixture();
+  c.appState.places = [{ id: 'nearby', lat: 10, lng: 0 }];
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget.id, 'nearby');
+  c.appState.activeChallenge = { mode: 'nearest' };
+  c.appState.targetMode = 'nearest';
+  c.chooseSearchTarget();
+  assert.equal(c.appState.randomTarget.id, 'nearby');
+});
+
 test('18件の候補と固定された探知先1件を区別して表示する', () => {
   const { context: c, elements } = sensorFixture();
   c.appState.places = Array.from({ length: 18 }, (_, i) => ({
