@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="60">
+  <meta name="html-rev" content="61">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -175,29 +175,6 @@
         <div class="relic-circuit"></div>
         <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
           <div class="map-signal-glow" aria-hidden="true"></div>
-          <svg class="map-rim-material" viewBox="0 0 440 440" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="rim-gold" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="var(--sheikah-gold)" />
-                <stop offset="0.5" stop-color="var(--sheikah-gold-dark)" />
-                <stop offset="1" stop-color="var(--sheikah-gold)" />
-              </linearGradient>
-              <mask id="rim-shape" maskUnits="userSpaceOnUse" x="-20" y="-20" width="480" height="480">
-                <circle cx="220" cy="220" r="220" fill="white" />
-                <path class="map-rim-north-shape" d="M184 18V4C196 4 204 1 220 -10C236 1 244 4 256 4V18Z" fill="white" />
-              </mask>
-              <filter id="rim-inset" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-                <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0" /></feComponentTransfer>
-                <feGaussianBlur stdDeviation="3" />
-                <feComposite in2="SourceAlpha" operator="in" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
-                <feBlend in2="SourceGraphic" mode="multiply" />
-              </filter>
-            </defs>
-            <g filter="url(#rim-inset)">
-              <rect x="-10" y="-10" width="460" height="460" fill="url(#rim-gold)" mask="url(#rim-shape)" />
-            </g>
-          </svg>
           <div id="map-container">
             <div id="map"></div>
             <div class="player-pointer" id="player-pointer">
