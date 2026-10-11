@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111333";
+const BASE_JS_VERSION = "v0.26.101.111337";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1119,8 +1119,8 @@ if (!SOUND_MODES.includes(savedSoundMode)) {
   savedSoundMode = 'headphone';
 }
 
-let savedSoundVolume = parseInt(localStorage.getItem('sheikah_sound_volume') || '7', 10);
-if (isNaN(savedSoundVolume) || savedSoundVolume < 1 || savedSoundVolume > 10) {
+let savedSoundVolume = Number(localStorage.getItem('sheikah_sound_volume') || '7');
+if (!Number.isFinite(savedSoundVolume) || savedSoundVolume < 0.5 || savedSoundVolume > 10 || !Number.isInteger(savedSoundVolume * 2)) {
   savedSoundVolume = 7;
 }
 
@@ -3090,7 +3090,7 @@ function showVolumeModeToast() {
 function changeSoundVolume(step) {
   if (appState.isMuted) return;
 
-  const nextVolume = Math.max(1, Math.min(10, appState.soundVolume + step));
+  const nextVolume = Math.max(0.5, Math.min(10, appState.soundVolume + step / 2));
   if (nextVolume === appState.soundVolume) {
     showVolumeModeToast();
     return;

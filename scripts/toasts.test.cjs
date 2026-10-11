@@ -68,7 +68,7 @@ test('音量更新は20本の棒を再利用し、最後の操作から1秒で�
   c.appState = {soundVolume: 1};
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   vm.runInContext(source.slice(source.indexOf('function showVolumeModeToast()'), source.indexOf('function changeSoundVolume')), c);
-  for (const volume of [0, 1, 9, 10]) {
+  for (const volume of [0.5, 1, 7.5, 9.5, 10]) {
     c.appState.soundVolume = volume;
     c.showVolumeModeToast();
     assert.equal(value.textContent, `${volume * 10}%`);
@@ -80,4 +80,40 @@ test('音量更新は20本の棒を再利用し、最後の操作から1秒で�
   assert.equal(timer.delay, 1000);
   timer.callback();
   assert.ok(!toast.classList.has('show'));
+});
+
+
+test('音量は5%刻みの20段階で保存され、上下限を超えない', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  const saved = [];
+  const c = {appState: {soundVolume: 0.5, isMuted: false},
+    localStorage: {setItem: (_, value) => saved.push(value)},
+    playBeep() {}, showVolumeModeToast() {}};
+  vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('function changeSoundVolume'), source.indexOf("document.getElementById('volume-down-btn')", source.indexOf('function changeSoundVolume'))), c);
+  c.changeSoundVolume(-1);
+  assert.equal(c.appState.soundVolume, 0.5);
+  for (let level = 2; level <= 20; level++) {
+    c.changeSoundVolume(1);
+    assert.equal(c.appState.soundVolume * 10, level * 5);
+    assert.equal(Number(saved.at(-1)), level / 2);
+  }
+  c.changeSoundVolume(1);
+  assert.equal(c.appState.soundVolume, 10);
+  c.changeSoundVolume(-1);
+  assert.equal(c.appState.soundVolume, 9.5);
+  c.appState.isMuted = true;
+  c.changeSoundVolume(-1);
+  assert.equal(c.appState.soundVolume, 9.5);
+});
+
+test('保存した5%刻みの値と以前の10%刻みの値を読み込める', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
+  const loader = source.slice(source.indexOf('let savedSoundVolume ='), source.indexOf('let savedSoundVolume =') + source.slice(source.indexOf('let savedSoundVolume =')).indexOf('\n}', 0) + 2);
+  for (const [stored, expected] of [['7', 7], ['7.5', 7.5], ['0.5', 0.5], ['10', 10], [null, 7], ['bad', 7], ['0', 7], ['10.5', 7], ['1.2', 7]]) {
+    const c = {localStorage: {getItem: () => stored}};
+    vm.createContext(c);
+    vm.runInContext(loader + '\nthis.loaded = savedSoundVolume;', c);
+    assert.equal(c.loaded, expected);
+  }
 });
