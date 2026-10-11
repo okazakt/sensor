@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "73";
+  --css-rev: "74";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1047,22 +1047,22 @@ body {
   color: #667788;
 }
 
-/* 2モード・到達後探索切替 */
-.continuous-mode-btn {
+/* 3段階・探知信号の周期倍率 */
+.pulse-rate-btn {
   position: relative;
   white-space: nowrap;
   gap: 6px;
   justify-content: flex-start;
 }
 
-.continuous-mode-icons {
+.pulse-rate-icons {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
 
-.continuous-mode-icon {
+.pulse-rate-icon {
   width: 16px;
   height: 16px;
   fill: #667788;
@@ -1070,17 +1070,17 @@ body {
   flex-shrink: 0;
 }
 
-.continuous-mode-btn .continuous-mode-icon.active {
+.pulse-rate-btn .pulse-rate-icon.active {
   fill: var(--sheikah-cyan);
   filter: drop-shadow(0 0 3px rgba(0, 243, 255, 0.7));
 }
 
-.continuous-mode-separator {
+.pulse-rate-separator {
   color: #667788;
   flex-shrink: 0;
 }
 
-#label-continuous-state {
+#label-pulse-state {
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -1578,7 +1578,7 @@ body {
 }
 #label-sound-state,
 #label-wake-state,
-#label-continuous-state,
+#label-pulse-state,
 .volume-label,
 .condition-label {
   white-space: nowrap;
@@ -1586,12 +1586,12 @@ body {
 }
 .sound-mode-icons,
 .wake-mode-icons,
-.continuous-mode-icons {
+.pulse-rate-icons {
   gap: 2px;
 }
 .sound-mode-icon,
 .wake-mode-icon,
-.continuous-mode-icon {
+.pulse-rate-icon {
   width: clamp(10px, 3.5cqw, 16px);
   height: clamp(10px, 3.5cqw, 16px);
 }
@@ -1627,7 +1627,7 @@ body {
   --setting-control-height: clamp(44px, calc(var(--main-controls-height) * 0.145), 56px);
   --setting-icon-size: clamp(12px, 3.8cqw, 16px);
 }
-.sound-mode-icon, .wake-mode-icon, .continuous-mode-icon,
+.sound-mode-icon, .wake-mode-icon, .pulse-rate-icon,
 .condition-icon, .condition-filter-icon {
   width: var(--setting-icon-size);
   height: var(--setting-icon-size);
@@ -1751,7 +1751,7 @@ body {
 }
 
 /* Challenge progression and unavailable controls. aria-disabled retains explanation taps. */
-.condition-btn.feature-locked, #continuous-toggle-btn.feature-locked { opacity: .5; cursor: default; }
+.condition-btn.feature-locked { opacity: .5; cursor: default; }
 #condition-mode-toast { white-space: pre-line; }
 .challenge-help { padding: 12px 16px; font-size: .8rem; line-height: 1.6; color: var(--sheikah-gold); }
 .challenge-active { flex-direction: row; align-items: center; justify-content: space-between; }

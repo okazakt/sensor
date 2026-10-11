@@ -7,13 +7,13 @@ const path = require('node:path');
 
 function fixture() {
   const ids = ['condition-mode-toast', 'sound-mode-toast', 'volume-mode-toast',
-    'continuous-mode-toast', 'wake-mode-toast', 'toast-banner'];
+    'pulse-rate-toast', 'wake-mode-toast', 'toast-banner'];
   const elements = Object.fromEntries(ids.map(id => [id, {classList: new Set(['show'])}]));
   for (const element of Object.values(elements)) element.classList.remove = element.classList.delete;
   const listeners = [], cancelled = [];
   const context = {
     conditionToastTimer: 1, soundModeToastTimer: 2, volumeModeToastTimer: 3,
-    continuousModeToastTimer: 4, wakeModeToastTimer: 5, toastBannerTimer: 6,
+    pulseRateToastTimer: 4, wakeModeToastTimer: 5, toastBannerTimer: 6,
     clearTimeout: id => cancelled.push(id),
     document: {getElementById: id => elements[id], addEventListener: (...args) => listeners.push(args)}
   };

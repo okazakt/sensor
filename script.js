@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111337";
+const BASE_JS_VERSION = "v0.26.101.111455";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -226,7 +226,7 @@ function initializeResponsiveLayout() {
   orientation.addEventListener('change', resetRotationOffsets);
   window.addEventListener('orientationchange', resetRotationOffsets);
   const labels = [...document.querySelectorAll(
-    '#label-sound-state, #label-wake-state, #label-continuous-state, .volume-label, .condition-label'
+    '#label-sound-state, #label-wake-state, #label-pulse-state, .volume-label, .condition-label'
   )];
   const toasts = [...document.querySelectorAll('.sound-mode-toast:not(#volume-mode-toast), #toast-text')];
   let pending = false;
@@ -419,10 +419,11 @@ const I18N = {
     wakeLockOff: "KEEP SCREEN OFF",
     wakeLockOnDesc: "画面ON：使用中は画面が自動で消えないようにします。",
     wakeLockOffDesc: "画面OFF：端末の設定に従って画面が自動で消えます。",
-    continuousSearch: "CONTINUOUS",
-    stopOnArrival: "STOP ON ARRIVAL",
-    continuousSearchDesc: "連続探索：到達後も探索を継続し、次の未踏スポットを探します。",
-    stopOnArrivalDesc: "到達時終了：スポットに到達すると探索を終了します。",
+    pulseRateDescriptions: {
+      max: "探知信号：最速（標準の間隔）",
+      mid: "探知信号：中速（標準の2倍の間隔）",
+      low: "探知信号：低速（標準の4倍の間隔）"
+    },
     langSwitchLabel: "→EN",
     footerTip: "※消音時も円周の光とフラッシュで反応",
     keywordsTitle: "探索履歴一覧",
@@ -505,10 +506,11 @@ const I18N = {
     wakeLockOff: "KEEP SCREEN OFF",
     wakeLockOnDesc: "Keep screen on: Prevents the screen from turning off automatically while in use.",
     wakeLockOffDesc: "Keep screen off: Allows the screen to turn off according to your device settings.",
-    continuousSearch: "CONTINUOUS",
-    stopOnArrival: "STOP ON ARRIVAL",
-    continuousSearchDesc: "Continuous search: Keeps searching for the next undiscovered spot after arrival.",
-    stopOnArrivalDesc: "Stop on arrival: Ends the search when you reach a spot.",
+    pulseRateDescriptions: {
+      max: "Pulse rate: MAX · Default intervals",
+      mid: "Pulse rate: MID · 2× default intervals",
+      low: "Pulse rate: LOW · 4× default intervals"
+    },
     langSwitchLabel: "→JA",
     footerTip: "Visual ring pulses even in mute mode",
     keywordsTitle: "Search History",
@@ -1138,7 +1140,7 @@ let appState = {
   isMuted: savedSoundMode === 'muted',
   wakeLockActive: savedWakeLockActive,
   soundVolume: savedSoundVolume,
-  continuousSearch: true,
+  pulseRate: readSensorSetting("pulse_rate", ["max", "mid", "low"], "max"),
   targetMode: challengeProgress().target ? readSensorSetting("target_mode", ["random", "nearest", "all"], "nearest") : "nearest",
   sensorDetail: challengeProgress().sensor ? readSensorSetting("sensor_detail", ["standard", "detailed"], "standard") : "standard",
   activeChallenge: null,
@@ -1801,6 +1803,10 @@ function evaluateSensorCycle() {
 }
 
 function scheduleRadarSound(interval, isDoubleBeep = false) {
+  // Keep pitch and double-beep spacing unchanged; only slow the repeat cycle.
+  const baseInterval = interval;
+  const rate = { max: 1, mid: 0.5, low: 0.25 }[appState.pulseRate] || 1;
+  interval = baseInterval / rate;
   if (radarTimer && scheduledInterval === interval) {
     return;
   }
@@ -1818,7 +1824,7 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
     if (isDoubleBeep) {
       playDoubleBeep();
     } else {
-      playBeep(interval <= 900 ? 2100 : 1750);
+      playBeep(baseInterval <= 900 ? 2100 : 1750);
     }
 
     const wave = document.getElementById('radar-pulse');
@@ -1896,20 +1902,8 @@ function updateArrivalRecordWithDetails(db, target, now) {
 
   showChallengePresentation(null, false, target);
 
-  if (!appState.continuousSearch) {
-    appState.pinpointTarget = null;
-    stopSearchAndReset();
-    return;
-  }
-
   appState.pinpointTarget = null;
-  resetKeywordSearch();
-  executeSearch();
-  evaluateSensorCycle();
-
-  setTimeout(() => {
-    evaluateSensorCycle();
-  }, 1500);
+  stopSearchAndReset();
 }
 
 let mapRotationFrame = null;
@@ -2363,12 +2357,9 @@ function releaseChallengeSettings() {
   appState.challengeSettings = null;
   appState.targetMode = saved.targetMode;
   appState.sensorDetail = saved.sensorDetail;
-  appState.continuousSearch = saved.continuousSearch;
   radiusIndex = saved.radiusIndex;
   document.getElementById('keyword-input').readOnly = false;
   document.getElementById('keyword-input').disabled = false;
-  document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'false');
-  document.getElementById('continuous-toggle-btn').classList.remove('feature-locked');
   applyFeatureAccess();
   renderChallenges();
 }
@@ -2451,20 +2442,17 @@ function startChallenge(challenge) {
   if (!isChallengeAvailable(challenge)) return;
   stopSearchAndReset();
   appState.challengeSettings = { targetMode: appState.targetMode, sensorDetail: appState.sensorDetail,
-    continuousSearch: appState.continuousSearch, radiusIndex };
+    radiusIndex };
   appState.activeChallenge = challenge;
   appState.challengeCategories = challengeCategoriesForGroup(challenge.group);
   appState.targetMode = challenge.mode;
   appState.sensorDetail = challenge.sensor;
-  appState.continuousSearch = false;
   radiusIndex = RADIUS_OPTIONS.indexOf(challenge.radius);
   const input = document.getElementById('keyword-input');
   input.value = challengeName(challenge);
   input.blur();
   input.readOnly = true;
   input.disabled = true;
-  document.getElementById('continuous-toggle-btn').setAttribute('aria-disabled', 'true');
-  document.getElementById('continuous-toggle-btn').classList.add('feature-locked');
   checkMainInputClearState();
   updateRadiusAccess();
   startSearchFromSet(true);
@@ -2903,15 +2891,13 @@ function updateButtonStateUI() {
     volumeUpBtn.disabled = false;
   }
 
-  const continuousIconLoop = document.getElementById('continuous-icon-loop');
-  const continuousIconFlag = document.getElementById('continuous-icon-flag');
-  const labelContinuous = document.getElementById('label-continuous-state');
-
-  continuousIconLoop.classList.toggle('active', appState.continuousSearch);
-  continuousIconFlag.classList.toggle('active', !appState.continuousSearch);
-  labelContinuous.textContent = appState.continuousSearch
-    ? t.continuousSearch
-    : t.stopOnArrival;
+  const pulseButton = document.getElementById('pulse-rate-btn');
+  const pulseLabel = document.getElementById('label-pulse-state');
+  pulseButton.querySelectorAll('[data-pulse-rate]').forEach(icon => {
+    icon.classList.toggle('active', icon.dataset.pulseRate === appState.pulseRate);
+  });
+  pulseLabel.textContent = `PULSE ${appState.pulseRate.toUpperCase()}`;
+  pulseButton.setAttribute('aria-label', t.pulseRateDescriptions[appState.pulseRate]);
 
   const wakeBtn = document.getElementById('wakelock-toggle-btn');
   const wakeIconOn = document.getElementById('wake-icon-on');
@@ -2956,11 +2942,11 @@ let toastBannerTimer = null;
 
 function hideOtherSettingToasts(activeToastId = null) {
   [conditionToastTimer, soundModeToastTimer, volumeModeToastTimer,
-    continuousModeToastTimer, wakeModeToastTimer, toastBannerTimer].forEach(clearTimeout);
+    pulseRateToastTimer, wakeModeToastTimer, toastBannerTimer].forEach(clearTimeout);
   conditionToastTimer = soundModeToastTimer = volumeModeToastTimer = null;
-  continuousModeToastTimer = wakeModeToastTimer = toastBannerTimer = null;
+  pulseRateToastTimer = wakeModeToastTimer = toastBannerTimer = null;
   const toastIds = ['condition-mode-toast', 'sound-mode-toast', 'volume-mode-toast',
-    'continuous-mode-toast', 'wake-mode-toast', 'toast-banner'];
+    'pulse-rate-toast', 'wake-mode-toast', 'toast-banner'];
   toastIds.forEach(id => {
     if (id !== activeToastId) document.getElementById(id)?.classList.remove('show');
   });
@@ -3111,39 +3097,36 @@ document.getElementById('volume-up-btn').addEventListener('click', () => {
   changeSoundVolume(1);
 });
 
-let continuousModeToastTimer = null;
+let pulseRateToastTimer = null;
 
-function showContinuousModeToast() {
-  const toast = document.getElementById('continuous-mode-toast');
+function showPulseRateToast() {
+  const toast = document.getElementById('pulse-rate-toast');
   if (!toast) return;
 
-  hideOtherSettingToasts('continuous-mode-toast');
+  hideOtherSettingToasts('pulse-rate-toast');
 
   const t = I18N[currentLang];
-  toast.textContent = appState.continuousSearch
-    ? t.continuousSearchDesc
-    : t.stopOnArrivalDesc;
+  toast.textContent = t.pulseRateDescriptions[appState.pulseRate];
 
   toast.classList.add('show');
 
-  if (continuousModeToastTimer) {
-    clearTimeout(continuousModeToastTimer);
+  if (pulseRateToastTimer) {
+    clearTimeout(pulseRateToastTimer);
   }
 
-  continuousModeToastTimer = setTimeout(() => {
+  pulseRateToastTimer = setTimeout(() => {
     toast.classList.remove('show');
-    continuousModeToastTimer = null;
+    pulseRateToastTimer = null;
   }, 2800);
 }
 
-document.getElementById('continuous-toggle-btn').addEventListener('click', () => {
-  if (appState.activeChallenge) {
-    showConditionToast(currentLang === 'ja' ? 'チャレンジ中は到達時終了です。変更するにはチャレンジを停止してください。' : 'Challenges end on arrival. Stop the challenge to change this setting.');
-    return;
-  }
-  appState.continuousSearch = !appState.continuousSearch;
+document.getElementById('pulse-rate-btn').addEventListener('click', () => {
+  const modes = ['max', 'mid', 'low'];
+  appState.pulseRate = modes[(modes.indexOf(appState.pulseRate) + 1) % modes.length];
+  localStorage.setItem('sheikah_pulse_rate', appState.pulseRate);
   updateButtonStateUI();
-  showContinuousModeToast();
+  evaluateSensorCycle();
+  showPulseRateToast();
 });
 
 let conditionToastTimer = null;

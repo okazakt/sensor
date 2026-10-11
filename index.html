@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="54">
+  <meta name="html-rev" content="55">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -269,19 +269,16 @@
               <span class="volume-toast-value">70%</span>
             </div>
           
-            <button class="btn-sheikah btn-sub-control active continuous-mode-btn" id="continuous-toggle-btn">
-              <span class="continuous-mode-icons" aria-hidden="true">
-                <svg class="continuous-mode-icon active" id="continuous-icon-loop" viewBox="0 0 24 24">
-                  <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                </svg>
-                <svg class="continuous-mode-icon" id="continuous-icon-flag" viewBox="0 0 24 24">
-                  <path d="M5 3v18h2v-7h10l2-4-2-4H7V3H5z"/>
-                </svg>
+            <button type="button" class="btn-sheikah btn-sub-control active pulse-rate-btn" id="pulse-rate-btn">
+              <span class="pulse-rate-icons" aria-hidden="true">
+                <svg class="pulse-rate-icon active" data-pulse-rate="max" viewBox="0 0 24 24"><path d="M2 13h3V5h2v8h4V5h2v8h4V5h2v8h3v2H2z"/></svg>
+                <svg class="pulse-rate-icon" data-pulse-rate="mid" viewBox="0 0 24 24"><path d="M2 13h5V5h2v8h6V5h2v8h5v2H2z"/></svg>
+                <svg class="pulse-rate-icon" data-pulse-rate="low" viewBox="0 0 24 24"><path d="M2 13h9V5h2v8h9v2H2z"/></svg>
               </span>
-              <span class="continuous-mode-separator" aria-hidden="true">｜</span>
-              <span id="label-continuous-state">CONTINUOUS</span>
+              <span class="pulse-rate-separator" aria-hidden="true">｜</span>
+              <span id="label-pulse-state">PULSE MAX</span>
             </button>
-            <div class="sound-mode-toast" id="continuous-mode-toast" role="status" aria-live="polite"></div>
+            <div class="sound-mode-toast" id="pulse-rate-toast" role="status" aria-live="polite"></div>
           </div>
           <div class="dual-btn-row">
             <button class="btn-sheikah btn-sub-control active sound-mode-btn" id="mute-toggle-btn">
