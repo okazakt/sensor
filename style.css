@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "75";
+  --css-rev: "76";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -359,10 +359,29 @@ body {
   border-radius: 50%;
   padding: 6px;
   background: none;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
+  --map-ring-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
   margin-top: 0;
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
+
+
+/* Only this rear layer receives the signal brightness filter. */
+.map-signal-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: var(--map-ring-shadow);
+  pointer-events: none;
+  z-index: -1;
+  animation-duration: inherit;
+  animation-timing-function: inherit;
+  animation-iteration-count: inherit;
+  transition: box-shadow 0.3s ease;
+}
+.signal-level1 > .map-signal-glow, .signal-level1-half > .map-signal-glow { animation-name: ring-light-1; }
+.signal-level2 > .map-signal-glow, .signal-level2-half > .map-signal-glow { animation-name: ring-light-2; }
+.signal-level3 > .map-signal-glow, .signal-level3-half > .map-signal-glow { animation-name: ring-light-3; }
+.signal-level4 > .map-signal-glow, .signal-level4-half > .map-signal-glow { animation-name: ring-light-4; }
 
 /* The opaque circular rim covers the curved north piece's broad base. */
 .circle-map-wrapper::before {
@@ -392,56 +411,72 @@ body {
 }
 
 .circle-map-wrapper.signal-idle {
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
+  --map-ring-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
   animation: none;
 }
 .circle-map-wrapper.signal-level1 {
-  box-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
+  --map-ring-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
   animation: ring-pulse-1 2.5s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level2 {
-  box-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
+  --map-ring-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
   animation: ring-pulse-2 1.5s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level3 {
-  box-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
+  --map-ring-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
   animation: ring-pulse-3 0.8s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level4 {
-  box-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
+  --map-ring-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
   animation: ring-pulse-4 0.45s infinite ease-in-out;
   border: 2px solid #fff;
 }
 
 .day-mode .circle-map-wrapper.signal-level1 {
-  box-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
+  --map-ring-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
 }
 .day-mode .circle-map-wrapper.signal-level2 {
-  box-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff;
+  --map-ring-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff;
 }
 .day-mode .circle-map-wrapper.signal-level3 {
-  box-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff;
+  --map-ring-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff;
 }
 .day-mode .circle-map-wrapper.signal-level4 {
-  box-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff;
+  --map-ring-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff;
   border: 2px solid var(--botw-yellow);
 }
 
 @keyframes ring-pulse-1 {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.01); filter: brightness(1.2); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.01); }
+}
+@keyframes ring-light-1 {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
 }
 @keyframes ring-pulse-2 {
-  0%, 100% { transform: scale(1); filter: brightness(1.1); }
-  50% { transform: scale(1.02); filter: brightness(1.35); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+@keyframes ring-light-2 {
+  0%, 100% { filter: brightness(1.1); }
+  50% { filter: brightness(1.35); }
 }
 @keyframes ring-pulse-3 {
-  0%, 100% { transform: scale(1); filter: brightness(1.2); }
-  50% { transform: scale(1.03); filter: brightness(1.55); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes ring-light-3 {
+  0%, 100% { filter: brightness(1.2); }
+  50% { filter: brightness(1.55); }
 }
 @keyframes ring-pulse-4 {
-  0%, 100% { transform: scale(1.01); filter: brightness(1.4) contrast(1.2); }
-  50% { transform: scale(1.05); filter: brightness(1.9) contrast(1.5); }
+  0%, 100% { transform: scale(1.01); }
+  50% { transform: scale(1.05); }
+}
+@keyframes ring-light-4 {
+  0%, 100% { filter: brightness(1.4) contrast(1.2); }
+  50% { filter: brightness(1.9) contrast(1.5); }
 }
 
 #map-container {
@@ -1719,33 +1754,33 @@ body {
 .lock-question { stroke-width: 2; }
 .lock-question-dot { fill: currentColor; stroke: none; }
 .circle-map-wrapper.signal-level1-half {
-  box-shadow: 0 0 26px var(--sheikah-cyan), inset 0 0 12px var(--sheikah-cyan);
+  --map-ring-shadow: 0 0 26px var(--sheikah-cyan), inset 0 0 12px var(--sheikah-cyan);
   animation: ring-pulse-1 2.05s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level2-half {
-  box-shadow: 0 0 37px var(--sheikah-cyan), inset 0 0 16px #fff;
+  --map-ring-shadow: 0 0 37px var(--sheikah-cyan), inset 0 0 16px #fff;
   animation: ring-pulse-2 1.15s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level3-half {
-  box-shadow: 0 0 48px var(--sheikah-cyan), 0 0 25px var(--sheikah-orange), inset 0 0 21px #fff;
+  --map-ring-shadow: 0 0 48px var(--sheikah-cyan), 0 0 25px var(--sheikah-orange), inset 0 0 21px #fff;
   animation: ring-pulse-3 0.625s infinite ease-in-out;
 }
 .circle-map-wrapper.signal-level4-half {
-  box-shadow: 0 0 62px var(--sheikah-orange), 0 0 35px var(--sheikah-cyan), inset 0 0 28px #fff;
+  --map-ring-shadow: 0 0 62px var(--sheikah-orange), 0 0 35px var(--sheikah-cyan), inset 0 0 28px #fff;
   animation: ring-pulse-4 0.35s infinite ease-in-out;
   border: 2px solid #fff;
 }
 .day-mode .circle-map-wrapper.signal-level1-half {
-  box-shadow: 0 0 26px var(--botw-yellow), inset 0 0 12px var(--botw-yellow);
+  --map-ring-shadow: 0 0 26px var(--botw-yellow), inset 0 0 12px var(--botw-yellow);
 }
 .day-mode .circle-map-wrapper.signal-level2-half {
-  box-shadow: 0 0 37px var(--botw-yellow), inset 0 0 16px #fff;
+  --map-ring-shadow: 0 0 37px var(--botw-yellow), inset 0 0 16px #fff;
 }
 .day-mode .circle-map-wrapper.signal-level3-half {
-  box-shadow: 0 0 48px var(--botw-yellow), 0 0 25px var(--botw-amber), inset 0 0 21px #fff;
+  --map-ring-shadow: 0 0 48px var(--botw-yellow), 0 0 25px var(--botw-amber), inset 0 0 21px #fff;
 }
 .day-mode .circle-map-wrapper.signal-level4-half {
-  box-shadow: 0 0 62px var(--botw-amber), 0 0 35px var(--botw-yellow), inset 0 0 28px #fff;
+  --map-ring-shadow: 0 0 62px var(--botw-amber), 0 0 35px var(--botw-yellow), inset 0 0 28px #fff;
   border: 2px solid var(--botw-yellow);
 }
 
