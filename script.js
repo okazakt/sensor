@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111455";
+const BASE_JS_VERSION = "v0.26.101.111457";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -3121,7 +3121,7 @@ function showPulseRateToast() {
 }
 
 document.getElementById('pulse-rate-btn').addEventListener('click', () => {
-  const modes = ['max', 'mid', 'low'];
+  const modes = ['low', 'mid', 'max'];
   appState.pulseRate = modes[(modes.indexOf(appState.pulseRate) + 1) % modes.length];
   localStorage.setItem('sheikah_pulse_rate', appState.pulseRate);
   updateButtonStateUI();
