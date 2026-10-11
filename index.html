@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="52">
+  <meta name="html-rev" content="53">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -174,29 +174,6 @@
 
         <div class="relic-circuit"></div>
         <div class="circle-map-wrapper signal-idle" id="circle-map-wrapper">
-          <svg class="map-rim" viewBox="0 0 100 100" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="map-rim-material" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="var(--sheikah-gold)" />
-                <stop offset="0.5" stop-color="var(--sheikah-gold-dark)" />
-                <stop offset="1" stop-color="var(--sheikah-gold)" />
-              </linearGradient>
-              <mask id="map-rim-outline" maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="110">
-                <circle cx="50" cy="50" r="50" fill="white" />
-                <path class="map-rim-north" d="M41.43 4.29V0.95C44.29 0.95 46.19 0.24 49.65 -2.14Q50 -2.38 50.35 -2.14C53.81 0.24 55.71 0.95 58.57 0.95V4.29Z" fill="white" />
-              </mask>
-              <filter id="map-rim-relief" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-                <feGaussianBlur in="SourceAlpha" stdDeviation="1.2" result="soft-outline" />
-                <feComposite in="SourceAlpha" in2="soft-outline" operator="out" result="inner-edge" />
-                <feFlood flood-color="#000" result="shade" />
-                <feComposite in="shade" in2="inner-edge" operator="in" result="inner-shadow" />
-                <feComposite in="inner-shadow" in2="SourceGraphic" operator="over" />
-              </filter>
-            </defs>
-            <g filter="url(#map-rim-relief)">
-              <rect x="-5" y="-5" width="110" height="110" fill="url(#map-rim-material)" mask="url(#map-rim-outline)" />
-            </g>
-          </svg>
           <div id="map-container">
             <div id="map"></div>
             <div class="player-pointer" id="player-pointer">
