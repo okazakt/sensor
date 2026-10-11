@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.112320";
+const BASE_JS_VERSION = "v0.26.101.112330";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -318,17 +318,6 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(initializeNavigationSystem, 0);
 }
-
-window.addEventListener('error', function(event) {
-  if (event.filename && !event.filename.includes(location.hostname) && !event.filename.startsWith('/')) {
-    return;
-  }
-  const errorMsg = `エラー発生: ${event.message} (${event.filename}:${event.lineno})`;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(errorMsg).catch(() => {});
-  }
-  alert("エラー発生。ログをクリップボードにコピーしました。\n" + errorMsg);
-});
 
 const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
@@ -4222,3 +4211,4 @@ window.addEventListener('load', () => {
   bootstrapMapAndLocation();
   checkAndShowStartupModals();
 });
+
