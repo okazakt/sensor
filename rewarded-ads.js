@@ -100,8 +100,8 @@
         ? (pending.reason === 'initial' ? '動画を見て利用を開始' : '動画を見て探索を続ける')
         : (pending.reason === 'initial' ? 'Watch a video to start' : 'Watch a video to continue');
       description.textContent = ja()
-        ? '広告動画の視聴に同意して利用を続けます。視聴完了で探索ポイントが1.0増えます。通常の探索は0.2、シークレットは0.5を消費します。広告収益は地図検索と運営費に充てられます。'
-        : 'Agree to watch an ad to continue. Completing it adds 1.0 exploration point. Regular searches use 0.2 and Secret challenges use 0.5. Ad revenue supports location searches and operating costs.';
+        ? '広告動画の視聴に同意し、視聴完了後に利用を続けます。'
+        : 'Agree to watch a video ad and continue using the app after completing it.';
       cancel.textContent = ja() ? 'キャンセル' : 'Cancel';
       languageLabel.textContent = ja() ? '→EN' : '→JA';
       agree.textContent = consentError === 'loading'
