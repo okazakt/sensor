@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111511";
+const BASE_JS_VERSION = "v0.26.101.111606";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -413,7 +413,7 @@ const I18N = {
     soundModeSpeaker: "for SPEAKER",
     soundModeMuted: "MUTED",
     soundModeHeadphoneDesc: "イヤホンモード：音楽と探知音を同時に再生できます。消音モードではイヤホンをご利用ください。",
-    soundModeSpeakerDesc: "スピーカーモード：消音モードでも探知音を再生します。音楽などは停止する場合があります。",
+    soundModeSpeakerDesc: "スピーカーモード：消音モードでも探知音を再生します。音楽などは停止する場合があります。もしも音が聞こえない場合は、アプリを開き直すか、再起動をお試しください。",
     soundModeMutedDesc: "サウンドOFF：探知音を再生しません。",
     wakeLockOn: "KEEP SCREEN ON",
     wakeLockOff: "KEEP SCREEN OFF",
@@ -500,7 +500,7 @@ const I18N = {
     soundModeSpeaker: "for SPEAKER",
     soundModeMuted: "MUTED",
     soundModeHeadphoneDesc: "Headphone mode: Music and detection sounds can play together. Use headphones when Silent Mode is on.",
-    soundModeSpeakerDesc: "Speaker mode: Detection sounds play even in Silent Mode. Music or other audio may stop.",
+    soundModeSpeakerDesc: "Speaker mode: Detection sounds play even in Silent Mode. Music or other audio may stop. If you cannot hear any sound, try reopening or restarting the app.",
     soundModeMutedDesc: "Sound off: Detection sounds will not play.",
     wakeLockOn: "KEEP SCREEN ON",
     wakeLockOff: "KEEP SCREEN OFF",
