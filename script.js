@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.110933";
+const BASE_JS_VERSION = "v0.26.101.111302";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1918,6 +1918,7 @@ let lastCompassEvaluationTime = -Infinity;
 
 function rotateMapSmoothly(targetBearing) {
   const mapDiv = document.getElementById('map');
+  const mapRing = document.getElementById('circle-map-wrapper');
   if (!mapDiv) return;
   mapRotationTarget = -targetBearing;
   // Rotate the canvas with CSS to keep compass updates cheap on mobile devices.
@@ -1937,6 +1938,7 @@ function rotateMapSmoothly(targetBearing) {
       mapRotationFrame = requestAnimationFrame(animateRotation);
     }
     mapDiv.style.transform = `rotate(${appState.visualMapRotation}deg)`;
+    if (mapRing) mapRing.style.setProperty('--map-north-rotation', `${appState.visualMapRotation}deg`);
   }
   mapRotationFrame = requestAnimationFrame(animateRotation);
 }

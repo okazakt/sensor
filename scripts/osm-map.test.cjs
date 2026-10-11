@@ -81,8 +81,13 @@ test('コンパス回転は北をまたぐ最短方向で補間し、出典を�
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   const frames = [];
   const mapElement = { style: {} };
+  const northProperties = {};
+  const mapRing = { style: { setProperty(name, value) { northProperties[name] = value; } } };
   const context = {
-    document: { getElementById(id) { assert.equal(id, 'map'); return mapElement; } },
+    document: { getElementById(id) {
+      if (id === 'circle-map-wrapper') return mapRing;
+      assert.equal(id, 'map'); return mapElement;
+    } },
     appState: { visualMapRotation: -359 },
     requestAnimationFrame(callback) { frames.push(callback); return frames.length; }
   };
@@ -96,6 +101,7 @@ test('コンパス回転は北をまたぐ最短方向で補間し、出典を�
   assert.ok(iterations < 100, 'rotation should settle');
   assert.ok(Math.abs(context.appState.visualMapRotation + 361) < 0.001);
   assert.ok(Math.abs(Number(mapElement.style.transform.slice(7, -4)) + 361) < 0.001);
+  assert.equal(northProperties['--map-north-rotation'], `${context.appState.visualMapRotation}deg`);
 });
 
 function positionFixture() {
