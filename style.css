@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "85";
+  --css-rev: "86";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1829,7 +1829,7 @@ body {
 .challenge-dialog:focus, .challenge-dialog :focus,
 .challenge-row:focus, .challenge-row button:focus,
 #title-page-challenges:focus { outline: none; }
-.challenge-dialog button:focus-visible, .challenge-row:focus-visible,
+.challenge-dialog button:focus-visible,
 .challenge-row .challenge-set:focus-visible { outline: 2px solid var(--sheikah-gold); outline-offset: 2px; }
 
 /* Let the radius control receive taps while challenge settings are fixed. */

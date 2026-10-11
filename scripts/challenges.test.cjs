@@ -98,3 +98,37 @@ test('ライフは生活サービス・小設備・子育て・公共施設と�
   assert.ok(!covers('adult.brothel'));
   assert.ok(!covers('commercial.erotic'));
 });
+
+test('広告完了前に開始確認を出さず、完了後に一度だけ表示する。広告キャンセルでは表示しない', async () => {
+  for (const watched of [true, false]) {
+    let completeAd;
+    let preparations = 0;
+    const elements = new Map();
+    const element = id => {
+      if (!elements.has(id)) elements.set(id, {open:false, showCount:0,
+        showModal(){this.open=true;this.showCount++;}, focus(){} });
+      return elements.get(id);
+    };
+    const context = {currentLang:'ja', rewardedSearchPending:false,
+      appState:{isPaused:false,isTracking:true}, evaluateSensorCycle(){},
+      isChallengeAvailable:()=>true, challengeName:()=> 'テストチャレンジ',
+      document:{getElementById:element}, window:{SensorRewardAds:{
+        prepare(){preparations++;return new Promise(resolve=>{completeAd=resolve;});}
+      }}
+    };
+    vm.createContext(context);
+    vm.runInContext(source.slice(source.indexOf('let pendingChallenge = null;'),
+      source.indexOf('function getChallengeArrivals')),context);
+    const first = context.requestChallengeStart({id:'test'});
+    assert.equal(element('challenge-start-dialog').open,false);
+    assert.equal(context.appState.isPaused,true);
+    await context.requestChallengeStart({id:'test'});
+    assert.equal(preparations,1);
+    completeAd(watched);
+    await first;
+    assert.equal(element('challenge-start-dialog').open,watched);
+    assert.equal(element('challenge-start-dialog').showCount,watched?1:0);
+    assert.equal(context.appState.isPaused,false);
+    if (watched) assert.equal(element('challenge-start-question').textContent,'チャレンジを開始しますか？');
+  }
+});

@@ -35,17 +35,16 @@
         busy = true;
         try { return await ensureAccess(); } finally { busy = false; }
       },
+      async prepare() {
+        if (busy) return false;
+        busy = true;
+        try { return await ensureAccess(); } finally { busy = false; }
+      },
       async search(kind, execute) {
         if (busy) return false;
         busy = true;
         try {
-          read();
-          if (!state.initialWatched || state.units <= 0) {
-            await ensureAccess();
-            // A completed ad only replenishes access. Require a new button tap
-            // so the original search/challenge never starts from an ad callback.
-            return false;
-          }
+          if (!await ensureAccess()) return false;
           if (await execute() === false) return false;
           read();
           state.units -= kind === 'secret' ? 5 : 2;
@@ -207,6 +206,7 @@
     const controller = createAccessController({ storage, watchAd });
     Object.assign(global.SensorRewardAds, {
       startup: () => controller.startup(),
+      prepare: () => controller.prepare(),
       search: (kind, execute) => controller.search(kind, execute),
       snapshot: () => controller.snapshot(),
       refreshLanguage: () => watchAd.refreshLanguage()

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.112259";
+const BASE_JS_VERSION = "v0.26.101.112320";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2588,20 +2588,33 @@ function startChallenge(challenge) {
 }
 
 let pendingChallenge = null;
-function requestChallengeStart(challenge) {
-  if (!isChallengeAvailable(challenge)) return;
-  pendingChallenge = challenge;
-  const ja = currentLang === 'ja';
+let challengeStartPending = false;
+async function requestChallengeStart(challenge) {
   const dialog = document.getElementById('challenge-start-dialog');
-  dialog.returnValue = '';
-  document.getElementById('challenge-start-question').textContent = ja
-    ? 'チャレンジを開始しますか？' : 'Start this challenge?';
-  document.getElementById('challenge-start-name').textContent = challengeName(challenge) +
-    (appState.isTracking ? (ja ? '（現在の探索は終了します）' : ' (the current search will end)') : '');
-  document.getElementById('challenge-start-yes').textContent = ja ? 'はい' : 'Yes';
-  document.getElementById('challenge-start-no').textContent = ja ? 'いいえ' : 'No';
-  dialog.showModal();
-  document.getElementById('challenge-start-question').focus({ preventScroll: true });
+  if (!isChallengeAvailable(challenge) || challengeStartPending || dialog.open || rewardedSearchPending) return;
+  challengeStartPending = true;
+  const previouslyPaused = appState.isPaused;
+  appState.isPaused = true;
+  evaluateSensorCycle();
+  window.SensorRewardAds.language = () => currentLang;
+  try {
+    if (!await window.SensorRewardAds.prepare() || !isChallengeAvailable(challenge)) return;
+    pendingChallenge = challenge;
+    const ja = currentLang === 'ja';
+    dialog.returnValue = '';
+    document.getElementById('challenge-start-question').textContent = ja
+      ? 'チャレンジを開始しますか？' : 'Start this challenge?';
+    document.getElementById('challenge-start-name').textContent = challengeName(challenge) +
+      (appState.isTracking ? (ja ? '（現在の探索は終了します）' : ' (the current search will end)') : '');
+    document.getElementById('challenge-start-yes').textContent = ja ? 'はい' : 'Yes';
+    document.getElementById('challenge-start-no').textContent = ja ? 'いいえ' : 'No';
+    dialog.showModal();
+    document.getElementById('challenge-start-question').focus({ preventScroll: true });
+  } finally {
+    challengeStartPending = false;
+    appState.isPaused = previouslyPaused;
+    evaluateSensorCycle();
+  }
 }
 
 function getChallengeArrivals(db, challenge) {

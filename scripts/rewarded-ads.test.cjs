@@ -21,11 +21,8 @@ test('初回視聴で1.0付与し、通常5回の後に次の検索前で再視�
   assert.equal(c.snapshot().points,0);
   assert.deepEqual(reasons,['initial']);
   let executions=0;
-  assert.equal(await c.search('normal',()=>{executions++;return true;}),false);
-  assert.deepEqual(reasons,['initial','continue']);
-  assert.equal(executions,0);
-  assert.equal(c.snapshot().points,1);
   assert.equal(await c.search('normal',()=>{executions++;return true;}),true);
+  assert.deepEqual(reasons,['initial','continue']);
   assert.equal(executions,1);
   assert.equal(c.snapshot().points,0.8);
 });
@@ -35,13 +32,11 @@ test('シークレット2回で0となり、混合時の負残高に1.0を加算
   await c.search('secret',()=>true);
   await c.search('secret',()=>true);
   assert.equal(c.snapshot().points,0);
-  assert.equal(await c.search('secret',()=>{assert.fail('視聴直後にチャレンジを開始しない');}),false);
+  assert.equal(await c.prepare(),true);
   assert.equal(c.snapshot().points,1);
   for(let i=0;i<3;i++) await c.search('normal',()=>true);
   await c.search('secret',()=>true);
   assert.equal(c.snapshot().points,-0.1);
-  assert.equal(await c.search('normal',()=>{assert.fail('視聴直後にSETを実行しない');}),false);
-  assert.equal(c.snapshot().points,0.9);
   await c.search('normal',()=>true);
   assert.equal(c.snapshot().points,0.7);
 });
@@ -73,10 +68,7 @@ test('連打中は追加の広告・検索・消費を発生させない',async(
   const first=c.search('normal',()=>{executions++;return true;});
   assert.equal(await c.search('secret',()=>{executions++;return true;}),false);
   complete(true);
-  assert.equal(await first,false);
-  assert.equal(executions,0);
-  assert.equal(c.snapshot().points,1);
-  assert.equal(await c.search('normal',()=>{executions++;return true;}),true);
+  assert.equal(await first,true);
   assert.equal(executions,1);
   assert.equal(c.snapshot().points,0.8);
 });
@@ -151,4 +143,26 @@ test('SDKはクリック内で呼び、completeだけで一度付与する。広
   element('rewarded-access-cancel').handlers.click();
   assert.equal(await sixth,false);
   assert.equal(ads.snapshot().points,0);
+});
+
+test('チャレンジ開始確認前の広告では消費せず、確認後の開始時だけ消費する',async()=>{
+  let ads=0;
+  const {controller:c}=fixture(async()=>{ads++;return true;});
+  await c.startup();
+  await c.search('secret',()=>true);
+  await c.search('secret',()=>true);
+  assert.equal(c.snapshot().points,0);
+  assert.equal(await c.prepare(),true);
+  assert.equal(c.snapshot().points,1);
+  assert.equal(ads,2);
+  // Declining the confirmation leaves the replenished points available.
+  assert.equal(await c.prepare(),true);
+  assert.equal(c.snapshot().points,1);
+  assert.equal(ads,2);
+  assert.equal(await c.search('secret',()=>true),true);
+  assert.equal(c.snapshot().points,0.5);
+  assert.equal(ads,2);
+  const {controller:d}=fixture(async()=>false);
+  assert.equal(await d.prepare(),false);
+  assert.equal(d.snapshot().points,0);
 });
