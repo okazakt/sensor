@@ -146,6 +146,60 @@ test('検索中は0件と断定せず、指定スポットは1件として表示
   assert.equal(elements['unknown-count'].textContent, 1);
 });
 
+test('射程内は検索せず、射程外で一度再検索し、指定スポット・停止中は検索しない', () => {
+  const { context: c } = sensorFixture();
+  c.getDistance = (lat,_lng,otherLat) => Math.abs(otherLat-lat);
+  c.appState.lastSearchedPos = {lat:0,lng:0};
+  c.appState.randomTarget = {id:'target',lat:100,lng:0};
+  c.appState.places = [c.appState.randomTarget];
+  let calls = 0;
+  c.executeSearch = refresh => { assert.equal(refresh,true); calls++; };
+  c.appState.currentPos = {lat:3100,lng:0};
+  c.refreshOutOfRangeTargets({lat:0,lng:0});
+  assert.equal(calls,0);
+  c.appState.currentPos = {lat:3101,lng:0};
+  c.refreshOutOfRangeTargets({lat:3100,lng:0});
+  c.refreshOutOfRangeTargets({lat:3100,lng:0});
+  assert.equal(calls,1);
+  assert.equal(c.appState.randomTarget,null);
+  c.appState.randomTarget = {id:'other',lat:0,lng:0};
+  c.appState.pinpointTarget = c.appState.randomTarget;
+  c.refreshOutOfRangeTargets({lat:0,lng:0});
+  c.appState.pinpointTarget = null;
+  c.appState.isPaused = true;
+  c.refreshOutOfRangeTargets({lat:0,lng:0});
+  assert.equal(calls,1);
+});
+test('全対象は最後の候補が射程外になった時だけ再検索する', () => {
+  const { context: c } = sensorFixture();
+  c.getDistance = (lat,_lng,otherLat) => Math.abs(otherLat-lat);
+  c.appState.targetMode = 'all';
+  c.appState.lastSearchedPos = {lat:0,lng:0};
+  c.appState.places = [{id:'a',lat:100,lng:0},{id:'b',lat:200,lng:0}];
+  let calls = 0;
+  c.executeSearch = () => { calls++; };
+  c.appState.currentPos = {lat:3101,lng:0};
+  c.refreshOutOfRangeTargets({lat:0,lng:0});
+  assert.equal(calls,0);
+  c.appState.currentPos = {lat:3201,lng:0};
+  c.refreshOutOfRangeTargets({lat:3101,lng:0});
+  c.refreshOutOfRangeTargets({lat:3101,lng:0});
+  assert.equal(calls,1);
+});
+test('全対象の詳細取得は最寄りの未到達候補だけで、移動すると対象が切り替わる', () => {
+  const { context:c, records } = sensorFixture();
+  c.getDistance = (lat,_lng,otherLat)=>Math.abs(otherLat-lat);
+  c.appState.targetMode = 'all';
+  c.appState.places = [{id:'muted',lat:30,lng:0},{id:'near',lat:100,lng:0},{id:'far',lat:200,lng:0}];
+  records.arrivals = [{id:'muted',muted:true}];
+  const requested = [];
+  c.requestDestinationGeometry = place => requested.push(place.id);
+  c.evaluateSensorCycle();
+  assert.deepEqual(requested,['near']);
+  c.appState.currentPos = {lat:300,lng:0};
+  c.evaluateSensorCycle();
+  assert.deepEqual(requested,['near','far']);
+});
 test('更新失敗時は固定対象を保持し、停止後の応答を無視する', async () => {
   const { context: c, elements } = sensorFixture();
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
@@ -153,7 +207,6 @@ test('更新失敗時は固定対象を保持し、停止後の応答を無視�
   c.appState.activeKeyword = 'カフェ';
   elements['target-meta-info'] = { textContent: '' };
   c.I18N.ja.targetMeta = () => 'カフェ';
-  c.scheduleCandidateRefresh = () => {};
   c.console = { warn() {} };
   let resolve;
   c.searchGeoapify = () => new Promise(done => { resolve = done; });

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.111622";
+const BASE_JS_VERSION = "v0.26.101.112020";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1491,22 +1491,7 @@ function updateVisualRing(level) {
   ring.className = `circle-map-wrapper signal-${level}`;
 }
 
-const CANDIDATE_REFRESH_MS = 5 * 60 * 1000;
-let candidateRefreshTimer = null;
-
-function scheduleCandidateRefresh() {
-  clearTimeout(candidateRefreshTimer);
-  candidateRefreshTimer = setTimeout(() => {
-    candidateRefreshTimer = null;
-    if (!appState.isTracking || appState.pinpointTarget) return;
-    scheduleCandidateRefresh();
-    executeSearch(true);
-  }, CANDIDATE_REFRESH_MS);
-}
-
 function resetKeywordSearch() {
-  clearTimeout(candidateRefreshTimer);
-  candidateRefreshTimer = null;
   searchGeneration++;
   isSearchInProgress = false;
   arrivalInProgressId = null;
@@ -1614,14 +1599,18 @@ function applyDestinationDetails(place, metadata) {
 }
 
 function requestDestinationGeometry(target) {
-  if (validDestinationGeometry(target.geometry) && target.placeDetailsVersion === 1) return;
   if (typeof fetchGeoapify !== 'function' || typeof target.id !== 'string' || target.id.startsWith('geo:')) return;
   const state = requestDestinationGeometry.state ||= { cache: new Map(), queue: [], running: 0 };
-  let entry = state.cache.get(target.id);
+  const cacheId = `${currentLang}:${target.id}`;
+  let entry = state.cache.get(cacheId);
+  if (entry?.done && Date.now() >= entry.expires) {
+    state.cache.delete(cacheId);
+    entry = null;
+  }
   if (!entry) {
     entry = { targets: new Set(), geometry: null, metadata: null, done: false };
-    state.cache.set(target.id, entry);
-    state.queue.push({ id: target.id, entry });
+    state.cache.set(cacheId, entry);
+    state.queue.push({ id: target.id, language: currentLang, entry });
   }
   if (entry.done) {
     if (entry.geometry) target.geometry = entry.geometry;
@@ -1632,13 +1621,14 @@ function requestDestinationGeometry(target) {
   while (state.running < 4 && state.queue.length) {
     const task = state.queue.shift();
     state.running++;
-    fetchGeoapify('/v2/place-details', { id: task.id, features: 'details', lang: currentLang })
+    fetchGeoapify('/v2/place-details', { id: task.id, features: 'details', lang: task.language })
       .then(features => {
         const details = features.find(feature => feature.properties?.feature_type === 'details');
         if (validDestinationGeometry(details?.geometry)) task.entry.geometry = details.geometry;
         task.entry.metadata = details?.properties || null;
+        task.entry.expires = features.cacheExpires || Date.now() + 5 * 24 * 60 * 60 * 1000;
       })
-      .catch(() => { /* Missing details retain point-based arrival detection. */ })
+      .catch(() => { task.entry.expires = Date.now() + 60 * 1000; })
       .finally(() => {
         task.entry.done = true;
         for (const place of task.entry.targets) {
@@ -1660,6 +1650,22 @@ function getSearchCandidates() {
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
   return appState.places.filter(place => !mutedIds.has(place.id) &&
     destinationDistance(appState.currentPos, place) <= radius);
+}
+
+function refreshOutOfRangeTargets(previousPos) {
+  if (!appState.isTracking || appState.isPaused || appState.pinpointTarget ||
+      !appState.currentPos || !appState.lastSearchedPos || isSearchInProgress) return;
+  const radius = RADIUS_OPTIONS[radiusIndex];
+  const target = appState.randomTarget;
+  const outside = target && destinationDistance(appState.currentPos, target) > radius;
+  // All-target mode refreshes once the last eligible candidate leaves the radius.
+  const exhausted = appState.targetMode === 'all' && previousPos && !getSearchCandidates().length &&
+    appState.places.some(place => destinationDistance(previousPos, place) <= radius &&
+      !loadSavedData().arrivals.some(item => item.id === place.id && item.muted));
+  if (!outside && !exhausted) return;
+  appState.randomTarget = null;
+  appState.places = [];
+  executeSearch(true);
 }
 
 function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos) {
@@ -1750,7 +1756,10 @@ function evaluateSensorCycle() {
     return;
   }
 
-  if (!appState.pinpointTarget) maintainSearchTarget();
+  if (!appState.pinpointTarget) {
+    refreshOutOfRangeTargets(null);
+    maintainSearchTarget();
+  }
   if (!appState.pinpointTarget && !appState.randomTarget && isSearchInProgress) {
     countEl.textContent = "--";
     distInfoEl.textContent = t.searching;
@@ -1767,7 +1776,10 @@ function evaluateSensorCycle() {
   countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
   updateDetectionLabel();
 
-  const geometryTargets = lockedTarget ? [lockedTarget] : appState.places;
+  const nearestTarget = activeTargets.reduce((nearest, place) => !nearest ||
+    destinationDistance(appState.currentPos, place) < destinationDistance(appState.currentPos, nearest)
+      ? place : nearest, null);
+  const geometryTargets = lockedTarget ? [lockedTarget] : (nearestTarget ? [nearestTarget] : []);
   geometryTargets.forEach(requestDestinationGeometry);
   if (lockedTarget && !appState.pinpointTarget && appState.activeChallenge?.mode === 'random' && !appState.randomTargetArrivalFallback &&
       appState.randomTargetOrigin && destinationDistance(appState.randomTargetOrigin, lockedTarget) <= 20) {
@@ -2124,6 +2136,7 @@ function onDeviceOrientation(e) {
 function onPositionUpdate(pos) {
   traceLocation('onPositionUpdate', `accuracy=${Math.round(pos.coords.accuracy)}m`);
   const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  const previousPos = appState.currentPos;
   appState.currentPos = newPos;
   lastKnownPos = newPos;
   localStorage.setItem('sheikah_last_pos', JSON.stringify(newPos));
@@ -2141,6 +2154,7 @@ function onPositionUpdate(pos) {
   }
 
   updateMapPositionSmoothly(pos.coords, now);
+  refreshOutOfRangeTargets(previousPos);
 
   if (appState.isTracking && !appState.isPaused && !appState.pinpointTarget &&
       !appState.lastSearchedPos) {
@@ -2197,11 +2211,56 @@ function getGeoapifyApiKey() {
   return key.trim();
 }
 
+const GEOAPIFY_CACHE_TTL_MS = 5 * 24 * 60 * 60 * 1000;
+const GEOAPIFY_CACHE_STORAGE_KEY = 'sheikah_geoapify_cache_v2';
+
+function readGeoapifyCache() {
+  try {
+    const entries = JSON.parse(localStorage.getItem(GEOAPIFY_CACHE_STORAGE_KEY) || '[]');
+    return Array.isArray(entries) ? entries.filter(entry => entry &&
+      typeof entry.signature === 'string' && Array.isArray(entry.features) &&
+      Number.isFinite(entry.created) && Date.now() - entry.created < GEOAPIFY_CACHE_TTL_MS) : [];
+  } catch { return []; }
+}
+
+function saveGeoapifyCache() {
+  const entries = fetchGeoapify.cache.filter(entry => Date.now() - entry.created < GEOAPIFY_CACHE_TTL_MS).slice(-399);
+  // Bound storage use and evict oldest responses before user history is affected.
+  let serialized = JSON.stringify(entries);
+  while (serialized.length > 1000000 && entries.length) {
+    entries.shift();
+    serialized = JSON.stringify(entries);
+  }
+  fetchGeoapify.cache = entries;
+  try { localStorage.setItem(GEOAPIFY_CACHE_STORAGE_KEY, serialized); }
+  catch { /* Storage unavailable: keep the bounded in-memory cache. */ }
+}
+
 async function fetchGeoapify(path, parameters) {
+  const apiKey = getGeoapifyApiKey();
+  const details = path === '/v2/place-details';
+  const cacheable = details || path === '/v1/geocode/search' || path === '/v2/places';
+  const circle = parameters.filter?.split(':');
+  const coordinates = circle?.[0] === 'circle' ? circle[1].split(',').map(Number) : null;
+  const cache = fetchGeoapify.cache ||= readGeoapifyCache();
+  const now = Date.now();
+  // Match all request options except the search origin, which may differ by 5 metres.
+  const signature = JSON.stringify([path, Object.entries({ ...parameters,
+    ...(coordinates ? { filter: `circle:origin,${coordinates[2]}`, bias: 'proximity:origin' } : {})
+  }).sort(([a], [b]) => a.localeCompare(b))]);
+  if (cacheable && (coordinates || details)) {
+    const cached = cache.find(entry => entry.signature === signature && now - entry.created < GEOAPIFY_CACHE_TTL_MS &&
+      (details || getDistance(coordinates[1], coordinates[0], entry.lat, entry.lng) <= 5));
+    if (cached) {
+      const features = JSON.parse(JSON.stringify(cached.features));
+      features.cacheExpires = cached.created + GEOAPIFY_CACHE_TTL_MS;
+      return features;
+    }
+  }
   if (typeof traceLocation === 'function') traceLocation('search.request', path);
   const url = new URL(path, 'https://api.geoapify.com');
   for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
-  url.searchParams.set('apiKey', getGeoapifyApiKey());
+  url.searchParams.set('apiKey', apiKey);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
@@ -2210,10 +2269,48 @@ async function fetchGeoapify(path, parameters) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid search response');
+    if (cacheable && (coordinates || details)) {
+      // Keep only recent successful responses; failures are never cached.
+      fetchGeoapify.cache.push({ signature, ...(coordinates ? {lat: coordinates[1], lng: coordinates[0]} : {}),
+        created: Date.now(), features: JSON.parse(JSON.stringify(data.features)) });
+      saveGeoapifyCache();
+      data.features.cacheExpires = Date.now() + GEOAPIFY_CACHE_TTL_MS;
+    }
     return data.features;
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Supplement only full pages that are at least 75% muted, with at most three calls.
+async function fetchKeywordCandidates(path, parameters, excludeChallengePlaces = false) {
+  const mutedIds = new Set(loadSavedData().arrivals.filter(item => item.muted).map(item => item.id));
+  const geocoding = path === '/v1/geocode/search';
+  const collected = new Map();
+  for (let page = 0; page < 3; page++) {
+    let features;
+    try {
+      features = await fetchGeoapify(path, {
+        ...parameters, limit: geocoding ? (page + 1) * 20 : 20,
+        ...(!geocoding ? { offset: page * 20 } : {})
+      });
+    } catch (error) {
+      if (!page) throw error;
+      return { features: [...collected.values()], partial: true };
+    }
+    const newFeatures = [];
+    for (const feature of features) {
+      const p = feature.properties || {};
+      const id = p.place_id || JSON.stringify(feature);
+      if (!collected.has(id)) newFeatures.push(feature);
+      collected.set(id, feature);
+    }
+    const mutedCount = newFeatures.filter(feature => mutedIds.has(feature.properties?.place_id) ||
+      (excludeChallengePlaces && isExcludedChallengePlace(feature.properties?.categories, feature.properties))).length;
+    if (features.length < (geocoding ? (page + 1) * 20 : 20) ||
+        newFeatures.length < 20 || mutedCount < 15) break;
+  }
+  return { features: [...collected.values()], partial: false };
 }
 
 async function searchGeoapify(text, position, radius, language, forcedCategories = null) {
@@ -2222,16 +2319,15 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
     filter: `circle:${position.lng},${position.lat},${radius}`,
     bias: `proximity:${position.lng},${position.lat}`, lang: language
   };
-  const requests = forcedCategories ? [] : [fetchGeoapify('/v1/geocode/search', { ...common, text, limit: 20 })];
+  const requests = forcedCategories ? [] : [fetchKeywordCandidates('/v1/geocode/search', { ...common, text })];
   const categories = forcedCategories || categoriesForKeyword(text);
-  if (categories.length) requests.push(fetchGeoapify('/v2/places', {
-    ...common, categories: categories.join(','), limit: forcedCategories ? 500 : 100
-  }));
+  if (categories.length) requests.push(fetchKeywordCandidates('/v2/places',
+    { ...common, categories: categories.join(',') }, Boolean(forcedCategories)));
   const responses = await Promise.allSettled(requests);
   const successful = responses.filter(result => result.status === 'fulfilled');
   if (!successful.length) throw new Error('Search unavailable');
   const places = new Map();
-  for (const result of successful) for (const feature of result.value) {
+  for (const result of successful) for (const feature of result.value.features) {
     const p = feature.properties || {};
     if (forcedCategories && isExcludedChallengePlace(p.categories, p)) continue;
     const lat = p.lat ?? feature.geometry?.coordinates?.[1];
@@ -2252,7 +2348,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   return {
     places: [...places.values()].sort((a, b) =>
       getDistance(position.lat, position.lng, a.lat, a.lng) - getDistance(position.lat, position.lng, b.lat, b.lng)),
-    partial: successful.length !== responses.length
+    partial: successful.length !== responses.length || successful.some(result => result.value.partial)
   };
 }
 
@@ -2292,7 +2388,6 @@ async function executeSearch(refreshCandidates = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
       appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return;
-  scheduleCandidateRefresh();
   const generation = searchGeneration;
   isSearchInProgress = true;
   const position = { ...appState.currentPos };
@@ -3968,7 +4063,7 @@ function openSpotDetailModal(item, orderedItems) {
 
 
   document.getElementById('detail-spot-address').textContent = item.formatted_address || t.noAddress;
-  if (item.placeDetailsVersion !== 1) requestDestinationGeometry(item);
+  requestDestinationGeometry(item);
 }
 
 function renderDetailMap(item, gallery, detailMapBox) {
