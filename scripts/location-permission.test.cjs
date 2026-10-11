@@ -47,7 +47,7 @@ test('位置情報APIがない場合や安全でない接続では要求せず�
 });
 test('起動の同じクリック内で方向と位置の許可を要求し、非同期処理を待たない',async()=>{
  const handlers={},calls=[];
- const c={startupRefreshPending:false,document:{getElementById:id=>({addEventListener:(event,fn)=>handlers[id]=fn,classList:{remove(){}}})},
+ const c={startupRefreshPending:false,currentLang:'ja',window:{SensorRewardAds:{startup:()=>new Promise(()=>{})}},document:{getElementById:id=>({addEventListener:(event,fn)=>handlers[id]=fn,classList:{remove(){}}})},
  requestCompassPermissionIfNeeded(){calls.push('compass');return new Promise(()=>{});},
  requestLocationAccess(){calls.push('location');},initAudio(){calls.push('audio');},
  appState:{wakeLockActive:true},requestWakeLock(){calls.push('wake');return new Promise(()=>{});}};

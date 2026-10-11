@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="61">
+  <meta name="html-rev" content="62">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -146,6 +146,17 @@
         </div>
       </div>
     </dialog>
+
+    <dialog id="rewarded-access-dialog" class="challenge-dialog rewarded-access-dialog" aria-labelledby="rewarded-access-title" aria-describedby="rewarded-access-description">
+      <h2 id="rewarded-access-title"></h2>
+      <p id="rewarded-access-description"></p>
+      <p id="rewarded-access-status" role="status" aria-live="polite"></p>
+      <div class="challenge-dialog-actions">
+        <button type="button" id="rewarded-access-cancel" class="btn-sheikah">キャンセル</button>
+        <button type="button" id="rewarded-access-watch" class="btn-sheikah">同意して動画を見る</button>
+      </div>
+    </dialog>
+    <div id="applixir-ad-container" hidden></div>
 
     <!-- 第2画面（メイン画面） -->
     <div id="page-main-wrap" style="width: 100%; height: 100%; position: relative; display: flex; flex-direction: column;">
@@ -465,6 +476,8 @@
 
   
   <script src="geoapify-config.js"></script>
+  <script src="applixir-config.js"></script>
+  <script src="rewarded-ads.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script>
     const scriptEl = document.createElement('script');

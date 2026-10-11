@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.112020";
+const BASE_JS_VERSION = "v0.26.101.112242";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2554,25 +2554,29 @@ function playChallengeFanfare(completed) {
 
 function startChallenge(challenge) {
   if (!isChallengeAvailable(challenge)) return;
-  stopSearchAndReset();
-  appState.challengeSettings = { targetMode: appState.targetMode, sensorDetail: appState.sensorDetail,
-    radiusIndex };
-  appState.activeChallenge = challenge;
-  appState.challengeCategories = challengeCategoriesForGroup(challenge.group);
-  appState.targetMode = challenge.mode;
-  appState.sensorDetail = challenge.sensor;
-  radiusIndex = RADIUS_OPTIONS.indexOf(challenge.radius);
-  const input = document.getElementById('keyword-input');
-  input.value = challengeName(challenge);
-  input.blur();
-  input.readOnly = true;
-  input.disabled = true;
-  checkMainInputClearState();
-  updateRadiusAccess();
-  startSearchFromSet(true);
-  renderChallenges();
-  navigateToMain();
-  showChallengePresentation(challenge);
+  return runRewardedSearch(challenge.group === 'secret' ? 'secret' : 'normal', () => {
+    if (!isChallengeAvailable(challenge)) return false;
+    stopSearchAndReset();
+    appState.challengeSettings = { targetMode: appState.targetMode, sensorDetail: appState.sensorDetail,
+      radiusIndex };
+    appState.activeChallenge = challenge;
+    appState.challengeCategories = challengeCategoriesForGroup(challenge.group);
+    appState.targetMode = challenge.mode;
+    appState.sensorDetail = challenge.sensor;
+    radiusIndex = RADIUS_OPTIONS.indexOf(challenge.radius);
+    const input = document.getElementById('keyword-input');
+    input.value = challengeName(challenge);
+    input.blur();
+    input.readOnly = true;
+    input.disabled = true;
+    checkMainInputClearState();
+    updateRadiusAccess();
+    startSearchFromSet(true);
+    renderChallenges();
+    navigateToMain();
+    showChallengePresentation(challenge);
+    return true;
+  });
 }
 
 let pendingChallenge = null;
@@ -3322,7 +3326,30 @@ function stopSearchAndReset() {
   updateButtonStateUI();
 }
 
-async function startSearchFromSet(fromChallenge = false) {
+let rewardedSearchPending = false;
+function runRewardedSearch(kind, execute) {
+  if (rewardedSearchPending) return Promise.resolve(false);
+  if (!window.SensorRewardAds?.search) return Promise.resolve(false);
+  rewardedSearchPending = true;
+  const previouslyPaused = appState.isPaused;
+  let launched = false;
+  // Freeze the existing exploration while consent or a video is on screen.
+  appState.isPaused = true;
+  evaluateSensorCycle();
+  window.SensorRewardAds.language = () => currentLang;
+  return window.SensorRewardAds.search(kind, () => {
+    appState.isPaused = previouslyPaused;
+    const result = execute();
+    launched = result !== false;
+    return result;
+  }).finally(() => {
+    rewardedSearchPending = false;
+    if (!launched) appState.isPaused = previouslyPaused;
+    evaluateSensorCycle();
+  });
+}
+
+function startSearchFromSet(fromChallenge = false) {
   traceLocation('startSearchFromSet');
   if (appState.activeChallenge && !fromChallenge) {
     showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
@@ -3337,32 +3364,38 @@ async function startSearchFromSet(fromChallenge = false) {
     alert("キーワードを入力してください");
     return;
   }
+  const begin = () => {
+    // Reject inputs changed while a consent dialog was open.
+    if (document.getElementById('keyword-input').value.trim() !== inputVal) return false;
+    resetKeywordSearch();
+    appState.activeKeyword = inputVal;
+    appState.pinpointTarget = null;
+    appState.isTracking = true;
+    appState.isPaused = false;
 
-  resetKeywordSearch();
-  appState.activeKeyword = inputVal;
-  appState.pinpointTarget = null;
-  appState.isTracking = true;
-  appState.isPaused = false;
-
-  const db = loadSavedData();
-  const now = new Date().toISOString();
-  if (!appState.activeChallenge) {
-    if (!db.keywordHistory[appState.activeKeyword]) {
-      db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
-    } else {
-      db.keywordHistory[appState.activeKeyword].lastSearch = now;
+    const db = loadSavedData();
+    const now = new Date().toISOString();
+    if (!appState.activeChallenge) {
+      if (!db.keywordHistory[appState.activeKeyword]) {
+        db.keywordHistory[appState.activeKeyword] = { lastSearch: now, lastArrival: null };
+      } else {
+        db.keywordHistory[appState.activeKeyword].lastSearch = now;
+      }
     }
-  }
-  saveAppData(db);
+    saveAppData(db);
 
-  updateButtonStateUI();
-  evaluateSensorCycle();
+    updateButtonStateUI();
+    evaluateSensorCycle();
 
-  if (watchId === null || locationAccessState !== 'ready' || Date.now() - lastLocationFixTime > 30000) requestLocationAccess();
-  executeSearch();
+    if (watchId === null || locationAccessState !== 'ready' || Date.now() - lastLocationFixTime > 30000) requestLocationAccess();
+    executeSearch();
+    return true;
+  };
+  return fromChallenge ? begin() : runRewardedSearch('normal', begin);
 }
 
 document.getElementById('set-btn').addEventListener('click', () => {
+  if (rewardedSearchPending) return;
   initAudio();
   if (!appState.isTracking) {
     startSearchFromSet();
@@ -3916,26 +3949,29 @@ function setPinpointTargetAndStart(item) {
     showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
     return;
   }
-  resetKeywordSearch();
-  const t = I18N[currentLang];
-  appState.pinpointTarget = {
-    id: item.id,
-    name: item.name,
-    lat: item.lat,
-    lng: item.lng,
-    geometry: item.geometry || null
-  };
-  appState.activeKeyword = item.keyword || item.name;
-  document.getElementById('keyword-input').value = appState.activeKeyword;
-  document.getElementById('btn-input-clear').classList.add('show');
-  document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
+  return runRewardedSearch('normal', () => {
+    resetKeywordSearch();
+    const t = I18N[currentLang];
+    appState.pinpointTarget = {
+      id: item.id,
+      name: item.name,
+      lat: item.lat,
+      lng: item.lng,
+      geometry: item.geometry || null
+    };
+    appState.activeKeyword = item.keyword || item.name;
+    document.getElementById('keyword-input').value = appState.activeKeyword;
+    document.getElementById('btn-input-clear').classList.add('show');
+    document.getElementById('target-meta-info').textContent = t.targetMetaPinpoint(item.name);
 
-  navigateToMain();
+    navigateToMain();
 
-  appState.isTracking = true;
-  appState.isPaused = false;
-  updateButtonStateUI();
-  evaluateSensorCycle();
+    appState.isTracking = true;
+    appState.isPaused = false;
+    updateButtonStateUI();
+    evaluateSensorCycle();
+    return true;
+  });
 }
 
 let detailNavigationIds = [];
@@ -4122,12 +4158,19 @@ document.getElementById('location-access-retry').addEventListener('click', reque
 
 document.getElementById('btn-safety-ok').addEventListener('click', async () => {
   if (startupRefreshPending) return;
+  const startupButton = document.getElementById('btn-safety-ok');
+  startupButton.disabled = true;
   // Both permission APIs run directly in the tap, before audio/wake-lock awaits.
   const compassPermission = requestCompassPermissionIfNeeded();
   requestLocationAccess();
-  document.getElementById('safety-prompt-overlay').classList.remove('show');
   initAudio();
   if (appState.wakeLockActive) requestWakeLock();
+  window.SensorRewardAds.language = () => currentLang;
+  if (!await window.SensorRewardAds.startup()) {
+    startupButton.disabled = false;
+    return;
+  }
+  document.getElementById('safety-prompt-overlay').classList.remove('show');
   await compassPermission;
 });
 
