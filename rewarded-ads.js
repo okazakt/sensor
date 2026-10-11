@@ -39,7 +39,13 @@
         if (busy) return false;
         busy = true;
         try {
-          if (!await ensureAccess()) return false;
+          read();
+          if (!state.initialWatched || state.units <= 0) {
+            await ensureAccess();
+            // A completed ad only replenishes access. Require a new button tap
+            // so the original search/challenge never starts from an ad callback.
+            return false;
+          }
           if (await execute() === false) return false;
           read();
           state.units -= kind === 'secret' ? 5 : 2;

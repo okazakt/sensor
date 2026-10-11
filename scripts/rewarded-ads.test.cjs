@@ -20,8 +20,13 @@ test('初回視聴で1.0付与し、通常5回の後に次の検索前で再視�
   for(let i=0;i<5;i++) assert.equal(await c.search('normal',()=>true),true);
   assert.equal(c.snapshot().points,0);
   assert.deepEqual(reasons,['initial']);
-  await c.search('normal',()=>true);
+  let executions=0;
+  assert.equal(await c.search('normal',()=>{executions++;return true;}),false);
   assert.deepEqual(reasons,['initial','continue']);
+  assert.equal(executions,0);
+  assert.equal(c.snapshot().points,1);
+  assert.equal(await c.search('normal',()=>{executions++;return true;}),true);
+  assert.equal(executions,1);
   assert.equal(c.snapshot().points,0.8);
 });
 test('シークレット2回で0となり、混合時の負残高に1.0を加算する',async()=>{
@@ -30,9 +35,13 @@ test('シークレット2回で0となり、混合時の負残高に1.0を加算
   await c.search('secret',()=>true);
   await c.search('secret',()=>true);
   assert.equal(c.snapshot().points,0);
+  assert.equal(await c.search('secret',()=>{assert.fail('視聴直後にチャレンジを開始しない');}),false);
+  assert.equal(c.snapshot().points,1);
   for(let i=0;i<3;i++) await c.search('normal',()=>true);
   await c.search('secret',()=>true);
   assert.equal(c.snapshot().points,-0.1);
+  assert.equal(await c.search('normal',()=>{assert.fail('視聴直後にSETを実行しない');}),false);
+  assert.equal(c.snapshot().points,0.9);
   await c.search('normal',()=>true);
   assert.equal(c.snapshot().points,0.7);
 });
@@ -64,7 +73,10 @@ test('連打中は追加の広告・検索・消費を発生させない',async(
   const first=c.search('normal',()=>{executions++;return true;});
   assert.equal(await c.search('secret',()=>{executions++;return true;}),false);
   complete(true);
-  assert.equal(await first,true);
+  assert.equal(await first,false);
+  assert.equal(executions,0);
+  assert.equal(c.snapshot().points,1);
+  assert.equal(await c.search('normal',()=>{executions++;return true;}),true);
   assert.equal(executions,1);
   assert.equal(c.snapshot().points,0.8);
 });
