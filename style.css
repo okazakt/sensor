@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "65";
+  --css-rev: "66";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -211,7 +211,14 @@ body {
   cursor: pointer;
   box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
 }
-.btn-safety-ok:active {
+.btn-safety-ok:disabled {
+  background: rgba(153, 170, 187, 0.1);
+  border-color: #657382;
+  color: #99aabb;
+  cursor: default;
+  box-shadow: none;
+}
+.btn-safety-ok:enabled:active {
   background: var(--sheikah-cyan);
   color: #000;
 }

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.101414";
+const BASE_JS_VERSION = "v0.26.101.110933";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -341,7 +341,7 @@ function showStartupRefresh() {
   document.getElementById('safety-prompt-overlay').classList.add('show');
   document.getElementById('safety-prompt-title').textContent = '更新を確認中 / Checking for updates';
   document.getElementById('safety-prompt-desc').textContent = '準備ができるまで少しお待ちください。 / Please wait a moment.';
-  document.getElementById('btn-safety-ok').textContent = '準備中… / Loading…';
+  document.getElementById('btn-safety-ok').textContent = '更新確認中… / Checking for updates…';
   document.getElementById('btn-safety-ok').disabled = true;
 }
 
@@ -670,7 +670,10 @@ function applyLanguage(lang) {
   document.getElementById('safety-prompt-desc').textContent = t.safetyDesc + (currentLang === 'ja'
     ? '\n開始時に位置情報と動作・方向へのアクセスを求めます。地図と探知を使うには、位置情報を許可してください。'
     : '\nStarting requests location and motion/orientation access. Allow location to use the map and detection.');
-  document.getElementById('btn-safety-ok').textContent = t.safetyOk;
+  const safetyOkButton = document.getElementById('btn-safety-ok');
+  safetyOkButton.textContent = safetyOkButton.disabled
+    ? '更新確認中… / Checking for updates…'
+    : t.safetyOk;
   renderLocationAccess();
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
   if (startupRefreshPending) showStartupRefresh();
@@ -3991,6 +3994,7 @@ document.getElementById('sort-history').addEventListener('change', renderHistory
 function checkAndShowStartupModals() {
   if (startupRefreshPending) return;
   document.getElementById('btn-safety-ok').disabled = false;
+  document.getElementById('btn-safety-ok').textContent = 'OK';
   const pwaOverlay = document.getElementById('pwa-prompt-overlay');
   const safetyOverlay = document.getElementById('safety-prompt-overlay');
 
