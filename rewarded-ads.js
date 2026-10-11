@@ -57,12 +57,14 @@
     const status = document.getElementById('rewarded-access-status');
     const agree = document.getElementById('rewarded-access-watch');
     const cancel = document.getElementById('rewarded-access-cancel');
+    const languageLabel = document.getElementById('rewarded-access-lang-label');
     const container = document.getElementById('applixir-ad-container');
     let pending = null;
     let sdkPromise = null;
     let playing = false;
     let attempt = 0;
     let timer = null;
+    let consentError = '';
     const ja = () => global.SensorRewardAds?.language?.() !== 'en';
     const key = () => global.APPLIXIR_CONFIG?.apiKey?.trim();
 
@@ -92,9 +94,8 @@
       return sdkPromise;
     }
 
-    function showConsent(error = '') {
-      if (!pending) return;
-      playing = false;
+    function renderConsent() {
+      if (!pending || playing) return;
       title.textContent = ja()
         ? (pending.reason === 'initial' ? '動画を見て利用を開始' : '動画を見て探索を続ける')
         : (pending.reason === 'initial' ? 'Watch a video to start' : 'Watch a video to continue');
@@ -102,12 +103,30 @@
         ? '広告動画の視聴に同意して利用を続けます。視聴完了で探索ポイントが1.0増えます。通常の探索は0.2、シークレットは0.5を消費します。広告収益は地図検索と運営費に充てられます。'
         : 'Agree to watch an ad to continue. Completing it adds 1.0 exploration point. Regular searches use 0.2 and Secret challenges use 0.5. Ad revenue supports location searches and operating costs.';
       cancel.textContent = ja() ? 'キャンセル' : 'Cancel';
-      agree.textContent = ja() ? '同意して動画を見る' : 'Agree and watch';
-      status.textContent = error;
+      languageLabel.textContent = ja() ? '→EN' : '→JA';
+      agree.textContent = consentError === 'loading'
+        ? (ja() ? '読み込みを再試行' : 'Retry loading')
+        : (ja() ? '同意して動画を見る' : 'Agree and watch');
+      const messages = {
+        incomplete: ja()
+          ? '動画の視聴が完了していません。広告がない場合は、時間をおいて再試行してください。'
+          : 'The video was not completed. If no ad is available, please try again later.',
+        loading: ja() ? '広告を読み込めませんでした。もう一度お試しください。' : 'Could not load advertising. Please try again.',
+        configuration: ja() ? '広告の設定が未完了です。' : 'Advertising is not configured.'
+      };
+      status.textContent = messages[consentError] || '';
+    }
+
+    function showConsent(error = '') {
+      if (!pending) return;
+      playing = false;
+      consentError = error;
+      renderConsent();
       agree.disabled = true;
       if (!dialog.open) dialog.showModal();
       if (!key()) {
-        status.textContent = ja() ? '広告の設定が未完了です。' : 'Advertising is not configured.';
+        consentError = 'configuration';
+        renderConsent();
         return;
       }
       const active = pending;
@@ -116,8 +135,8 @@
         agree.disabled = false;
       }).catch(() => {
         if (pending !== active) return;
-        status.textContent = ja() ? '広告を読み込めませんでした。もう一度お試しください。' : 'Could not load advertising. Please try again.';
-        agree.textContent = ja() ? '読み込みを再試行' : 'Retry loading';
+        consentError = 'loading';
+        renderConsent();
         agree.disabled = false;
       });
     }
@@ -148,9 +167,7 @@
         clearTimeout(timer);
         container.hidden = true;
         container.replaceChildren();
-        showConsent(ja()
-          ? '動画の視聴が完了していません。広告がない場合は、時間をおいて再試行してください。'
-          : 'The video was not completed. If no ad is available, please try again later.');
+        showConsent('incomplete');
       }
       // A hung player must not grant points or leave the app permanently blocked.
       timer = setTimeout(failure, 180000);
@@ -168,21 +185,25 @@
     });
     cancel.addEventListener('click', () => finish(false));
     dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
-    return reason => {
+    const watchAd = reason => {
       if (pending) return Promise.resolve(false);
       return new Promise(resolve => { pending = { reason, resolve }; showConsent(); });
     };
+    watchAd.refreshLanguage = renderConsent;
+    return watchAd;
   }
 
   global.SensorRewardAds = { createAccessController, language: () => 'ja' };
   if (typeof document !== 'undefined') {
     let storage;
     try { storage = global.localStorage; } catch { storage = null; }
-    const controller = createAccessController({ storage, watchAd: createBrowserAdapter() });
+    const watchAd = createBrowserAdapter();
+    const controller = createAccessController({ storage, watchAd });
     Object.assign(global.SensorRewardAds, {
       startup: () => controller.startup(),
       search: (kind, execute) => controller.search(kind, execute),
-      snapshot: () => controller.snapshot()
+      snapshot: () => controller.snapshot(),
+      refreshLanguage: () => watchAd.refreshLanguage()
     });
   }
 })(window);

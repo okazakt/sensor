@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "84";
+  --css-rev: "85";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -1801,6 +1801,7 @@ body {
 .challenge-dialog { position: fixed; inset: 0; margin: auto; height: fit-content; max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow-y: auto; width: min(360px, 85vw); border: 1px solid var(--sheikah-gold); border-radius: 12px; padding: 24px; background: #101c25; color: #fff; }
 .challenge-dialog::backdrop { background: rgba(0, 0, 0, .7); }
 .challenge-dialog-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 24px; }
+.rewarded-access-dialog { padding-top: 56px; }
 .rewarded-access-dialog h2 { font-size: 18px; margin-top: 0; }
 .rewarded-access-dialog p { line-height: 1.7; }
 .rewarded-access-dialog .challenge-dialog-actions { flex-wrap: wrap; gap: 12px; }

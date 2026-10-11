@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.112242";
+const BASE_JS_VERSION = "v0.26.101.112259";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -624,6 +624,10 @@ function escapeHtml(value) {
 
 function applyLanguage(lang) {
   currentLang = lang;
+  if (window.SensorRewardAds) {
+    window.SensorRewardAds.language = () => currentLang;
+    window.SensorRewardAds.refreshLanguage();
+  }
   localStorage.setItem('sheikah_lang', lang);
   const t = I18N[lang];
 
@@ -690,6 +694,10 @@ function applyLanguage(lang) {
 }
 
 document.getElementById('pwa-lang-btn').addEventListener('click', () => {
+  applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
+});
+
+document.getElementById('rewarded-access-lang-btn').addEventListener('click', () => {
   applyLanguage(currentLang === 'ja' ? 'en' : 'ja');
 });
 
