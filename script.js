@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.121023";
+const BASE_JS_VERSION = "v0.26.101.121028";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -657,7 +657,7 @@ function applyLanguage(lang) {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const japanese = lang === 'ja';
   const labels = japanese ? {
-    title: 'ホーム画面に追加してください', desc: '本アプリは、ホーム画面から起動して利用することを想定しています。',
+    title: 'ホーム画面に本アプリを追加してからご利用ください', desc: '本アプリは、ホーム画面から起動して利用することを想定しています。',
     first: appleMobile ? '「共有」をタップ' : 'ブラウザのメニューを開く',
     menu: appleMobile ? '共有' : 'メニュー', second: 'ホーム画面に追加',
     step2: appleMobile ? '「ホーム画面に追加」を選ぶ' : '「ホーム画面に追加」または「インストール」を選ぶ',
@@ -665,7 +665,7 @@ function applyLanguage(lang) {
     launch: '次回から、このアイコンで起動', skip: 'ブラウザで続ける',
     note: appleMobile ? '項目が見つからない場合は、メニューを下へスクロールしてください。アプリ内で開いている場合は、Webブラウザで開き直してください。' : 'メニューの位置や項目名はWebブラウザによって異なります。アプリ内で開いている場合は、Webブラウザで開き直してください。'
   } : {
-    title: 'Please add this app to your Home Screen', desc: 'This app is designed to be launched and used from your Home Screen.',
+    title: 'Please add this app to your Home Screen before using it', desc: 'This app is designed to be launched and used from your Home Screen.',
     first: appleMobile ? 'Tap Share' : 'Open the browser menu',
     menu: appleMobile ? 'Share' : 'Menu', second: 'Add to Home Screen',
     step2: appleMobile ? 'Choose Add to Home Screen' : 'Choose Add to Home Screen or Install',
@@ -676,16 +676,16 @@ function applyLanguage(lang) {
   for (const [id, value] of Object.entries({
     'pwa-browser-help-title': japanese ? 'SNSアプリ等から直接開いた方へ' : 'Opened directly from a social media or other app?',
     'pwa-browser-help-text': japanese ? '「共有」や「ホーム画面に追加」がない場合は、アプリのメニューから「ブラウザで開く」を選び、通常のWebブラウザで開き直してください。' : 'If Share or Add to Home Screen is missing, choose Open in browser from the app menu to reopen this page in a regular web browser.',
-    'pwa-browser-example-label': japanese ? '操作例（図は押せません）：アプリのメニューを開き、下の項目を選びます。' : 'Example (not a button): open the app menu and choose the item shown below.',
+    'pwa-browser-example-label': japanese ? '操作例：アプリのメニューを開き、下の項目を選びます。' : 'Example: open the app menu and choose the item shown below.',
     'pwa-browser-visual': japanese ? 'ブラウザで開く' : 'Open in browser',
     'pwa-browser-context-copy': japanese ? '▧　リンクをコピー' : '▧　Copy Link',
     'pwa-browser-help-fallback': japanese ? '項目がない場合は、リンクをコピーしてWebブラウザのアドレス欄に貼り付けてください。' : 'If that option is missing, copy the link and paste it into your web browser’s address bar.',
-    'pwa-example-note': japanese ? '以下は操作例の図です。図は押せません。お使いのWebブラウザのボタン・メニューを操作してください。' : 'These are example illustrations, not buttons. Use the buttons and menus in your own web browser.',
+    'pwa-example-note': japanese ? '以下は操作例の図です。お使いのWebブラウザのボタン・メニューを操作してください。' : 'These are example illustrations. Use the buttons and menus in your own web browser.',
     'pwa-context-bookmark': japanese ? '♧　ブックマークに追加' : '♧　Add Bookmark',
     'pwa-context-copy': japanese ? '▧　リンクをコピー' : '▧　Copy Link',
     'pwa-context-edit': japanese ? '☷　アクションを編集' : '☷　Edit Actions',
-    'pwa-home-caption-intro': japanese ? 'ホーム画面の例：このアイコンから起動します（図は押せません）' : 'Example Home Screen: launch from this icon (illustration only).',
-    'pwa-home-caption-done': japanese ? '追加完了後のホーム画面の例（図は押せません）' : 'Example Home Screen after adding the app (illustration only).',
+    'pwa-home-caption-intro': japanese ? 'ホーム画面の例：このアイコンから起動します' : 'Example Home Screen: launch from this icon.',
+    'pwa-home-caption-done': japanese ? '追加完了後のホーム画面の例' : 'Example Home Screen after adding the app.',
     'pwa-prompt-title': labels.title, 'pwa-prompt-desc': labels.desc,
     'pwa-step-1': labels.first, 'pwa-step-2': labels.step2, 'pwa-step-3': labels.step3,
     'pwa-visual-1': labels.menu, 'pwa-visual-2': labels.second,
