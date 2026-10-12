@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "88";
+  --css-rev: "89";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2044,3 +2044,5 @@ body {
 .pwa-screen-example .pwa-menu-picture { margin: 3px 5px; padding: 8px; border: 0; border-radius: 0; outline: 2px dashed #007a86; outline-offset: -2px; }
 .pwa-screen-example .pwa-confirm-picture { margin: 3px 5px; border-radius: 0; }
 .pwa-screen-example .pwa-confirm-picture strong { border: 2px dashed #007a86; border-radius: 0; }
+
+.pwa-browser-help .pwa-menu-picture strong { color: #16181b; }
