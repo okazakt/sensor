@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.121028";
+const BASE_JS_VERSION = "v0.26.101.121039";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -675,7 +675,7 @@ function applyLanguage(lang) {
   };
   for (const [id, value] of Object.entries({
     'pwa-browser-help-title': japanese ? 'SNSアプリ等から直接開いた方へ' : 'Opened directly from a social media or other app?',
-    'pwa-browser-help-text': japanese ? '「共有」や「ホーム画面に追加」がない場合は、アプリのメニューから「ブラウザで開く」を選び、通常のWebブラウザで開き直してください。' : 'If Share or Add to Home Screen is missing, choose Open in browser from the app menu to reopen this page in a regular web browser.',
+    'pwa-browser-help-text': japanese ? 'SNSアプリ等から直接開いた場合は、ホーム画面に追加できないことがあります。アプリのメニューから「ブラウザで開く」を選び、通常のWebブラウザで開き直してください。' : 'When opened directly from a social media or other app, this page may not support adding to your Home Screen. Choose Open in browser from the app menu to reopen it in a regular web browser.',
     'pwa-browser-example-label': japanese ? '操作例：アプリのメニューを開き、下の項目を選びます。' : 'Example: open the app menu and choose the item shown below.',
     'pwa-browser-visual': japanese ? 'ブラウザで開く' : 'Open in browser',
     'pwa-browser-context-copy': japanese ? '▧　リンクをコピー' : '▧　Copy Link',
