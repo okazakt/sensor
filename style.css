@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "91";
+  --css-rev: "92";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2052,4 +2052,4 @@ body {
 .pwa-home-example figcaption { margin-top: 6px; font-size: .72rem; color: #b0c4de; line-height: 1.5; text-align: left; }
 .pwa-step-content .pwa-home-example { margin-bottom: 0; }
 
-.pwa-home-picture { max-width: 230px; margin: 0 auto; }
+.pwa-home-picture { margin: 0 auto; }
