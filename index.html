@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="66">
+  <meta name="html-rev" content="67">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -64,20 +64,40 @@
           「Sensor Challenge（センサーチャレンジ）」をしっかり楽しみたい方は、ホーム画面への追加（全画面アプリ起動）をおこなってください。
         </div>
 
-        <div class="pwa-step-card">
+        <div class="pwa-step-card" aria-label="ホーム画面への追加手順">
           <div class="pwa-step-item">
             <div class="pwa-step-num">1</div>
-            <span id="pwa-step-1">ブラウザ下部の「共有（四角と矢印）」をタップ</span>
+            <div class="pwa-step-content">
+              <span id="pwa-step-1">「共有」をタップ</span>
+              <div class="pwa-menu-picture" aria-hidden="true">
+                <svg id="pwa-share-picture" viewBox="0 0 40 40"><path d="M13 15H9a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h22a3 3 0 0 0 3-3V18a3 3 0 0 0-3-3h-4M20 26V3m-7 7 7-7 7 7"/></svg>
+                <svg id="pwa-menu-picture" viewBox="0 0 40 40" hidden><circle cx="20" cy="8" r="2"/><circle cx="20" cy="20" r="2"/><circle cx="20" cy="32" r="2"/></svg>
+                <strong id="pwa-visual-1">共有</strong>
+                <span class="pwa-tap-mark">↖</span>
+              </div>
+            </div>
           </div>
           <div class="pwa-step-item">
             <div class="pwa-step-num">2</div>
-            <span id="pwa-step-2">メニューから「ホーム画面に追加」を選択</span>
+            <div class="pwa-step-content">
+              <span id="pwa-step-2">「ホーム画面に追加」を選ぶ</span>
+              <div class="pwa-menu-picture" aria-hidden="true">
+                <svg viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="30" rx="7"/><path d="M20 12v16M12 20h16"/></svg>
+                <strong id="pwa-visual-2">ホーム画面に追加</strong>
+                <span class="pwa-tap-mark">↖</span>
+              </div>
+            </div>
           </div>
           <div class="pwa-step-item">
             <div class="pwa-step-num">3</div>
-            <span id="pwa-step-3">ホーム画面に生成されたアイコンから起動</span>
+            <div class="pwa-step-content">
+              <span id="pwa-step-3">「追加」で完了</span>
+              <div class="pwa-confirm-picture" aria-hidden="true"><span>Sensor Challenge</span><strong id="pwa-visual-3">追加</strong></div>
+            </div>
           </div>
         </div>
+        <div class="pwa-launch-hint"><img src="icon.png" alt=""><span id="pwa-launch-label">次回から、このアイコンで起動</span></div>
+        <p id="pwa-platform-note" class="pwa-platform-note"></p>
 
         <button class="btn-dev-skip" id="btn-pwa-skip">ブラウザのままテスト起動（記録は一時的になります）</button>
         <div class="modal-version"><span class="app-build-ver-span"></span></div>

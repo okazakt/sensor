@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.112330";
+const BASE_JS_VERSION = "v0.26.101.120947";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -653,12 +653,35 @@ function applyLanguage(lang) {
   document.getElementById('toast-title').textContent = t.discoveryCompleted;
   document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
 
-  document.getElementById('pwa-prompt-title').textContent = t.pwaTitle;
-  document.getElementById('pwa-prompt-desc').textContent = t.pwaDesc;
-  document.getElementById('pwa-step-1').textContent = t.pwaStep1;
-  document.getElementById('pwa-step-2').textContent = t.pwaStep2;
-  document.getElementById('pwa-step-3').textContent = t.pwaStep3;
-  document.getElementById('btn-pwa-skip').textContent = t.pwaSkip;
+  const appleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const japanese = lang === 'ja';
+  const labels = japanese ? {
+    title: 'ホーム画面から、すぐに起動', desc: 'アプリのように全画面で使えます',
+    first: appleMobile ? '「共有」をタップ' : 'ブラウザのメニューを開く',
+    menu: appleMobile ? '共有' : 'メニュー', second: 'ホーム画面に追加',
+    step2: appleMobile ? '「ホーム画面に追加」を選ぶ' : '「ホーム画面に追加」または「インストール」を選ぶ',
+    third: appleMobile ? '追加' : '追加 / インストール', step3: '確認画面で確定して完了',
+    launch: '次回から、このアイコンで起動', skip: 'ブラウザで続ける',
+    note: appleMobile ? '項目が見つからない場合は、メニューを下へスクロール。表示されない場合はSafariで開いてください。' : 'メニューの位置や項目名はブラウザによって異なります。見つからない場合はChromeで開いてください。'
+  } : {
+    title: 'Launch from your Home Screen', desc: 'Enjoy the app in full screen',
+    first: appleMobile ? 'Tap Share' : 'Open the browser menu',
+    menu: appleMobile ? 'Share' : 'Menu', second: 'Add to Home Screen',
+    step2: appleMobile ? 'Choose Add to Home Screen' : 'Choose Add to Home Screen or Install',
+    third: appleMobile ? 'Add' : 'Add / Install', step3: 'Confirm to finish',
+    launch: 'Next time, launch from this icon', skip: 'Continue in browser',
+    note: appleMobile ? 'Scroll down the menu if needed. If the option is missing, open in Safari.' : 'Menu placement and labels vary by browser. If the option is missing, open in Chrome.'
+  };
+  for (const [id, value] of Object.entries({
+    'pwa-prompt-title': labels.title, 'pwa-prompt-desc': labels.desc,
+    'pwa-step-1': labels.first, 'pwa-step-2': labels.step2, 'pwa-step-3': labels.step3,
+    'pwa-visual-1': labels.menu, 'pwa-visual-2': labels.second, 'pwa-visual-3': labels.third,
+    'pwa-launch-label': labels.launch, 'pwa-platform-note': labels.note, 'btn-pwa-skip': labels.skip
+  })) document.getElementById(id).textContent = value;
+  document.getElementById('pwa-share-picture').style.display = appleMobile ? '' : 'none';
+  document.getElementById('pwa-menu-picture').style.display = appleMobile ? 'none' : 'block';
+  document.querySelector('#pwa-prompt-overlay .pwa-step-card').setAttribute('aria-label', japanese ? 'ホーム画面への追加手順' : 'Home Screen installation steps');
   document.getElementById('pwa-lang-label').textContent = t.langSwitchLabel;
 
   document.getElementById('safety-prompt-title').textContent = t.safetyTitle;
