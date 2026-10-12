@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.121039";
+const BASE_JS_VERSION = "v0.26.101.130811";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -323,7 +323,17 @@ const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
 
 const CACHE_CHECK_KEY = 'sheikah_last_cache_time';
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const UPDATE_RESUME_IDLE_TIME = 10 * 60 * 1000;
 let startupRefreshPending = false;
+let updateHiddenSince = document.visibilityState === 'hidden' ? Date.now() : null;
+
+function isUpdateReloadBlocked() {
+  return document.visibilityState !== 'visible' ||
+    appState.isTracking || Boolean(appState.activeChallenge) || isSearchInProgress ||
+    arrivalInProgressId !== null || rewardedSearchPending || challengeStartPending ||
+    compassPermissionPending || locationAccessState === 'waiting' ||
+    Boolean(document.getElementById('challenge-presentation')?.classList.contains('is-visible'));
+}
 
 function showStartupRefresh() {
   document.getElementById('pwa-prompt-overlay').classList.remove('show');
@@ -334,9 +344,13 @@ function showStartupRefresh() {
   document.getElementById('btn-safety-ok').disabled = true;
 }
 
-function reloadForUpdate() {
-  if (startupRefreshPending) return;
+function reloadForUpdate(startup = false) {
+  if (startupRefreshPending) return true;
+  // A blocked resume is skipped completely. Finishing exploration or a banner
+  // must not trigger a reload while the user is operating the app.
+  if (!startup && isUpdateReloadBlocked()) return false;
   startupRefreshPending = true;
+  localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
   showStartupRefresh();
   traceLocation('update.reload.pending');
   const clearCaches = 'caches' in window
@@ -346,18 +360,19 @@ function reloadForUpdate() {
     traceLocation('update.reload');
     window.location.reload();
   });
+  return true;
 }
 
 const nowTime = Date.now();
 const lastCacheTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
 const firstStandaloneLaunch = isStandaloneMode && !sessionStorage.getItem('sheikah_pwa_refreshed');
-const cacheExpired = lastCacheTime && nowTime - lastCacheTime > TWENTY_FOUR_HOURS;
 if (firstStandaloneLaunch) sessionStorage.setItem('sheikah_pwa_refreshed', 'true');
-if (!lastCacheTime || firstStandaloneLaunch || cacheExpired) localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
-if (firstStandaloneLaunch || cacheExpired) reloadForUpdate();
+if (!lastCacheTime) localStorage.setItem(CACHE_CHECK_KEY, nowTime.toString());
+if (firstStandaloneLaunch) reloadForUpdate(true);
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
+    if (updateHiddenSince === null) updateHiddenSince = Date.now();
     // バックグラウンドでは方角センサーの更新が保証されないため、
     // 古い方角判定のまま探知音を鳴らし続けないよう停止する。
     if (radarTimer) {
@@ -369,10 +384,11 @@ document.addEventListener('visibilitychange', () => {
   }
 
   if (document.visibilityState === 'visible') {
+    const resumedAfterIdle = updateHiddenSince !== null &&
+      Date.now() - updateHiddenSince >= UPDATE_RESUME_IDLE_TIME;
+    updateHiddenSince = null;
     const storedTime = parseInt(localStorage.getItem(CACHE_CHECK_KEY) || '0', 10);
-    if (Date.now() - storedTime > TWENTY_FOUR_HOURS && !compassPermissionPending && locationAccessState !== 'waiting') {
-      localStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
-      reloadForUpdate();
+    if (resumedAfterIdle && storedTime && Date.now() - storedTime > TWENTY_FOUR_HOURS && reloadForUpdate()) {
       return;
     }
 
