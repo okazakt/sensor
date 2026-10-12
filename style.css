@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "87";
+  --css-rev: "88";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2032,3 +2032,15 @@ body {
 .pwa-launch-hint { display: flex; align-items: center; justify-content: center; gap: 10px; color: #e0f8ff; font-size: .8rem; }
 .pwa-launch-hint img { width: 36px; height: 36px; border-radius: 8px; }
 .pwa-platform-note { color: #b0c4de; font-size: .7rem; line-height: 1.5; text-align: left; margin: 12px 0 6px; }
+
+.pwa-browser-help { padding: 12px; margin-bottom: 12px; border-left: 3px solid var(--sheikah-gold); background: rgba(197,160,89,.09); text-align: left; color: #e0f8ff; font-size: .8rem; line-height: 1.6; }
+.pwa-browser-help strong { color: var(--sheikah-gold); }
+.pwa-browser-help p { margin: 6px 0 0; }
+.pwa-example-note { color: #e0f8ff; font-size: .78rem; line-height: 1.6; text-align: left; margin: 0 0 12px; }
+.pwa-screen-example { margin-top: 6px; background: #dadce0; color: #16181b; border: 1px solid #8d939b; border-radius: 3px; overflow: hidden; pointer-events: none; user-select: none; }
+.pwa-crop-neighbor { height: 15px; overflow: hidden; padding: 0 10px; line-height: 24px; font-size: .8rem; color: #656970; white-space: nowrap; }
+.pwa-crop-neighbor:first-child { line-height: 16px; }
+.pwa-address-context { font-size: .7rem; text-align: center; }
+.pwa-screen-example .pwa-menu-picture { margin: 3px 5px; padding: 8px; border: 0; border-radius: 0; outline: 2px dashed #007a86; outline-offset: -2px; }
+.pwa-screen-example .pwa-confirm-picture { margin: 3px 5px; border-radius: 0; }
+.pwa-screen-example .pwa-confirm-picture strong { border: 2px dashed #007a86; border-radius: 0; }

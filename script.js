@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.120952";
+const BASE_JS_VERSION = "v0.26.101.121001";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -674,11 +674,22 @@ function applyLanguage(lang) {
     note: appleMobile ? 'Scroll down the menu if needed. If you are viewing this in an in-app browser, reopen it in a web browser.' : 'Menu placement and labels vary by web browser. If you are viewing this in an in-app browser, reopen it in a web browser.'
   };
   for (const [id, value] of Object.entries({
+    'pwa-browser-help-title': japanese ? 'LINEなどから開いた方へ' : 'Opened from LINE or another app?',
+    'pwa-browser-help-text': japanese ? '「共有」や「ホーム画面に追加」がない場合は、アプリのメニューから「ブラウザで開く」を選び、通常のWebブラウザで開き直してください。' : 'If Share or Add to Home Screen is missing, choose Open in browser from the app menu to reopen this page in a regular web browser.',
+    'pwa-browser-help-fallback': japanese ? '項目がない場合は、リンクをコピーしてWebブラウザのアドレス欄に貼り付けてください。' : 'If that option is missing, copy the link and paste it into your web browser’s address bar.',
+    'pwa-example-note': japanese ? '以下は操作例の図です。図は押せません。お使いのWebブラウザのボタン・メニューを操作してください。' : 'These are example illustrations, not buttons. Use the buttons and menus in your own web browser.',
+    'pwa-context-bookmark': japanese ? '♧　ブックマークに追加' : '♧　Add Bookmark',
+    'pwa-context-copy': japanese ? '▧　リンクをコピー' : '▧　Copy Link',
+    'pwa-context-edit': japanese ? '☷　アクションを編集' : '☷　Edit Actions',
+    'pwa-context-home': japanese ? 'ホーム画面に追加' : 'Add to Home Screen',
     'pwa-prompt-title': labels.title, 'pwa-prompt-desc': labels.desc,
     'pwa-step-1': labels.first, 'pwa-step-2': labels.step2, 'pwa-step-3': labels.step3,
     'pwa-visual-1': labels.menu, 'pwa-visual-2': labels.second, 'pwa-visual-3': labels.third,
     'pwa-launch-label': labels.launch, 'pwa-platform-note': labels.note, 'btn-pwa-skip': labels.skip
   })) document.getElementById(id).textContent = value;
+  for (const id of ['pwa-context-bookmark', 'pwa-context-copy', 'pwa-context-edit']) {
+    document.getElementById(id).style.visibility = appleMobile ? 'visible' : 'hidden';
+  }
   document.getElementById('pwa-share-picture').style.display = appleMobile ? '' : 'none';
   document.getElementById('pwa-menu-picture').style.display = appleMobile ? 'none' : 'block';
   document.querySelector('#pwa-prompt-overlay .pwa-step-card').setAttribute('aria-label', japanese ? 'ホーム画面への追加手順' : 'Home Screen installation steps');
