@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="71">
+  <meta name="html-rev" content="72">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -63,6 +63,11 @@
         <div class="pwa-desc" id="pwa-prompt-desc">
           本アプリは、ホーム画面から起動して利用することを想定しています。
         </div>
+
+        <figure class="pwa-home-example">
+          <img class="pwa-home-picture" src="pwa-home-screen.svg" alt="架空のホーム画面にSensor Challengeのアイコンが配置された例">
+          <figcaption id="pwa-home-caption-intro">ホーム画面の例：このアイコンから起動します（図は押せません）</figcaption>
+        </figure>
 
         <div class="pwa-browser-help">
           <strong id="pwa-browser-help-title">SNSアプリ等から直接開いた方へ</strong>
@@ -116,11 +121,10 @@
             <div class="pwa-step-num">3</div>
             <div class="pwa-step-content">
               <span id="pwa-step-3">「追加」で完了</span>
-              <div class="pwa-screen-example" aria-hidden="true">
-                <div id="pwa-context-home" class="pwa-crop-neighbor">ホーム画面に追加</div>
-                <div class="pwa-confirm-picture"><span>Sensor Challenge</span><strong id="pwa-visual-3">追加</strong></div>
-                <div class="pwa-crop-neighbor pwa-address-context">sensorchallenge.xyz</div>
-              </div>
+              <figure class="pwa-home-example">
+                <img class="pwa-home-picture" src="pwa-home-screen.svg" alt="架空のホーム画面にSensor Challengeのアイコンが配置された例">
+                <figcaption id="pwa-home-caption-done">追加完了後のホーム画面の例（図は押せません）</figcaption>
+              </figure>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "89";
+  --css-rev: "90";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2046,3 +2046,8 @@ body {
 .pwa-screen-example .pwa-confirm-picture strong { border: 2px dashed #007a86; border-radius: 0; }
 
 .pwa-browser-help .pwa-menu-picture strong { color: #16181b; }
+
+.pwa-home-example { margin: 8px 0 16px; }
+.pwa-home-picture { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
+.pwa-home-example figcaption { margin-top: 6px; font-size: .72rem; color: #b0c4de; line-height: 1.5; text-align: left; }
+.pwa-step-content .pwa-home-example { margin-bottom: 0; }

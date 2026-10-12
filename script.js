@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.121017";
+const BASE_JS_VERSION = "v0.26.101.121023";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -684,12 +684,16 @@ function applyLanguage(lang) {
     'pwa-context-bookmark': japanese ? '♧　ブックマークに追加' : '♧　Add Bookmark',
     'pwa-context-copy': japanese ? '▧　リンクをコピー' : '▧　Copy Link',
     'pwa-context-edit': japanese ? '☷　アクションを編集' : '☷　Edit Actions',
-    'pwa-context-home': japanese ? 'ホーム画面に追加' : 'Add to Home Screen',
+    'pwa-home-caption-intro': japanese ? 'ホーム画面の例：このアイコンから起動します（図は押せません）' : 'Example Home Screen: launch from this icon (illustration only).',
+    'pwa-home-caption-done': japanese ? '追加完了後のホーム画面の例（図は押せません）' : 'Example Home Screen after adding the app (illustration only).',
     'pwa-prompt-title': labels.title, 'pwa-prompt-desc': labels.desc,
     'pwa-step-1': labels.first, 'pwa-step-2': labels.step2, 'pwa-step-3': labels.step3,
-    'pwa-visual-1': labels.menu, 'pwa-visual-2': labels.second, 'pwa-visual-3': labels.third,
+    'pwa-visual-1': labels.menu, 'pwa-visual-2': labels.second,
     'pwa-launch-label': labels.launch, 'pwa-platform-note': labels.note, 'btn-pwa-skip': labels.skip
   })) document.getElementById(id).textContent = value;
+  document.querySelectorAll('.pwa-home-picture').forEach(image => {
+    image.alt = japanese ? '架空のホーム画面にSensor Challengeのアイコンが配置された例' : 'Example Home Screen with the Sensor Challenge app icon.';
+  });
   for (const id of ['pwa-context-bookmark', 'pwa-context-copy', 'pwa-context-edit']) {
     document.getElementById(id).style.visibility = appleMobile ? 'visible' : 'hidden';
   }
