@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.120947";
+const BASE_JS_VERSION = "v0.26.101.120952";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -657,21 +657,21 @@ function applyLanguage(lang) {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const japanese = lang === 'ja';
   const labels = japanese ? {
-    title: 'ホーム画面から、すぐに起動', desc: 'アプリのように全画面で使えます',
+    title: 'ホーム画面に追加してください', desc: '本アプリは、ホーム画面から起動して利用することを想定しています。',
     first: appleMobile ? '「共有」をタップ' : 'ブラウザのメニューを開く',
     menu: appleMobile ? '共有' : 'メニュー', second: 'ホーム画面に追加',
     step2: appleMobile ? '「ホーム画面に追加」を選ぶ' : '「ホーム画面に追加」または「インストール」を選ぶ',
     third: appleMobile ? '追加' : '追加 / インストール', step3: '確認画面で確定して完了',
     launch: '次回から、このアイコンで起動', skip: 'ブラウザで続ける',
-    note: appleMobile ? '項目が見つからない場合は、メニューを下へスクロール。表示されない場合はSafariで開いてください。' : 'メニューの位置や項目名はブラウザによって異なります。見つからない場合はChromeで開いてください。'
+    note: appleMobile ? '項目が見つからない場合は、メニューを下へスクロールしてください。アプリ内で開いている場合は、Webブラウザで開き直してください。' : 'メニューの位置や項目名はWebブラウザによって異なります。アプリ内で開いている場合は、Webブラウザで開き直してください。'
   } : {
-    title: 'Launch from your Home Screen', desc: 'Enjoy the app in full screen',
+    title: 'Please add this app to your Home Screen', desc: 'This app is designed to be launched and used from your Home Screen.',
     first: appleMobile ? 'Tap Share' : 'Open the browser menu',
     menu: appleMobile ? 'Share' : 'Menu', second: 'Add to Home Screen',
     step2: appleMobile ? 'Choose Add to Home Screen' : 'Choose Add to Home Screen or Install',
     third: appleMobile ? 'Add' : 'Add / Install', step3: 'Confirm to finish',
     launch: 'Next time, launch from this icon', skip: 'Continue in browser',
-    note: appleMobile ? 'Scroll down the menu if needed. If the option is missing, open in Safari.' : 'Menu placement and labels vary by browser. If the option is missing, open in Chrome.'
+    note: appleMobile ? 'Scroll down the menu if needed. If you are viewing this in an in-app browser, reopen it in a web browser.' : 'Menu placement and labels vary by web browser. If you are viewing this in an in-app browser, reopen it in a web browser.'
   };
   for (const [id, value] of Object.entries({
     'pwa-prompt-title': labels.title, 'pwa-prompt-desc': labels.desc,
