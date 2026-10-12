@@ -212,16 +212,16 @@ test('更新失敗時は固定対象を保持し、停止後の応答を無視�
   c.searchGeoapify = () => new Promise(done => { resolve = done; });
   vm.runInContext(source.slice(source.indexOf('async function executeSearch('),
     source.indexOf('function getRadiusText')), c);
-  const pending = c.executeSearch();
+  const pending = c.executeSearch(false, true);
   resolve({ places: [{ id: 'fixed', lat: 100, lng: 0 }], partial: false });
   await pending;
   assert.equal(c.appState.randomTarget.id, 'fixed');
   c.searchGeoapify = async () => { throw new Error('unavailable'); };
-  await c.executeSearch(true);
+  await c.executeSearch(true, true);
   assert.equal(c.appState.randomTarget.id, 'fixed');
   assert.equal(elements['unknown-count'].textContent, 1);
   c.searchGeoapify = () => new Promise(done => { resolve = done; });
-  const stale = c.executeSearch(true);
+  const stale = c.executeSearch(true, true);
   c.searchGeneration++;
   c.appState.isTracking = false;
   resolve({ places: [], partial: false });

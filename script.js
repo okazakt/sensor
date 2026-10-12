@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.130811";
+const BASE_JS_VERSION = "v0.26.101.130818";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1243,6 +1243,7 @@ let compassPermissionPending = false;
 
 let isSearchInProgress = false;
 let searchGeneration = 0;
+let initialSearchAccessGranted = false;
 let arrivalInProgressId = null;
 let detailMinimapInstance = null;
 
@@ -1547,6 +1548,7 @@ function updateVisualRing(level) {
 
 function resetKeywordSearch() {
   searchGeneration++;
+  initialSearchAccessGranted = false;
   isSearchInProgress = false;
   arrivalInProgressId = null;
   appState.randomTarget = null;
@@ -2438,11 +2440,28 @@ async function searchSecretChallenge(position, radius, language, mode) {
   };
 }
 
-async function executeSearch(refreshCandidates = false) {
+async function executeSearch(refreshCandidates = false, accessGranted = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
-      appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return;
+      appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return false;
   const generation = searchGeneration;
+  if (!accessGranted && initialSearchAccessGranted) {
+    initialSearchAccessGranted = false;
+    accessGranted = true;
+  }
+  if (!accessGranted) {
+    if (rewardedSearchPending) return;
+    const kind = appState.activeChallenge?.group === 'secret' ? 'secret' : 'normal';
+    const continued = await runRewardedSearch(kind, () => {
+      if (generation !== searchGeneration || !appState.isTracking) return false;
+      // Authorization applies to this search only, using the latest GPS fix.
+      return executeSearch(refreshCandidates, true);
+    }, { requireFullCost: true });
+    if (!continued && generation === searchGeneration && appState.isTracking) {
+      stopSearchAndReset();
+    }
+    return;
+  }
   isSearchInProgress = true;
   const position = { ...appState.currentPos };
   appState.lastSearchedPos = position;
@@ -2453,7 +2472,7 @@ async function executeSearch(refreshCandidates = false) {
     const result = appState.activeChallenge?.group === 'secret'
       ? await searchSecretChallenge(position, radius, currentLang, appState.targetMode)
       : await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang, appState.challengeCategories);
-    if (generation !== searchGeneration || !appState.isTracking) return;
+    if (generation !== searchGeneration || !appState.isTracking) return false;
     if (result.partial) console.warn('One search source is unavailable; using available results.');
     appState.places = result.places;
     const fixedTarget = refreshCandidates ? appState.randomTarget : null;
@@ -2461,8 +2480,9 @@ async function executeSearch(refreshCandidates = false) {
     const retained = fixedTarget && getSearchCandidates().find(place => place.id === fixedTarget.id);
     if (retained) appState.randomTarget = retained;
     else chooseSearchTarget(position);
+    return true;
   } catch (error) {
-    if (generation !== searchGeneration || !appState.isTracking) return;
+    if (generation !== searchGeneration || !appState.isTracking) return false;
     console.warn('Geoapify search unavailable.');
     if (!refreshCandidates) {
       appState.places = [];
@@ -3394,7 +3414,7 @@ function stopSearchAndReset() {
 }
 
 let rewardedSearchPending = false;
-function runRewardedSearch(kind, execute) {
+function runRewardedSearch(kind, execute, options) {
   if (rewardedSearchPending) return Promise.resolve(false);
   if (!window.SensorRewardAds?.search) return Promise.resolve(false);
   rewardedSearchPending = true;
@@ -3409,7 +3429,7 @@ function runRewardedSearch(kind, execute) {
     const result = execute();
     launched = result !== false;
     return result;
-  }).finally(() => {
+  }, options).finally(() => {
     rewardedSearchPending = false;
     if (!launched) appState.isPaused = previouslyPaused;
     evaluateSensorCycle();
@@ -3436,6 +3456,7 @@ function startSearchFromSet(fromChallenge = false) {
     if (document.getElementById('keyword-input').value.trim() !== inputVal) return false;
     resetKeywordSearch();
     appState.activeKeyword = inputVal;
+    initialSearchAccessGranted = true;
     appState.pinpointTarget = null;
     appState.isTracking = true;
     appState.isPaused = false;

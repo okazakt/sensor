@@ -18,10 +18,10 @@
     function save() {
       try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* Session-only fallback. */ }
     }
-    async function ensureAccess() {
+    async function ensureAccess(requiredUnits = 1, reason = 'continue') {
       read();
-      if (state.initialWatched && state.units > 0) return true;
-      if (!await watchAd(!state.initialWatched ? 'initial' : 'continue')) return false;
+      if (state.initialWatched && state.units >= requiredUnits) return true;
+      if (!await watchAd(!state.initialWatched ? 'initial' : reason)) return false;
       read();
       state = { initialWatched: true, units: state.units + 10 };
       save();
@@ -40,11 +40,12 @@
         busy = true;
         try { return await ensureAccess(); } finally { busy = false; }
       },
-      async search(kind, execute) {
+      async search(kind, execute, { requireFullCost = false } = {}) {
         if (busy) return false;
         busy = true;
         try {
-          if (!await ensureAccess()) return false;
+          if (!await ensureAccess(requireFullCost ? (kind === 'secret' ? 5 : 2) : 1,
+              requireFullCost ? 'research' : 'continue')) return false;
           if (await execute() === false) return false;
           read();
           state.units -= kind === 'secret' ? 5 : 2;
@@ -104,10 +105,12 @@
       title.textContent = ja()
         ? (pending.reason === 'initial' ? '動画を見て利用を開始' : '動画を見て探索を続ける')
         : (pending.reason === 'initial' ? 'Watch a video to start' : 'Watch a video to continue');
-      description.textContent = ja()
-        ? '広告動画の視聴に同意し、視聴完了後に利用を続けます。'
-        : 'Agree to watch a video ad and continue using the app after completing it.';
-      cancel.textContent = ja() ? 'キャンセル' : 'Cancel';
+      description.textContent = pending.reason === 'research'
+        ? (ja() ? '再探索に必要なポイントが不足しています。動画を視聴して続けますか？「いいえ」を選ぶと現在の探索・チャレンジを終了します。'
+          : 'You need more points to search again. Watch a video to continue? Choosing No ends the current search or challenge.')
+        : (ja() ? '広告動画の視聴に同意し、視聴完了後に利用を続けます。'
+          : 'Agree to watch a video ad and continue using the app after completing it.');
+      cancel.textContent = pending.reason === 'research' ? (ja() ? 'いいえ' : 'No') : (ja() ? 'キャンセル' : 'Cancel');
       languageLabel.textContent = ja() ? '→EN' : '→JA';
       agree.textContent = consentError === 'loading'
         ? (ja() ? '読み込みを再試行' : 'Retry loading')
@@ -207,7 +210,7 @@
     Object.assign(global.SensorRewardAds, {
       startup: () => controller.startup(),
       prepare: () => controller.prepare(),
-      search: (kind, execute) => controller.search(kind, execute),
+      search: (kind, execute, options) => controller.search(kind, execute, options),
       snapshot: () => controller.snapshot(),
       refreshLanguage: () => watchAd.refreshLanguage()
     });
