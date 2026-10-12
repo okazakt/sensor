@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.121012";
+const BASE_JS_VERSION = "v0.26.101.121017";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -674,7 +674,7 @@ function applyLanguage(lang) {
     note: appleMobile ? 'Scroll down the menu if needed. If you are viewing this in an in-app browser, reopen it in a web browser.' : 'Menu placement and labels vary by web browser. If you are viewing this in an in-app browser, reopen it in a web browser.'
   };
   for (const [id, value] of Object.entries({
-    'pwa-browser-help-title': japanese ? 'LINEなどから開いた方へ' : 'Opened from LINE or another app?',
+    'pwa-browser-help-title': japanese ? 'SNSアプリ等から直接開いた方へ' : 'Opened directly from a social media or other app?',
     'pwa-browser-help-text': japanese ? '「共有」や「ホーム画面に追加」がない場合は、アプリのメニューから「ブラウザで開く」を選び、通常のWebブラウザで開き直してください。' : 'If Share or Add to Home Screen is missing, choose Open in browser from the app menu to reopen this page in a regular web browser.',
     'pwa-browser-example-label': japanese ? '操作例（図は押せません）：アプリのメニューを開き、下の項目を選びます。' : 'Example (not a button): open the app menu and choose the item shown below.',
     'pwa-browser-visual': japanese ? 'ブラウザで開く' : 'Open in browser',
