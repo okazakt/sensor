@@ -1,0 +1,6 @@
+{
+  "name": "sensor-challenge",
+  "private": true,
+  "scripts": { "test": "node --test scripts/*.test.cjs" },
+  "devDependencies": { "fake-indexeddb": "6.2.4" }
+}

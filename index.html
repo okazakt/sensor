@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="75">
+  <meta name="html-rev" content="76">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -535,11 +535,27 @@
   <script src="applixir-config.js"></script>
   <script src="rewarded-ads.js?v=75"></script>
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+  <script src="app-storage.js?v=76"></script>
   <script>
     const scriptEl = document.createElement('script');
     scriptEl.src = 'script.js?v=' + cacheBuster;
     scriptEl.id = 'main-script';
-    document.body.appendChild(scriptEl);
+    window.SensorAppStorage = SensorStorage.create({
+      onError(error) {
+        window.sensorStorageError = error;
+        window.dispatchEvent(new Event('sensor-storage-error'));
+      },
+      onChange() { window.dispatchEvent(new Event('sensor-storage-change')); }
+    });
+    window.SensorAppStorage.initialize().then(async () => {
+      if (new URLSearchParams(location.search).get('storage') === 'local') {
+        await window.SensorAppStorage.rollbackToLocalStorage();
+      }
+      document.body.appendChild(scriptEl);
+    }).catch(() => {
+      document.getElementById('safety-prompt-desc').textContent =
+        '保存データを開けませんでした。再読み込みしてください。 / Unable to open saved data. Please reload.';
+    });
   </script>
 </body>
 </html>

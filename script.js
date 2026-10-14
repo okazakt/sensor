@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.141105";
+const BASE_JS_VERSION = "v0.26.101.141239";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -607,10 +607,32 @@ function arrivalPinPosition(item) {
     Math.abs(pin.lat) <= 90 && Math.abs(pin.lng) <= 180 ? pin : item;
 }
 
-function updateDestinationOutlines() {
+let savedOutlineSignature = null;
+let savedOutlineGeneration = 0;
+let savedOutlineMap = null;
+let savedOutlinePlaces = [];
+
+function updateDestinationOutlines(db = loadSavedData()) {
   if (!map) return;
-  const saved = [...(loadSavedData().arrivals || [])]
+  const saved = [...(db.arrivals || [])]
     .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+  if (window.SensorAppStorage) {
+    const signature = JSON.stringify(saved.map(({ id, date }) => [id, date]));
+    if (signature === savedOutlineSignature && map === savedOutlineMap) {
+      map.setOutlines(savedOutlinePlaces);
+      return;
+    }
+    savedOutlineSignature = signature;
+    savedOutlineMap = map;
+    const currentMap = map;
+    const generation = ++savedOutlineGeneration;
+    Promise.all(saved.map(loadSpotDetails)).then(places => {
+      if (generation !== savedOutlineGeneration || map !== currentMap) return;
+      savedOutlinePlaces = places.filter(place => validDestinationGeometry(place.geometry));
+      map.setOutlines(savedOutlinePlaces);
+    }).catch(() => { savedOutlineSignature = null; });
+    return;
+  }
   const areas = new Map();
   saved.forEach(place => {
     if (validDestinationGeometry(place.geometry)) areas.set(place.id, place);
@@ -803,8 +825,8 @@ function isValidTransferData(db) {
     (item.geometry == null || validDestinationGeometry(item.geometry)));
 }
 
-function triggerDataTransferPrompt() {
-  const db = loadSavedData();
+async function triggerDataTransferPrompt() {
+  const db = window.SensorAppStorage ? await window.SensorAppStorage.exportData() : loadSavedData();
   const jsonStr = JSON.stringify(db);
   const base64Code = encodeTransferData(jsonStr);
 
@@ -833,7 +855,7 @@ function triggerDataTransferPrompt() {
         const restoredJson = decodeTransferData(inputCode.trim());
         const restoredDb = JSON.parse(restoredJson);
         if (isValidTransferData(restoredDb)) {
-          saveAppData(normalizeHistoryData(restoredDb));
+          await saveAppData(normalizeHistoryData(restoredDb), { replace: true });
           stopSearchAndReset();
           applyFeatureAccess();
           renderChallenges();
@@ -1281,6 +1303,7 @@ let arrivalInProgressId = null;
 let detailMinimapInstance = null;
 
 function loadSavedData() {
+  if (window.SensorAppStorage) return normalizeHistoryData(window.SensorAppStorage.read());
   const data = localStorage.getItem('sheikah_db_v1');
   if (data) return normalizeHistoryData(JSON.parse(data));
   return { keywordHistory: {}, arrivals: [] };
@@ -1330,9 +1353,22 @@ function deleteKeywordHistory(db, keyword) {
   });
 }
 
-function saveAppData(db) {
+function saveAppData(db, options) {
+  if (window.SensorAppStorage) {
+    const saved = window.SensorAppStorage.save(db, options);
+    // Storage reports errors separately; event handlers must not leak rejections.
+    saved.catch(() => {});
+    return saved;
+  }
   localStorage.setItem('sheikah_db_v1', JSON.stringify(db));
+  return Promise.resolve();
 }
+
+async function loadSpotDetails(item) {
+  if (!window.SensorAppStorage) return item;
+  return await window.SensorAppStorage.detail(item.id) || item;
+}
+
 
 let map = null;
 let visualMapCenter = null;
@@ -1732,33 +1768,32 @@ function requestDestinationGeometry(target) {
   }
 }
 
-function getSearchCandidates() {
+function getSearchCandidates(db = loadSavedData()) {
   if (!appState.currentPos) return [];
-  const db = loadSavedData();
   const radius = RADIUS_OPTIONS[radiusIndex];
   const mutedIds = new Set(db.arrivals.filter(item => item.muted).map(item => item.id));
   return appState.places.filter(place => !mutedIds.has(place.id) &&
     destinationDistance(appState.currentPos, place) <= radius);
 }
 
-function refreshOutOfRangeTargets(previousPos) {
+function refreshOutOfRangeTargets(previousPos, db = loadSavedData()) {
   if (!appState.isTracking || appState.isPaused || appState.pinpointTarget ||
       !appState.currentPos || !appState.lastSearchedPos || isSearchInProgress) return;
   const radius = RADIUS_OPTIONS[radiusIndex];
   const target = appState.randomTarget;
   const outside = target && destinationDistance(appState.currentPos, target) > radius;
   // All-target mode refreshes once the last eligible candidate leaves the radius.
-  const exhausted = appState.targetMode === 'all' && previousPos && !getSearchCandidates().length &&
+  const exhausted = appState.targetMode === 'all' && previousPos && !getSearchCandidates(db).length &&
     appState.places.some(place => destinationDistance(previousPos, place) <= radius &&
-      !loadSavedData().arrivals.some(item => item.id === place.id && item.muted));
+      !db.arrivals.some(item => item.id === place.id && item.muted));
   if (!outside && !exhausted) return;
   appState.randomTarget = null;
   appState.places = [];
   executeSearch(true);
 }
 
-function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos) {
-  const available = getSearchCandidates();
+function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos, db = loadSavedData()) {
+  const available = getSearchCandidates(db);
   const outsideArrivalRange = appState.activeChallenge?.mode === 'random'
     ? available.filter(place => destinationDistance(appState.currentPos, place) > 20)
     : available;
@@ -1778,15 +1813,15 @@ function chooseSearchTarget(origin = appState.lastSearchedPos || appState.curren
   }
 }
 
-function maintainSearchTarget() {
+function maintainSearchTarget(db = loadSavedData()) {
   if (appState.targetMode === 'all') {
     appState.randomTarget = null;
     return;
   }
-  if (!appState.randomTarget || !getSearchCandidates().some(place => place.id === appState.randomTarget.id) ||
+  if (!appState.randomTarget || !getSearchCandidates(db).some(place => place.id === appState.randomTarget.id) ||
       (appState.activeChallenge?.mode === 'random' && !appState.randomTargetArrivalFallback && appState.randomTargetOrigin &&
         destinationDistance(appState.randomTargetOrigin, appState.randomTarget) <= 20)) {
-    chooseSearchTarget();
+    chooseSearchTarget(undefined, db);
   }
 }
 
@@ -1848,7 +1883,8 @@ function updateDetectionLabel() {
 }
 
 function evaluateSensorCycle() {
-  updateDestinationOutlines();
+  const db = window.SensorAppStorage
+    ? { arrivals: window.SensorAppStorage.detection() } : loadSavedData();
   updateDetectionLabel();
   const countEl = document.getElementById('unknown-count');
   const distInfoEl = document.getElementById('distance-info');
@@ -1864,8 +1900,8 @@ function evaluateSensorCycle() {
   }
 
   if (!appState.pinpointTarget) {
-    refreshOutOfRangeTargets(null);
-    maintainSearchTarget();
+    refreshOutOfRangeTargets(null, db);
+    maintainSearchTarget(db);
   }
   if (!appState.pinpointTarget && !appState.randomTarget && isSearchInProgress) {
     countEl.textContent = "--";
@@ -1877,10 +1913,10 @@ function evaluateSensorCycle() {
   }
   const lockedTarget = appState.pinpointTarget || appState.randomTarget;
   const activeTargets = lockedTarget ? [lockedTarget] :
-    (appState.targetMode === 'all' ? getSearchCandidates() : []);
+    (appState.targetMode === 'all' ? getSearchCandidates(db) : []);
 
   // The count represents all eligible places in either locked or all-target mode.
-  countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates().length;
+  countEl.textContent = appState.pinpointTarget ? 1 : getSearchCandidates(db).length;
   updateDetectionLabel();
 
   const nearestTarget = activeTargets.reduce((nearest, place) => !nearest ||
@@ -1890,7 +1926,7 @@ function evaluateSensorCycle() {
   geometryTargets.forEach(requestDestinationGeometry);
   if (lockedTarget && !appState.pinpointTarget && appState.activeChallenge?.mode === 'random' && !appState.randomTargetArrivalFallback &&
       appState.randomTargetOrigin && destinationDistance(appState.randomTargetOrigin, lockedTarget) <= 20) {
-    chooseSearchTarget();
+    chooseSearchTarget(undefined, db);
     evaluateSensorCycle();
     return;
   }
@@ -3675,6 +3711,7 @@ function setupSwipeAndNavigationSystem() {
     updateFooterActive(2);
   });
   document.getElementById('back-to-history-list')?.addEventListener('click', () => {
+    spotDetailGeneration++;
     pageSpotDetail.classList.remove('open');
     if (appState.fromAllHistory) {
       updateFooterActive(3);
@@ -4083,7 +4120,10 @@ function showToast(msg) {
   }, 2500);
 }
 
-function setPinpointTargetAndStart(item) {
+function setPinpointTargetAndStart(item, hydrated = false) {
+  if (!hydrated && window.SensorAppStorage) {
+    return loadSpotDetails(item).then(detail => setPinpointTargetAndStart(detail, true));
+  }
   if (appState.activeChallenge) {
     showToast(currentLang === 'ja' ? 'チャレンジを停止してから探索を変更してください。' : 'Stop the challenge before changing the search.');
     return;
@@ -4123,8 +4163,18 @@ function moveSpotDetail(offset) {
   openSpotDetailModal(items[index + offset], items);
 }
 
-function openSpotDetailModal(item, orderedItems) {
-  item = loadSavedData().arrivals.find(saved => saved.id === item.id) || item;
+let spotDetailGeneration = 0;
+
+function openSpotDetailModal(item, orderedItems, hydrated = false) {
+  if (!hydrated && window.SensorAppStorage) {
+    const generation = ++spotDetailGeneration;
+    if (orderedItems) detailNavigationIds = orderedItems.map(spot => spot.id);
+    loadSpotDetails(item).then(detail => {
+      if (generation === spotDetailGeneration) openSpotDetailModal(detail, orderedItems, true);
+    }).catch(() => showToast(currentLang === 'ja' ? '図鑑詳細を読み込めませんでした。' : 'Unable to read spot details.'));
+    return;
+  }
+  item = { ...item, ...(loadSavedData().arrivals.find(saved => saved.id === item.id) || {}) };
   if (orderedItems) detailNavigationIds = orderedItems.map(spot => spot.id);
   hideOtherSettingToasts();
   appState.selectedSpotForDetail = item;
@@ -4341,7 +4391,17 @@ document.getElementById('challenge-start-dialog').addEventListener('close', () =
 document.getElementById('challenge-start-dialog').addEventListener('cancel', () => {
   pendingChallenge = null;
 });
+window.addEventListener('sensor-storage-change', () => {
+  savedOutlineSignature = null;
+  updateDestinationOutlines();
+});
+window.addEventListener('sensor-storage-error', () => {
+  showToast(currentLang === 'ja'
+    ? '保存処理に問題が発生しました。再読み込みしてください。既存データは保持されています。'
+    : 'Storage failed. Please reload. Existing data has been retained.');
+});
 applyLanguage(currentLang);
+if (window.sensorStorageError) window.dispatchEvent(new Event('sensor-storage-error'));
 function initializeOnLoad() {
   if (startupRefreshPending) return;
   bootstrapMapAndLocation();

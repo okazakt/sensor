@@ -8,7 +8,7 @@ function fixture() {
   const c = { TextEncoder, TextDecoder, Uint8Array, btoa, atob };
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('function validDestinationGeometry'), source.indexOf('function destinationGeometryReading')), c);
-  vm.runInContext(source.slice(source.indexOf('function encodeTransferData'), source.indexOf('function triggerDataTransferPrompt')), c);
+  vm.runInContext(source.slice(source.indexOf('function encodeTransferData'), source.indexOf('async function triggerDataTransferPrompt')), c);
   return c;
 }
 test('引き継ぎコードは旧UTF-8形式と互換で、日本語・絵文字を保持する', () => {

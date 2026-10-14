@@ -10,7 +10,7 @@ function sensorFixture() {
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   const elements = { 'unknown-count': { textContent: '' }, 'label-detecting': { textContent: '' }, 'distance-info': { textContent: '' } };
   const records = { arrivals: [] };
-  const context = {
+  const context = { window: {},
     appState: {
       targetMode: "random", sensorDetail: "standard", isTracking: true, isPaused: false,
       currentPos: { lat: 0, lng: 0 }, currentHeading: 0,
@@ -355,5 +355,21 @@ test('代表座標が遠くても敷地内なら全件・固定対象のどち�
     c.handleArrival = target => { arrived = target.id; };
     c.evaluateSensorCycle();
     assert.equal(arrived,'large-park');
+  }
+});
+
+test('探知判定は保存データを一度だけ読み、IndexedDB時は軽い探知一覧だけを使う', () => {
+  for (const indexed of [false, true]) {
+    const { context: c, records } = sensorFixture();
+    let reads = 0, detectionReads = 0, outlineUpdates = 0;
+    c.loadSavedData = () => { reads++; return records; };
+    c.updateDestinationOutlines = () => { outlineUpdates++; };
+    c.requestDestinationGeometry = () => {};
+    c.appState.places = [{ id:'target', lat:1000, lng:0 }];
+    if (indexed) c.window.SensorAppStorage = { detection() { detectionReads++; return records.arrivals; } };
+    c.evaluateSensorCycle();
+    assert.equal(reads, indexed ? 0 : 1);
+    assert.equal(detectionReads, indexed ? 1 : 0);
+    assert.equal(outlineUpdates, 0);
   }
 });
