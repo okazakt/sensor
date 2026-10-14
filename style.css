@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "93";
+  --css-rev: "94";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -239,11 +239,11 @@ body {
   padding-block: 16px;
 }
 #safety-prompt-overlay .pwa-relic-box {
-  height: min(480px, 100%);
-  min-height: 340px;
+  height: min(390px, 100%);
+  min-height: 300px;
   flex-shrink: 0;
   display: grid;
-  grid-template-rows: 86px 60px minmax(0, 1fr) 64px 10px;
+  grid-template-rows: 70px 48px minmax(0, 1fr) 48px 10px;
   row-gap: 8px;
 }
 #safety-prompt-overlay .pwa-icon-img {
