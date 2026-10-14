@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "92";
+  --css-rev: "93";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -231,6 +231,44 @@ body {
   text-align: center;
   min-height: 1em;
   line-height: 1em;
+}
+
+/* Keep startup copy and language changes inside a stable, centered dialog. */
+#safety-prompt-overlay {
+  justify-content: safe center;
+  padding-block: 16px;
+}
+#safety-prompt-overlay .pwa-relic-box {
+  height: min(480px, 100%);
+  min-height: 340px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-rows: 86px 60px minmax(0, 1fr) 64px 10px;
+  row-gap: 8px;
+}
+#safety-prompt-overlay .pwa-icon-img {
+  margin: 10px auto 0;
+}
+#safety-prompt-title {
+  margin: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  align-content: center;
+}
+#safety-prompt-desc {
+  min-height: 0;
+  margin-bottom: 0 !important;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-gutter: stable both-edges;
+}
+#safety-prompt-overlay .btn-safety-ok {
+  min-height: 0;
+  margin-top: 0;
+  overflow-y: auto;
+}
+#safety-prompt-overlay .modal-version {
+  margin-top: 0;
 }
 
 #arrival-flash-overlay {
