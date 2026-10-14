@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.130818";
+const BASE_JS_VERSION = "v0.26.101.141038";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -276,7 +276,7 @@ function initializeResponsiveLayout() {
 initializeResponsiveLayout();
 
 
-(function() {
+function updateDisplayedVersion() {
   const metaTag = document.querySelector('meta[name="html-rev"]');
   const htmlRev = metaTag ? metaTag.getAttribute('content') : "11";
 
@@ -289,21 +289,12 @@ initializeResponsiveLayout();
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
   });
-})();
+}
+
+updateDisplayedVersion();
 
 function initializeNavigationSystem() {
-  const metaTag = document.querySelector('meta[name="html-rev"]');
-  const htmlRev = metaTag ? metaTag.getAttribute('content') : "11";
-
-  const computedStyle = getComputedStyle(document.documentElement);
-  let cssRev = computedStyle.getPropertyValue('--css-rev').trim().replace(/['"]/g, '');
-  if (!cssRev) cssRev = "07";
-
-  const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
-
-  document.querySelectorAll('.app-build-ver-span').forEach(el => {
-    el.textContent = fullVersion;
-  });
+  updateDisplayedVersion();
 
   setupDataTransferEasterEgg();
   setupSwipeAndNavigationSystem();
@@ -770,10 +761,45 @@ function setupDataTransferEasterEgg() {
   });
 }
 
+function encodeTransferData(json) {
+  const bytes = new TextEncoder().encode(json);
+  return btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
+}
+
+function decodeTransferData(code) {
+  const bytes = Uint8Array.from(atob(code), char => char.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+}
+
+function isValidTransferData(db) {
+  const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const strings = value => Array.isArray(value) && value.every(item => typeof item === 'string');
+  // Imported objects must not introduce inherited keyword entries.
+  const safeKeys = value => !value || typeof value !== 'object' ||
+    Object.keys(value).every(key => !['__proto__', 'constructor', 'prototype'].includes(key) && safeKeys(value[key]));
+  if (!record(db) || !Array.isArray(db.arrivals) || !safeKeys(db)) return false;
+  if (db.keywordHistory !== undefined && (!record(db.keywordHistory) ||
+      !Object.values(db.keywordHistory).every(entry => record(entry) &&
+        ['lastSearch', 'lastArrival'].every(key => entry[key] == null || typeof entry[key] === 'string')))) return false;
+  if (db.completedChallenges !== undefined && !strings(db.completedChallenges)) return false;
+  return db.arrivals.every(item => record(item) &&
+    (typeof item.id === 'string' || (typeof item.id === 'number' && Number.isFinite(item.id))) &&
+    typeof item.name === 'string' && Number.isFinite(item.lat) && Math.abs(item.lat) <= 90 &&
+    Number.isFinite(item.lng) && Math.abs(item.lng) <= 180 &&
+    ['keyword', 'date', 'branch', 'brand', 'formatted_address', 'phone', 'website'].every(key =>
+      item[key] == null || typeof item[key] === 'string') &&
+    ['keywords', 'challengeIds'].every(key => item[key] === undefined || strings(item[key])) &&
+    (item.muted === undefined || typeof item.muted === 'boolean') &&
+    (item.arrivalPosition == null || (record(item.arrivalPosition) &&
+      Number.isFinite(item.arrivalPosition.lat) && Math.abs(item.arrivalPosition.lat) <= 90 &&
+      Number.isFinite(item.arrivalPosition.lng) && Math.abs(item.arrivalPosition.lng) <= 180)) &&
+    (item.geometry == null || validDestinationGeometry(item.geometry)));
+}
+
 function triggerDataTransferPrompt() {
   const db = loadSavedData();
   const jsonStr = JSON.stringify(db);
-  const base64Code = btoa(unescape(encodeURIComponent(jsonStr)));
+  const base64Code = encodeTransferData(jsonStr);
 
   const choice = prompt(
     "【Data Transfer】\n" +
@@ -797,10 +823,10 @@ function triggerDataTransferPrompt() {
     const inputCode = prompt("コードを貼り付けてください:");
     if (inputCode && inputCode.trim()) {
       try {
-        const restoredJson = decodeURIComponent(escape(atob(inputCode.trim())));
+        const restoredJson = decodeTransferData(inputCode.trim());
         const restoredDb = JSON.parse(restoredJson);
-        if (restoredDb && restoredDb.arrivals) {
-          saveAppData(restoredDb);
+        if (isValidTransferData(restoredDb)) {
+          saveAppData(normalizeHistoryData(restoredDb));
           stopSearchAndReset();
           applyFeatureAccess();
           renderChallenges();
@@ -3758,11 +3784,11 @@ function renderKeywordsList() {
     div.innerHTML = `
       <div class="list-item-row">
         <div class="list-item-left">
-          <span class="list-item-title">${k}</span>
+          <span class="list-item-title">${escapeHtml(k)}</span>
           <div class="list-item-sub">${t.arrivalCount(count)}</div>
         </div>
         <div class="item-right-actions">
-          <button class="btn-sheikah-sm btn-reset-search" data-key="${k}">SET</button>
+          <button class="btn-sheikah-sm btn-reset-search" data-key="${escapeHtml(k)}">SET</button>
           <div style="color: var(--sheikah-gold); font-size: 1.3rem;">▶</div>
         </div>
       </div>
@@ -4284,9 +4310,14 @@ document.getElementById('challenge-start-dialog').addEventListener('cancel', () 
   pendingChallenge = null;
 });
 applyLanguage(currentLang);
-window.addEventListener('load', () => {
+function initializeOnLoad() {
   if (startupRefreshPending) return;
   bootstrapMapAndLocation();
   checkAndShowStartupModals();
-});
+}
+if (document.readyState === 'complete') {
+  initializeOnLoad();
+} else {
+  window.addEventListener('load', initializeOnLoad, { once: true });
+}
 
