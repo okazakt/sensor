@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.141038";
+const BASE_JS_VERSION = "v0.26.101.141105";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -399,6 +399,9 @@ const I18N = {
     unvisited: "未踏:",
     detecting: "件探知中",
     detectingLocked: "件探知　対象1件をロック",
+    locationInfoMissing: "位置情報を取得できていません",
+    compassInfoMissing: "方位情報を取得できていません",
+    sensorInfoMissing: "位置・方位情報を取得できていません",
     standby: "STANDBY",
     searching: "SEARCHING...",
     paused: "PAUSED",
@@ -486,6 +489,9 @@ const I18N = {
     unvisited: "Left:",
     detecting: " detected",
     detectingLocked: " detected · 1 target locked",
+    locationInfoMissing: "Location information unavailable",
+    compassInfoMissing: "Compass information unavailable",
+    sensorInfoMissing: "Location and compass information unavailable",
     standby: "STANDBY",
     searching: "SEARCHING...",
     paused: "PAUSED",
@@ -721,6 +727,7 @@ function applyLanguage(lang) {
   document.getElementById('safety-lang-label').textContent = t.langSwitchLabel;
   if (startupRefreshPending) showStartupRefresh();
   updateCompassStatus();
+  updateDetectionLabel();
 
   updateButtonStateUI();
   renderKeywordsList();
@@ -1783,6 +1790,19 @@ function maintainSearchTarget() {
   }
 }
 
+const SENSOR_INFO_NOTICE_DELAY = 20000;
+let sensorInfoMonitoringSince = null;
+
+function sensorInfoNotice(now = Date.now()) {
+  if (sensorInfoMonitoringSince === null || document.visibilityState === 'hidden') return '';
+  // Start/resume gets a full grace period; old readings never shorten it.
+  const locationMissing = now - Math.max(sensorInfoMonitoringSince, lastLocationFixTime) >= SENSOR_INFO_NOTICE_DELAY;
+  const compassMissing = now - Math.max(sensorInfoMonitoringSince, appState.lastCompassTimestamp ?? 0) >= SENSOR_INFO_NOTICE_DELAY;
+  const t = I18N[currentLang];
+  return locationMissing && compassMissing ? t.sensorInfoMissing :
+    locationMissing ? t.locationInfoMissing : compassMissing ? t.compassInfoMissing : '';
+}
+
 function sensorReaction(distance, angle) {
   const radius = RADIUS_OPTIONS[radiusIndex];
   const strong = Math.max(100, radius * 0.1);
@@ -1817,9 +1837,14 @@ function sensorReaction(distance, angle) {
 function updateDetectionLabel() {
   const label = document.getElementById('label-detecting');
   if (!label) return;
+  const notice = sensorInfoNotice();
+  for (const id of ['label-unvisited', 'unknown-count']) {
+    const element = document.getElementById(id);
+    if (element) element.hidden = Boolean(notice);
+  }
   const locked = appState.isTracking && !appState.isPaused &&
     appState.targetMode !== 'all' && Boolean(appState.pinpointTarget || appState.randomTarget);
-  label.textContent = locked ? I18N[currentLang].detectingLocked : I18N[currentLang].detecting;
+  label.textContent = notice || (locked ? I18N[currentLang].detectingLocked : I18N[currentLang].detecting);
 }
 
 function evaluateSensorCycle() {
@@ -4274,6 +4299,7 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
   if (startupRefreshPending) return;
   const startupButton = document.getElementById('btn-safety-ok');
   startupButton.disabled = true;
+  if (sensorInfoMonitoringSince === null) sensorInfoMonitoringSince = Date.now();
   // Both permission APIs run directly in the tap, before audio/wake-lock awaits.
   const compassPermission = requestCompassPermissionIfNeeded();
   requestLocationAccess();
@@ -4289,6 +4315,12 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
 });
 
 setInterval(updateCompassStatus, 500);
+// Refresh the notice even when neither sensor is delivering events.
+setInterval(updateDetectionLabel, 1000);
+document.addEventListener('visibilitychange', () => {
+  if (sensorInfoMonitoringSince !== null) sensorInfoMonitoringSince = Date.now();
+  updateDetectionLabel();
+});
 
 document.getElementById('challenge-start-no').addEventListener('click', () => {
   pendingChallenge = null;
