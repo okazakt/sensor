@@ -23,6 +23,7 @@ if (require.main === module) {
   }
   const version = versionForDate(new Date());
   fs.writeFileSync(scriptPath, source.replace(pattern, `const BASE_JS_VERSION = "${version}";`));
+  require('./sync-asset-versions.cjs').synchronize();
   console.log(`BASE_JS_VERSION: ${version} (Asia/Tokyo)`);
 }
 

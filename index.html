@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="76">
+  <meta name="html-rev" content="78">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -36,14 +36,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css">
 
-  <!-- CSSキャッシュ回避用動的読み込み -->
-  <script>
-    const cacheBuster = Date.now();
-    const linkEl = document.createElement('link');
-    linkEl.rel = 'stylesheet';
-    linkEl.href = 'style.css?v=' + cacheBuster;
-    document.head.appendChild(linkEl);
-  </script>
+  <link rel="stylesheet" href="style.css?v=7409b4e94202f986">
 </head>
 <body>
   <div id="app-container">
@@ -531,14 +524,14 @@
   </div>
 
   
-  <script src="geoapify-config.js"></script>
-  <script src="applixir-config.js"></script>
-  <script src="rewarded-ads.js?v=75"></script>
+  <script src="geoapify-config.js?v=075f4b92e9be37ad"></script>
+  <script src="applixir-config.js?v=d45c497c7055d5bf"></script>
+  <script src="rewarded-ads.js?v=22d4af82abee18ae"></script>
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
-  <script src="app-storage.js?v=76"></script>
+  <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=' + cacheBuster;
+    scriptEl.src = 'script.js?v=c45c067044a56a51';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
@@ -548,6 +541,31 @@
       onChange() { window.dispatchEvent(new Event('sensor-storage-change')); }
     });
     window.SensorAppStorage.initialize().then(async () => {
+      // Revalidate HTML without forcing unchanged JS/CSS to download again.
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        let response, latest;
+        try {
+          response = await fetch(location.href, { cache: 'no-cache', signal: controller.signal });
+          if (response.ok) latest = await response.text();
+        }
+        finally { clearTimeout(timeout); }
+        if (response.ok) {
+          const revision = latest.match(/<meta name="html-rev" content="(\d+)"/);
+          const source = latest.match(/scriptEl\.src = '([^']+)'/);
+          if (revision && source &&
+              (revision[1] !== document.querySelector('meta[name="html-rev"]').content ||
+               new URL(source[1], location.href).href !== scriptEl.src)) {
+            const refreshed = new URL(location.href);
+            refreshed.searchParams.set('_build', revision[1] + '-' + new URL(source[1], location.href).searchParams.get('v'));
+            if (refreshed.href !== location.href) {
+              location.replace(refreshed.href);
+              return;
+            }
+          }
+        }
+      } catch (_) { /* Offline or slow connections can use the loaded version. */ }
       if (new URLSearchParams(location.search).get('storage') === 'local') {
         await window.SensorAppStorage.rollbackToLocalStorage();
       }
