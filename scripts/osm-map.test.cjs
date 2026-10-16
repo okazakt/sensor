@@ -9,13 +9,16 @@ const vm = require('node:vm');
 function fixture(devicePixelRatio) {
   const maps = [];
   const observers = [];
+  const timers = new globalThis.Map();
+  let clock = 0, timerId = 0;
   class Map {
-    constructor(options) { this.options = options; this.events = {}; this.paint = {}; maps.push(this); }
+    constructor(options) { this.options = options; this.events = {}; this.paint = {}; this.centerCalls = 0;
+      this.container = {clientWidth:320, clientHeight:320}; maps.push(this); }
     on(name, callback) { this.events[name] = callback; }
     once(name, callback) { this.on(name, callback); }
-    getContainer() { return {}; }
+    getContainer() { return this.container; }
     getSource() { return { setData: data => { this.outlines = data; } }; }
-    setCenter(center) { this.center = center; }
+    setCenter(center) { this.center = center; this.centerCalls++; }
     isStyleLoaded() { return !!this.ready; }
     areTilesLoaded() { return !!this.ready; }
     setPaintProperty(layer, property, value) {
@@ -30,17 +33,27 @@ function fixture(devicePixelRatio) {
     observe() {}
     disconnect() { this.disconnected = true; }
   }
-  const context = { window: { maplibregl: { Map }, devicePixelRatio }, ResizeObserver };
+  const context = { window: { maplibregl: { Map }, devicePixelRatio,
+    performance:{now:() => clock}, setTimeout(fn, delay) {timers.set(++timerId,{fn, due:clock+delay}); return timerId;},
+    clearTimeout:id => timers.delete(id)}, ResizeObserver };
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   vm.runInNewContext(source.slice(source.indexOf('function initializeMapRenderer(global)'),
     source.indexOf('function initializeResponsiveLayout()')), context);
-  return { api: context.window.SensorMap, maps, observers };
+  return { api: context.window.SensorMap, maps, observers, timers, advance(ms) {
+    const end = clock + ms;
+    while (true) {
+      const next = [...timers].sort((a,b) => a[1].due - b[1].due)[0];
+      if (!next || next[1].due > end) break;
+      clock = next[1].due; timers.delete(next[0]); next[1].fn();
+    }
+    clock = end;
+  }};
 }
 
-test('高密度端末でも地図の描画倍率を2倍以内に抑える', () => {
+test('高密度端末でも地図の描画倍率を1.5倍以内に抑える', () => {
   const { api, maps } = fixture(3);
   api.createMap('map', {lat:35, lng:139}, 'botw');
-  assert.equal(maps[0].options.pixelRatio, 2);
+  assert.equal(maps[0].options.pixelRatio, 1.5);
 });
 
 test('OSM地図はGoogleなしで作成でき、緯度・経度の順序と表示倍率を変換する', () => {
@@ -48,7 +61,7 @@ test('OSM地図はGoogleなしで作成でき、緯度・経度の順序と表�
   const map = api.createMap('map', { lat: 35, lng: 139 }, 'botw');
   assert.deepEqual(Array.from(maps[0].options.center), [139, 35]);
   assert.equal(maps[0].options.zoom, 16);
-  assert.equal(maps[0].options.maxTileCacheSize, 32);
+  assert.equal(maps[0].options.maxTileCacheSize, 16);
   assert.equal(maps[0].options.pixelRatio, 1);
   map.setCenter({ lat: 36, lng: 140 });
   assert.deepEqual(Array.from(maps[0].center), [140, 36]);
@@ -79,10 +92,49 @@ test('地図の破棄でサイズ監視も終了し、配信エラーを表示�
   maps[0].events.sourcedata({ sourceId: 'openmaptiles', sourceDataType: 'content' });
   assert.equal(status.hidden, true);
   observers[0].callback();
+  assert.equal(maps[0].resized, undefined);
+  maps[0].container.clientWidth = 360;
+  observers[0].callback();
   assert.equal(maps[0].resized, true);
   map.remove();
   assert.equal(observers[0].disconnected, true);
   assert.equal(maps[0].removed, true);
+});
+
+test('徒歩相当の60fps位置更新を10fps以下にまとめ、最後の位置も反映する', () => {
+  const {api, maps, timers, advance} = fixture();
+  const map = api.createMap('map', {lat:35,lng:139}, 'botw');
+  let position;
+  for (let frame = 0; frame < 300; frame++) {
+    advance(16);
+    position = {lat:35, lng:139 + (frame+1)*0.0000003};
+    map.setCenter(position);
+  }
+  assert.ok(maps[0].centerCalls <= 49);
+  assert.ok(timers.size <= 1);
+  advance(100);
+  assert.equal(maps[0].center[0],position.lng);
+  assert.equal(timers.size,0);
+  const count = maps[0].centerCalls;
+  map.setCenter(position);
+  assert.equal(maps[0].centerCalls,count);
+});
+
+test('破棄した地図の予約位置更新と非表示中のリサイズは実行しない', () => {
+  const {api, maps, observers, timers, advance} = fixture();
+  const map = api.createMap('detail', {lat:35,lng:139}, 'botw');
+  map.setCenter({lat:36,lng:140});
+  map.setCenter({lat:36,lng:141});
+  assert.equal(timers.size,1);
+  maps[0].container.clientWidth = 0;
+  observers[0].callback();
+  assert.equal(maps[0].resized,undefined);
+  map.remove();
+  advance(200);
+  assert.equal(timers.size,0);
+  assert.equal(maps[0].centerCalls,1);
+  map.setCenter({lat:37,lng:142});
+  assert.equal(maps[0].centerCalls,1);
 });
 
 test('コンパス回転は北をまたぐ最短方向で補間し、出典を回転しない', () => {

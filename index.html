@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="86">
+  <meta name="html-rev" content="88">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -36,7 +36,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#111417">
   
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.2/dist/maplibre-gl.css">
 
   <link rel="stylesheet" href="style.css?v=7a5b4ac42a614b70">
 </head>
@@ -529,11 +529,12 @@
   <script src="geoapify-config.js?v=075f4b92e9be37ad"></script>
   <script src="applixir-config.js?v=d45c497c7055d5bf"></script>
   <script src="rewarded-ads.js?v=22d4af82abee18ae"></script>
-  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+  <script src="runtime-diagnostics.js?v=96b1a1861dedd19b"></script>
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=04645aba674c68c5';
+    scriptEl.src = 'script.js?v=0032cd7db51cb9f5';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
@@ -562,6 +563,7 @@
             const refreshed = new URL(location.href);
             refreshed.searchParams.set('_build', revision[1] + '-' + new URL(source[1], location.href).searchParams.get('v'));
             if (refreshed.href !== location.href) {
+              window.SensorRuntimeDiagnostics?.plannedReload('asset-update');
               location.replace(refreshed.href);
               return;
             }

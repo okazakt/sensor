@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const ASSETS = ['style.css', 'script.js', 'app-storage.js', 'rewarded-ads.js', 'geoapify-config.js', 'applixir-config.js'];
+const ASSETS = ['style.css', 'script.js', 'app-storage.js', 'rewarded-ads.js', 'geoapify-config.js', 'applixir-config.js', 'runtime-diagnostics.js'];
 function synchronize(root = path.resolve(__dirname, '..'), { check = false } = {}) {
   const htmlPath = path.join(root, 'index.html');
   const original = fs.readFileSync(htmlPath, 'utf8');

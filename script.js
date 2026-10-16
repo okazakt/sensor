@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162024";
+const BASE_JS_VERSION = "v0.26.101.162049";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -52,6 +52,7 @@ function traceLocation(event, detail = '', throttle = 0) {
 }
 
 function traceArrivalStage(phase) {
+  globalThis.SensorRuntimeDiagnostics?.event(`arrival.${phase}`);
   traceLocation(`arrival.${phase}`);
   // Keep a small trail across a renderer restart, without place IDs or coordinates.
   try {
@@ -152,6 +153,24 @@ function initializeMapRenderer(global) {
     let styleReady = false;
     let outlines = [];
     let outlinesSignature = '[]';
+    let removed = false;
+    let centerTimer = null;
+    let pendingCenter = null;
+    let lastCenter = { ...position };
+    let lastCenterAt = -Infinity;
+    const clock = () => global.performance?.now?.() ?? Date.now();
+    function flushCenter() {
+      centerTimer = null;
+      if (removed || !pendingCenter) return;
+      const next = pendingCenter;
+      pendingCenter = null;
+      if (Math.abs(next.lat - lastCenter.lat) < 0.0000001 && Math.abs(next.lng - lastCenter.lng) < 0.0000001) return;
+      instance.setCenter([next.lng, next.lat]);
+      lastCenter = next;
+      lastCenterAt = clock();
+      global.SensorRuntimeDiagnostics?.count('map.center');
+      global.SensorDiagnostics?.record('map.setCenter', '', 2000);
+    }
     function repaintOutlines() {
       instance.getSource('destination-outlines').setData({ type: 'FeatureCollection',
         features: outlines.map(geometry => ({ type: 'Feature', properties: {}, geometry })) });
@@ -161,17 +180,36 @@ function initializeMapRenderer(global) {
       // MapLibre uses 512px tiles; Google zoom 17 has the same scale as zoom 16.
       zoom: 16, interactive: false, attributionControl: false,
       // Bound GPU buffers on high-density phones and retained tiles while moving.
-      pixelRatio: Math.min(global.devicePixelRatio || 1, 2), maxTileCacheSize: 32
+      pixelRatio: Math.min(global.devicePixelRatio || 1, 1.5), maxTileCacheSize: 16,
+      canvasContextAttributes: { powerPreference: 'low-power' }
     });
+    global.SensorRuntimeDiagnostics?.count('map.created');
+    instance.on('webglcontextlost', () => {
+      global.SensorRuntimeDiagnostics?.event('map.context-lost');
+      if (statusElement) statusElement.hidden = false;
+    });
+    instance.on('webglcontextrestored', () => global.SensorRuntimeDiagnostics?.event('map.context-restored'));
     if (statusElement) {
-      instance.on('error', event => { statusElement.hidden = false; global.SensorDiagnostics?.record('map.error', event.error?.status ? `status=${event.error.status}` : 'tile/render error', 2000); });
+      instance.on('error', event => {
+        statusElement.hidden = false;
+        global.SensorRuntimeDiagnostics?.count('map.error');
+        global.SensorDiagnostics?.record('map.error', event.error?.status ? `status=${event.error.status}` : 'tile/render error', 2000);
+      });
       instance.on('sourcedata', event => {
         if (event.sourceId === 'openmaptiles' && event.sourceDataType === 'content' &&
             instance.areTilesLoaded()) { statusElement.hidden = true; global.SensorDiagnostics?.record('map.tiles.loaded', '', 3000); }
       });
     }
-    const resizeObserver = new ResizeObserver(() => instance.resize());
-    resizeObserver.observe(instance.getContainer());
+    const element = instance.getContainer();
+    let width = element.clientWidth, height = element.clientHeight;
+    const resizeObserver = new ResizeObserver(() => {
+      if (removed || element.clientWidth <= 0 || element.clientHeight <= 0 ||
+          (width === element.clientWidth && height === element.clientHeight)) return;
+      width = element.clientWidth; height = element.clientHeight;
+      instance.resize();
+      global.SensorRuntimeDiagnostics?.count('map.resize');
+    });
+    resizeObserver.observe(element);
     function repaintTheme() {
       createStyle(theme).layers.forEach(layer => {
         Object.entries(layer.paint).forEach(([property, value]) =>
@@ -196,7 +234,16 @@ function initializeMapRenderer(global) {
         outlinesSignature = signature;
         if (styleReady) repaintOutlines();
       },
-      setCenter: position => { global.SensorDiagnostics?.record('map.setCenter', '', 2000); instance.setCenter([position.lng, position.lat]); },
+      setCenter: position => {
+        if (removed || !Number.isFinite(position.lat) || !Number.isFinite(position.lng)) return;
+        pendingCenter = { ...position };
+        if (centerTimer !== null) return;
+        const remaining = 100 - (clock() - lastCenterAt);
+        // Camera changes rebuild tile/render state. Coalesce animation frames,
+        // but keep a trailing update so the final measured position is applied.
+        if (remaining <= 0) flushCenter();
+        else centerTimer = global.setTimeout(flushCenter, remaining);
+      },
       setStyle: mode => {
         // Both themes have identical layers and data. Repaint without reloading tiles.
         theme = mode;
@@ -208,7 +255,14 @@ function initializeMapRenderer(global) {
         return new global.maplibregl.Marker({ element, rotationAlignment: 'map' })
           .setLngLat([position.lng, position.lat]).addTo(instance);
       },
-      remove() { resizeObserver.disconnect(); instance.remove(); }
+      remove() {
+        if (removed) return;
+        removed = true;
+        if (centerTimer !== null) global.clearTimeout(centerTimer);
+        pendingCenter = null;
+        resizeObserver.disconnect(); instance.remove();
+        global.SensorRuntimeDiagnostics?.count('map.removed');
+      }
     };
   }
 
@@ -304,6 +358,7 @@ function updateDisplayedVersion() {
   if (!cssRev) cssRev = "07";
 
   const fullVersion = `${BASE_JS_VERSION}.${htmlRev}.${cssRev}`;
+  window.SensorRuntimeDiagnostics?.setVersion(fullVersion);
   
   document.querySelectorAll('.app-build-ver-span').forEach(el => {
     el.textContent = fullVersion;
@@ -368,6 +423,7 @@ function reloadForUpdate(startup = false) {
     : Promise.resolve();
   clearCaches.catch(() => {}).then(() => {
     traceLocation('update.reload');
+    window.SensorRuntimeDiagnostics?.plannedReload('startup-update');
     window.location.reload();
   });
   return true;
@@ -1909,6 +1965,7 @@ function updateDetectionLabel() {
 }
 
 function evaluateSensorCycle() {
+  globalThis.SensorRuntimeDiagnostics?.count('sensor.cycle');
   if (arrivalInProgressId !== null) return;
   const db = window.SensorAppStorage
     ? { arrivals: window.SensorAppStorage.detection() } : loadSavedData();
@@ -2263,6 +2320,7 @@ function determineMovementHeading(coords, newPos, now) {
 }
 
 function onDeviceOrientation(e) {
+  globalThis.SensorRuntimeDiagnostics?.count('compass.event');
   const now = Date.now();
   const absolute = e.type === 'deviceorientationabsolute' || e.absolute === true ||
     Number.isFinite(e.webkitCompassHeading);
@@ -2330,6 +2388,7 @@ function onDeviceOrientation(e) {
 }
 
 function onPositionUpdate(pos) {
+  globalThis.SensorRuntimeDiagnostics?.count('gps.fix');
   traceLocation('onPositionUpdate', `accuracy=${Math.round(pos.coords.accuracy)}m`);
   const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
   const previousPos = appState.currentPos;
@@ -2454,6 +2513,7 @@ async function fetchGeoapify(path, parameters) {
     }
   }
   if (typeof traceLocation === 'function') traceLocation('search.request', path);
+  globalThis.SensorRuntimeDiagnostics?.count('search.request');
   const url = new URL(path, 'https://api.geoapify.com');
   for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, String(value));
   url.searchParams.set('apiKey', apiKey);
@@ -2461,6 +2521,7 @@ async function fetchGeoapify(path, parameters) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    globalThis.SensorRuntimeDiagnostics?.count('search.response');
     if (typeof traceLocation === 'function') traceLocation('search.response', `status=${response.status}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
@@ -3653,6 +3714,14 @@ const pageMainWrap = document.getElementById('page-main-wrap');
 const pageKeywords = document.getElementById('page-keywords');
 const pageHistory = document.getElementById('page-history');
 const pageSpotDetail = document.getElementById('page-spot-detail');
+function releaseHiddenDetailMap() {
+  if (detailMinimapInstance && !pageSpotDetail.classList.contains('open')) {
+    detailMinimapInstance.remove();
+    detailMinimapInstance = null;
+  }
+}
+// Navigation has several close paths; release the extra WebGL context for all.
+new MutationObserver(releaseHiddenDetailMap).observe(pageSpotDetail, { attributes:true, attributeFilter:['class'] });
 const pageAllHistory = document.getElementById('page-all-history');
 
 const fnavBtnChallenges = document.getElementById('fnav-btn-challenges');
@@ -4458,6 +4527,14 @@ window.addEventListener('sensor-storage-error', () => {
 });
 applyLanguage(currentLang);
 if (window.sensorStorageError) window.dispatchEvent(new Event('sensor-storage-error'));
+window.SensorRuntimeDiagnostics?.setSnapshotProvider(() => ({
+  tracking: appState.isTracking, paused: appState.isPaused, searching: isSearchInProgress,
+  locationHistoryEntries: appState.locationHistory.length,
+  geometryCacheEntries: requestDestinationGeometry.state?.cache.size || 0,
+  geometryQueueEntries: requestDestinationGeometry.state?.queue.length || 0,
+  audioState: audioCtx?.state || 'none', soundMode: appState.soundMode,
+  silentAudioPlaying: Boolean(silentAudioElement && !silentAudioElement.paused)
+}));
 function initializeOnLoad() {
   if (startupRefreshPending) return;
   bootstrapMapAndLocation();
