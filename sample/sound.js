@@ -7,8 +7,8 @@ let context, bus, nodes = [], timers = [], generation = 0;
 const $ = id => document.getElementById(id);
 const catalog = [];
 const favorites = new Set(['P01', 'P02', 'A01', 'A02', 'A05', 'A08']);
-function add(group, id, name, description, play, duration = 2.5) {
-  catalog.push({group, id, name, description, play, duration});
+function add(group, id, name, description, play, duration = 2.5, options = {}) {
+  catalog.push({group, id, name, description, play, duration, ...options});
 }
 function tone(frequency, time, duration, amplitude = .3, type = 'sine', endFrequency, attack = .008) {
   const osc = context.createOscillator(), gain = context.createGain();
@@ -149,6 +149,80 @@ for (const score of arrivals) {
     }, duration);
 }
 
+
+// Replacement suites keep production pitch ratios, double spacing and pulse intervals.
+const detectionSuites = [
+  {id:'R01', name:'基本ソナー', parent:'P02', frequency:660, end:720, attack:.025, shimmer:false},
+  {id:'R02', name:'深海ソナー', parent:'S03', frequency:440, end:470, attack:.04, shimmer:false},
+  {id:'R03', name:'揺らぐソナー', parent:'S05', frequency:660, end:720, attack:.04, shimmer:true},
+  {id:'R04', name:'丸いソナー', parent:'S07', frequency:660, end:720, attack:.06, shimmer:false}
+];
+function detectionPulse(suite, role, t) {
+  const notes = role === 'double' ? [[2300 / 1750, 0], [2450 / 1750, .085]] :
+    [[role === 'near' ? 2100 / 1750 : 1, 0]];
+  const length = role === 'double' ? .07 : role === 'near' ? .2 : .35;
+  const attack = Math.min(suite.attack, role === 'double' ? .012 : role === 'near' ? .03 : .06);
+  notes.forEach(([ratio, offset]) => sonar(t + offset, suite.frequency * ratio, length,
+    suite.end * ratio, attack, suite.shimmer));
+}
+for (const suite of detectionSuites) {
+  const group = `第3弾 / ${suite.id} ${suite.name}で探知音を置き換え`;
+  for (const [suffix, role, name, interval] of [
+    ['N', 'normal', '通常の探知音', 2.6],
+    ['H', 'near', '近距離の探知音', .8],
+    ['D', 'double', '至近距離の二連音', .45]
+  ]) {
+    add(group, `${suite.id}-${suffix}`, name,
+      `${suite.parent}系。${role === 'normal' ? '基本の高さ、長さ0.35秒。' : role === 'near' ? '通常の1.2倍の音程、長さ0.20秒。' : '通常の1.31→1.4倍の音程、1音0.07秒・二連の間隔85ms。'}中エコー。連続試聴では${interval}秒間隔。`,
+      () => { echo(2); detectionPulse(suite, role, context.currentTime + .025); }, 1.6, {pulseInterval:interval});
+  }
+  add(group, `${suite.id}-ALL`, '接近する流れをまとめて試聴',
+    '約15秒。通常（2.6→1.5秒間隔）→近距離（0.8秒）→二連（0.45→0.35秒）。現行の探知段階と詳細モード最速を再現。', () => {
+      echo(2); const t = context.currentTime + .025; let offset = 0;
+      for (const [label, role, interval, count] of [
+        ['遠距離 / 通常音・2.6秒間隔', 'normal', 2.6, 2],
+        ['中距離 / 通常音・1.5秒間隔', 'normal', 1.5, 2],
+        ['近距離 / 高い音・0.8秒間隔', 'near', .8, 3],
+        ['至近距離 / 二連音・0.45秒間隔', 'double', .45, 4],
+        ['詳細モード最速 / 二連音・0.35秒間隔', 'double', .35, 4]
+      ]) {
+        timers.push(setTimeout(() => { $('status').textContent = `再生中：${suite.id}-ALL ${label}`; }, offset * 1000));
+        for (let i = 0; i < count; i++) detectionPulse(suite, role, t + offset + i * interval);
+        offset += count * interval;
+      }
+    }, 15);
+}
+const ORIGINAL_ARRIVAL_STEP = .115;
+const originalRun = [60,62,64,65,67,69,71,72,74,76];
+const extendedRun = [...originalRun,74,72,71,69,67,64,67,69,71,72,74,76,79,76,74,72,71,69,67,69,71,74,72,67,64,67,71,74,72];
+const fastArrivals = [
+  {id:'A21', name:'現行の続編 / エコーなし', notes:extendedRun, voice:'triangle', echo:0, description:'現行と同じ10音で始まり、折り返し・上昇・終止へ続く旋律。'},
+  {id:'A22', name:'現行の続編 / 豊かなエコー', notes:extendedRun, voice:'triangle', echo:2, description:'A21と同じ旋律とテンポに中エコーを追加。A01・A02の延長として比較。'},
+  {id:'A23', name:'軽やかな上昇チャイム / 長い旋律', voice:'sine', echo:1, notes:[60,64,67,72,76,72,67,64,62,65,69,74,77,74,69,65,64,67,71,76,79,76,71,67,65,69,72,77,76,74,72,69,67,64,67,71,74,71,67,72], description:'A05の柔らかい音色で、上昇するフレーズを受け渡す。'},
+  {id:'A24', name:'あたたかいファンファーレ / 展開版', voice:'triangle', echo:2, notes:[55,60,64,67,72,67,64,60,57,60,65,69,74,69,65,60,59,62,67,71,76,71,67,62,60,64,67,72,79,76,74,72,69,65,69,72,74,71,67,72], description:'A08の三角波を基調に、低い導入から明るい応答へ展開する。'},
+  {id:'A25', name:'ソナーの旋律 / 軽快な到着', voice:'sonar', echo:1, notes:[55,59,62,67,71,67,62,59,57,60,64,69,72,69,64,60,59,62,66,71,74,71,66,62,60,64,67,72,76,72,67,64,62,66,69,74,71,67,62,67], description:'探知音につながるソナーの音色を、短く歯切れよく旋律として演奏。'},
+  {id:'A26', name:'木琴の旅路 / 軽快な到着', voice:'mallet', echo:2, notes:[60,67,64,72,67,76,72,67,62,69,65,74,69,77,74,69,64,71,67,76,71,79,76,71,65,72,69,77,74,72,69,65,64,67,72,76,74,71,67,72], description:'P01の丸い粒を連ねた旋律。音域を行き来しながら終止へ進む。'},
+  {id:'A27', name:'長編ファンファーレ / 冒険の達成', voice:'triangle', echo:2, notes:[60,64,67,72,76,72,67,64,62,65,69,74,77,74,69,65,64,67,71,76,79,76,71,67,65,69,72,77,81,77,72,69,67,71,74,79,83,79,74,71,69,72,76,81,79,76,72,69,65,69,72,77,76,74,72,69,67,64,67,71,74,71,67,72], description:'64音の旋律。現行の速度で、導入・発展・山場・終止まで演奏する長編。'},
+  {id:'A28', name:'ソナーとチャイム / 交差する旋律', voice:'dialogue', echo:2, notes:[60,64,67,72,76,72,67,64,62,65,69,74,77,74,69,65,64,67,71,76,79,76,71,67,65,69,72,77,81,77,72,69,67,71,74,79,76,74,71,67,65,69,72,76,74,71,67,72], description:'8音ごとにソナーとチャイムが交代。同じ速さのまま音色で展開する。'}
+];
+for (const score of fastArrivals) {
+  const last = (score.notes.length - 1) * ORIGINAL_ARRIVAL_STEP;
+  const tail = 1.5, echoTail = score.echo === 2 ? .9 : score.echo === 1 ? .525 : 0;
+  const duration = Math.ceil((.025 + last + tail + echoTail + .1) * 10) / 10;
+  add('第3弾 / 元のテンポで長い到着メロディ', score.id, score.name,
+    `現行と同じ1音0.115秒・${score.notes.length}音・約${duration}秒（余韻込み）。${score.description}`, () => {
+      echo(score.echo); const t = context.currentTime + .025;
+      score.notes.forEach((note, i) => {
+        const start = t + i * ORIGINAL_ARRIVAL_STEP, final = i === score.notes.length - 1;
+        const voice = score.voice === 'dialogue' ? (Math.floor(i / 8) % 2 ? 'sine' : 'sonar') : score.voice;
+        // Ordinary notes keep the original 0.18s envelope; only the final note sustains.
+        if (voice === 'sonar') sonar(start, hz(note), final ? tail : .18, hz(note) * 1.045, .012);
+        else if (voice === 'mallet') mallet(start, hz(note), final ? tail : .18, .25);
+        else tone(hz(note), start, final ? tail : .18, .25, voice, null, .008);
+      });
+    }, duration);
+}
+
 function stop() {
   generation++;
   timers.forEach(clearTimeout); timers = [];
@@ -174,8 +248,9 @@ async function play(item) {
     document.querySelector(`[data-id="${item.id}"]`).classList.add('playing');
     $('status').textContent = `再生中：${item.id} ${item.name}`;
     // Echo wiring is created once per playback, so repeated previews use separate buses.
-    const count = $('mode').value === 'repeat' ? 3 : 1;
-    const interval = Math.max(item.duration, 2.5);
+    const radarRepeat = $('mode').value === 'radar' && item.pulseInterval;
+    const count = radarRepeat ? 6 : $('mode').value === 'repeat' ? 3 : 1;
+    const interval = radarRepeat ? item.pulseInterval : Math.max(item.duration, 2.5);
     item.play();
     // Repeats rebuild the bus to avoid stacking echo taps.
     for (let i = 1; i < count; i++) timers.push(setTimeout(() => {
@@ -183,7 +258,7 @@ async function play(item) {
       bus.disconnect(); bus = context.createGain(); bus.connect(master); audioCtx.destination = bus;
       item.play();
     }, interval * i * 1000));
-    timers.push(setTimeout(() => { if (token === generation) { stop(); $('status').textContent = `試聴済み：${item.id} ${item.name}`; } }, (interval * count + .2) * 1000));
+    timers.push(setTimeout(() => { if (token === generation) { stop(); $('status').textContent = `試聴済み：${item.id} ${item.name}`; } }, ((count - 1) * interval + item.duration + .2) * 1000));
   } catch (error) { stop(); $('status').textContent = '音を再生できませんでした。対応ブラウザで開き、もう一度再生してください。'; }
 }
 let selected = new Set();
@@ -192,7 +267,8 @@ function memo() {
   $('memo').value = catalog.filter(x => selected.has(x.id)).map(x => `${x.id}：${x.name}`).join('\n');
   try { localStorage.setItem('sensor-sound-lab-selection', JSON.stringify([...selected])); } catch (_) {}
 }
-const orderedGroups = [...new Set(catalog.map(x => x.group))].sort((a, b) => Number(b.startsWith('新候補')) - Number(a.startsWith('新候補')));
+const groupRank = group => group.startsWith('第3弾') ? 0 : group.startsWith('新候補') ? 1 : 2;
+const orderedGroups = [...new Set(catalog.map(x => x.group))].sort((a, b) => groupRank(a) - groupRank(b));
 for (const group of orderedGroups) {
   const section = document.createElement('section'), title = document.createElement('h2'), grid = document.createElement('div');
   title.textContent = group; grid.className = 'grid'; section.append(title, grid);
