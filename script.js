@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162254";
+const BASE_JS_VERSION = "v0.26.101.162300";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1786,12 +1786,28 @@ function renderDestinationClassification(place) {
   element.textContent = currentLang === 'ja'
     ? `検索時の区分: ${diagnostics.search || unknown}\n詳細取得後の区分: ${diagnostics.details || unknown}`
     : `Search classification: ${diagnostics.search || unknown}\nDetail classification: ${diagnostics.details || unknown}`;
+  const names = diagnostics.names;
+  const pending = currentLang === 'ja' ? '未取得' : 'Not fetched';
+  const value = key => {
+    if (!names) return pending;
+    if (names[key] == null) return currentLang === 'ja' ? '項目なし' : 'Missing';
+    return JSON.stringify(names[key]);
+  };
+  const labels = currentLang === 'ja'
+    ? ['API名称 (name)', `API名称 (name_international.${currentLang})`, '元データ名称 (raw.name)', `元データ名称 (raw.name:${currentLang})`]
+    : ['API name (name)', `API name (name_international.${currentLang})`, 'Source name (raw.name)', `Source name (raw.name:${currentLang})`];
+  element.textContent += '\n' + labels.map((label, index) => `${label}: ${value(['name', 'localizedName', 'rawName', 'rawLocalizedName'][index])}`).join('\n');
 }
 
 function applyDestinationDetails(place, metadata) {
   if (!metadata) return;
   const diagnostics = destinationClassification.diagnostics ||= new Map();
-  diagnostics.set(place.id, { ...diagnostics.get(place.id), details: destinationClassification(metadata) });
+  diagnostics.set(place.id, { ...diagnostics.get(place.id), details: destinationClassification(metadata), names: {
+    name: metadata.name,
+    localizedName: metadata.name_international?.[currentLang],
+    rawName: metadata.datasource?.raw?.name,
+    rawLocalizedName: metadata.datasource?.raw?.[`name:${currentLang}`]
+  } });
   if (typeof document !== 'undefined' && appState.selectedSpotForDetail?.id === place.id) {
     renderDestinationClassification(appState.selectedSpotForDetail);
   }
