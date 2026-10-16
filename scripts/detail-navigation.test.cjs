@@ -15,6 +15,7 @@ function fixture() {
     document:{getElementById(id){if(!elements.has(id)) elements.set(id,element());return elements.get(id);},
       querySelector:()=>element(), createElement:element}};
   vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('function destinationClassification'), source.indexOf('function applyDestinationDetails')), c);
   vm.runInContext(source.slice(source.indexOf('let detailNavigationIds'), source.indexOf('function renderDetailMap')), c);
   return {c,items,elements};
 }

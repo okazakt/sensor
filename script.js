@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162137";
+const BASE_JS_VERSION = "v0.26.101.162252";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1758,8 +1758,32 @@ function geoapifyPlaceIdentity(properties, fallbackName = '') {
   return { name: fullName, branch, brand };
 }
 
+function destinationClassification(properties) {
+  const raw = properties.datasource?.raw || {};
+  const categories = Array.isArray(properties.categories) ? properties.categories.filter(value => typeof value === 'string') : [];
+  const tags = ['highway', 'railway', 'building', 'amenity', 'leisure', 'sport', 'tourism', 'shop', 'office', 'landuse']
+    .filter(key => typeof raw[key] === 'string').map(key => `${key}=${raw[key]}`);
+  return [...categories, ...tags].join(' / ');
+}
+
+function renderDestinationClassification(place) {
+  if (typeof document === 'undefined') return;
+  const element = document.getElementById('detail-spot-classification');
+  if (!element) return;
+  const unknown = currentLang === 'ja' ? '未取得・区分情報なし' : 'Unavailable';
+  const diagnostics = destinationClassification.diagnostics?.get(place.id) || {};
+  element.textContent = currentLang === 'ja'
+    ? `検索時の区分: ${diagnostics.search || unknown}\n詳細取得後の区分: ${diagnostics.details || unknown}`
+    : `Search classification: ${diagnostics.search || unknown}\nDetail classification: ${diagnostics.details || unknown}`;
+}
+
 function applyDestinationDetails(place, metadata) {
   if (!metadata) return;
+  const diagnostics = destinationClassification.diagnostics ||= new Map();
+  diagnostics.set(place.id, { ...diagnostics.get(place.id), details: destinationClassification(metadata) });
+  if (typeof document !== 'undefined' && appState.selectedSpotForDetail?.id === place.id) {
+    renderDestinationClassification(appState.selectedSpotForDetail);
+  }
   const identity = geoapifyPlaceIdentity(metadata, place.name);
   if (place.placeDetailsVersion === 1 && place.name === identity.name && place.branch === identity.branch && place.brand === identity.brand) return;
   Object.assign(place, identity);
@@ -2578,6 +2602,9 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
     const name = identity.name;
     if (!name) continue;
     const id = p.place_id || `geo:${lat}:${lng}:${name}`;
+    // Temporary diagnostics stay in memory and never enter arrival records or exports.
+    const diagnostics = destinationClassification.diagnostics ||= new Map();
+    diagnostics.set(id, { ...diagnostics.get(id), search: destinationClassification(p) });
     const previous = places.get(id);
     places.set(id, {
       ...identity, id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
@@ -4297,6 +4324,13 @@ function openSpotDetailModal(item, orderedItems, hydrated = false) {
 
   document.getElementById('detail-spot-name').textContent = item.name;
   document.getElementById('detail-spot-address').textContent = t.loadingAddress;
+  // Temporary place identity diagnostics; keep the existing name-copy action intact.
+  document.getElementById('detail-spot-id').textContent = item.id || '--';
+  renderDestinationClassification(item);
+  const copyIdButton = document.getElementById('detail-btn-copy-id');
+  copyIdButton.textContent = currentLang === 'ja' ? 'IDコピー' : 'Copy ID';
+  copyIdButton.disabled = !item.id;
+  copyIdButton.onclick = () => copyPlaceNameToClipboard(item.id);
 
   const d = new Date(item.date);
   const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;

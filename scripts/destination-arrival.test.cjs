@@ -13,6 +13,13 @@ function fixture(fetchGeoapify) {
 }
 const ring = size => [[-size,-size],[size,-size],[size,size],[-size,size],[-size,-size]];
 const target = { id:'place-id', lat:1, lng:1, geometry: {type:'Polygon', coordinates:[ring(0.01)]} };
+test('区分表示は施設と道路のAPIカテゴリ・元タグを保持し、名称から推測しない', () => {
+  const c = fixture();
+  assert.equal(c.destinationClassification({categories:['sport.stadium'], datasource:{raw:{leisure:'stadium'}}}),
+    'sport.stadium / leisure=stadium');
+  assert.equal(c.destinationClassification({datasource:{raw:{highway:'secondary'}}}), 'highway=secondary');
+  assert.equal(c.destinationClassification({name:'道路'}), '');
+});
 test('長時間の探索でも完了した目的地キャッシュが増え続けない', async () => {
   const c = fixture(async () => [{properties:{feature_type:'details'}, geometry:target.geometry}]);
   for (let i = 0; i < 200; i++) {
