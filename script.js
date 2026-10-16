@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162340";
+const BASE_JS_VERSION = "v0.26.101.170006";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -499,7 +499,10 @@ const I18N = {
     sortHNear: "現在地から近い順",
     sortHDesc: "到達日時が新しい順",
     sortHAsc: "到達日時が古い順",
-    sortHName: "名称あいうえお順",
+    sortHName: "名称昇順",
+    sortHFar: "現在地から遠い順",
+    sortHNameDesc: "名称降順",
+    sortHCategory: "カテゴリ順（カテゴリID昇順）",
     noSpotsInRange: "範囲内に対象なし",
     spotDetected: "探知反応あり",
     emptyHistory: "このキーワードでの到達実績はまだありません。",
@@ -589,7 +592,10 @@ const I18N = {
     sortHNear: "By Distance (Nearest)",
     sortHDesc: "Newest First",
     sortHAsc: "Oldest First",
-    sortHName: "Alphabetical",
+    sortHName: "Name ascending",
+    sortHFar: "Farthest first",
+    sortHNameDesc: "Name descending",
+    sortHCategory: "Category ID ascending",
     noSpotsInRange: "No targets in range",
     spotDetected: "Target detected",
     emptyHistory: "No places discovered for this keyword yet.",
@@ -739,10 +745,16 @@ function applyLanguage(lang) {
   document.getElementById('opt-hsort-desc').textContent = t.sortHDesc;
   document.getElementById('opt-hsort-asc').textContent = t.sortHAsc;
   document.getElementById('opt-hsort-name').textContent = t.sortHName;
+  document.getElementById('opt-hsort-far').textContent = t.sortHFar;
+  document.getElementById('opt-hsort-name-desc').textContent = t.sortHNameDesc;
+  document.getElementById('opt-hsort-category').textContent = t.sortHCategory;
   document.getElementById('opt-asort-near').textContent = t.sortHNear;
   document.getElementById('opt-asort-desc').textContent = t.sortHDesc;
   document.getElementById('opt-asort-asc').textContent = t.sortHAsc;
   document.getElementById('opt-asort-name').textContent = t.sortHName;
+  document.getElementById('opt-asort-far').textContent = t.sortHFar;
+  document.getElementById('opt-asort-name-desc').textContent = t.sortHNameDesc;
+  document.getElementById('opt-asort-category').textContent = t.sortHCategory;
   document.getElementById('toast-title').textContent = t.discoveryCompleted;
   document.getElementById('label-lang-switch').textContent = t.langSwitchLabel;
 
@@ -2138,6 +2150,7 @@ async function updateArrivalRecordWithDetails(db, target, now) {
     db.arrivals.push({
       id: target.id, name: target.name, branch: target.branch || '', brand: target.brand || '',
       placeDetailsVersion: target.placeDetailsVersion || 0, keyword: '', keywords: [],
+      categories: target.categories || [],
       lat: target.lat, lng: target.lng, date: now, muted: true,
       arrivalPosition, geometry: area ? target.geometry : null,
       formatted_address: target.formatted_address || '',
@@ -2145,6 +2158,7 @@ async function updateArrivalRecordWithDetails(db, target, now) {
     });
   } else {
     existing.muted = true;
+    if (target.categories?.length) existing.categories = target.categories;
     if (target.name) existing.name = target.name;
     if (target.branch) existing.branch = target.branch;
     if (target.brand) existing.brand = target.brand;
@@ -2597,7 +2611,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
     const id = p.place_id || `geo:${lat}:${lng}:${name}`;
     const previous = places.get(id);
     places.set(id, {
-      ...identity, id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
+      ...identity, id, name, lat, lng, categories: p.categories || previous?.categories || [], formatted_address: p.formatted || previous?.formatted_address || '',
       phone: p.contact?.phone || previous?.phone || null,
       website: p.website || previous?.website || null
     });
@@ -4042,6 +4056,44 @@ document.getElementById('btn-delete-zero-keywords').addEventListener('click', ()
   }
 });
 
+function compendiumCategoryId(item) {
+  return (item.categories || []).filter(id => typeof id === 'string' && id).sort()[0] || '';
+}
+
+function compareCompendiumItems(a, b, sortType) {
+  const nameOrder = () => a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
+  if (sortType === 'near_asc' || sortType === 'near_desc') {
+    const distanceA = Number.isFinite(a.calcDistance) ? a.calcDistance : null;
+    const distanceB = Number.isFinite(b.calcDistance) ? b.calcDistance : null;
+    if (distanceA === null) return distanceB === null ? 0 : 1;
+    if (distanceB === null) return -1;
+    return sortType === 'near_asc' ? distanceA - distanceB : distanceB - distanceA;
+  }
+  if (sortType === 'date_desc') return new Date(b.date) - new Date(a.date);
+  if (sortType === 'date_asc') return new Date(a.date) - new Date(b.date);
+  if (sortType === 'name_desc') return -nameOrder();
+  if (sortType === 'category_asc') {
+    const categoryA = compendiumCategoryId(a), categoryB = compendiumCategoryId(b);
+    if (!categoryA) return categoryB ? 1 : nameOrder();
+    if (!categoryB) return -1;
+    return categoryA.localeCompare(categoryB, 'en', { numeric: true }) || nameOrder();
+  }
+  return nameOrder();
+}
+
+function initializeCompendiumSort(id, render) {
+  const select = document.getElementById(id);
+  const key = `sheikah_${id}`;
+  try {
+    const saved = localStorage.getItem(key);
+    if (Array.from(select.options).some(option => option.value === saved)) select.value = saved;
+  } catch (_) {}
+  select.addEventListener('change', () => {
+    try { localStorage.setItem(key, select.value); } catch (_) {}
+    render();
+  });
+}
+
 function renderHistoryList() {
   const db = loadSavedData();
   const container = document.getElementById('history-list-container');
@@ -4063,17 +4115,7 @@ function renderHistoryList() {
     });
   }
 
-  items.sort((a, b) => {
-    if (sortType === 'near_asc') {
-      return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
-    } else if (sortType === 'date_desc') {
-      return new Date(b.date) - new Date(a.date);
-    } else if (sortType === 'date_asc') {
-      return new Date(a.date) - new Date(b.date);
-    } else if (sortType === 'name_asc') {
-      return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
-    }
-  });
+  items.sort((a, b) => compareCompendiumItems(a, b, sortType));
 
   if (items.length === 0) {
     container.innerHTML = `
@@ -4156,17 +4198,7 @@ function renderAllHistoryList() {
     });
   }
 
-  items.sort((a, b) => {
-    if (sortType === 'near_asc') {
-      return (a.calcDistance || Infinity) - (b.calcDistance || Infinity);
-    } else if (sortType === 'date_desc') {
-      return new Date(b.date) - new Date(a.date);
-    } else if (sortType === 'date_asc') {
-      return new Date(a.date) - new Date(b.date);
-    } else if (sortType === 'name_asc') {
-      return a.name.localeCompare(b.name, currentLang === 'ja' ? 'ja' : 'en');
-    }
-  });
+  items.sort((a, b) => compareCompendiumItems(a, b, sortType));
 
   if (items.length === 0) {
     container.innerHTML = `
@@ -4236,7 +4268,7 @@ function renderAllHistoryList() {
 }
 
 document.getElementById('all-history-filter').addEventListener('input', renderAllHistoryList);
-document.getElementById('sort-all-history').addEventListener('change', renderAllHistoryList);
+initializeCompendiumSort('sort-all-history', renderAllHistoryList);
 
 function copyPlaceNameToClipboard(text) {
   const t = I18N[currentLang];
@@ -4457,7 +4489,7 @@ function renderDetailMap(item, gallery, detailMapBox) {
 document.getElementById('keyword-filter').addEventListener('input', renderKeywordsList);
 document.getElementById('sort-keywords').addEventListener('change', renderKeywordsList);
 document.getElementById('history-filter').addEventListener('input', renderHistoryList);
-document.getElementById('sort-history').addEventListener('change', renderHistoryList);
+initializeCompendiumSort('sort-history', renderHistoryList);
 
 function checkAndShowStartupModals() {
   if (startupRefreshPending) return;

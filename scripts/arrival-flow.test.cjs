@@ -114,3 +114,19 @@ test('到着の保存要求には復元を無効にする探索IDも含め、履
  assert.equal(db.completedExplorationIds.length,32);assert.equal(db.completedExplorationIds.at(-1),'current');
  resolveSave();await pending;
 });
+
+test('キーワード到達で複数カテゴリを保持し、再到達で更新する', async () => {
+  const { c, target, db, resolveSave } = fixture();
+  target.categories = ['catering', 'catering.cafe'];
+  resolveSave();
+  await c.updateArrivalRecordWithDetails(db, target, '2026-10-16');
+  assert.deepEqual(Array.from(db.arrivals[0].categories), target.categories);
+  c.appState.isTracking = true;
+  target.categories = ['commercial', 'commercial.food_and_drink'];
+  await c.updateArrivalRecordWithDetails(db, target, '2026-10-17');
+  assert.equal(db.arrivals.length, 1);
+  assert.deepEqual(Array.from(db.arrivals[0].categories), target.categories);
+  delete target.categories;
+  await c.updateArrivalRecordWithDetails(db, target, '2026-10-18');
+  assert.deepEqual(Array.from(db.arrivals[0].categories), ['commercial', 'commercial.food_and_drink']);
+});

@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="03">
+  <meta name="html-rev" content="04">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -428,9 +428,12 @@
         </div>
         <select class="sheikah-select-box" id="sort-all-history">
           <option value="near_asc" id="opt-asort-near">現在地から近い順</option>
+          <option value="near_desc" id="opt-asort-far">現在地から遠い順</option>
           <option value="date_desc" id="opt-asort-desc">到達日時が新しい順</option>
           <option value="date_asc" id="opt-asort-asc">到達日時が古い順</option>
-          <option value="name_asc" id="opt-asort-name">名称あいうえお順</option>
+          <option value="name_asc" id="opt-asort-name">名称昇順</option>
+          <option value="name_desc" id="opt-asort-name-desc">名称降順</option>
+          <option value="category_asc" id="opt-asort-category">カテゴリ順（カテゴリID昇順）</option>
         </select>
       </div>
       <div class="list-scroll" id="all-history-list-container"></div>
@@ -452,9 +455,12 @@
         </div>
         <select class="sheikah-select-box" id="sort-history">
           <option value="near_asc" id="opt-hsort-near">現在地から近い順</option>
+          <option value="near_desc" id="opt-hsort-far">現在地から遠い順</option>
           <option value="date_desc" id="opt-hsort-desc">到達日時が新しい順</option>
           <option value="date_asc" id="opt-hsort-asc">到達日時が古い順</option>
-          <option value="name_asc" id="opt-hsort-name">名称あいうえお順</option>
+          <option value="name_asc" id="opt-hsort-name">名称昇順</option>
+          <option value="name_desc" id="opt-hsort-name-desc">名称降順</option>
+          <option value="category_asc" id="opt-hsort-category">カテゴリ順（カテゴリID昇順）</option>
         </select>
       </div>
       <div class="action-sub-bar">
@@ -544,7 +550,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=83977d091cc515a2';
+    scriptEl.src = 'script.js?v=0bc4b85b71f2025d';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
