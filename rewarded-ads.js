@@ -16,19 +16,32 @@
       return state;
     }
     function save() {
-      try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* Session-only fallback. */ }
+      try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }
+      catch { return false; /* Session-only fallback. */ }
+    }
+    function saveExploration(exploration) {
+      read();
+      if (JSON.stringify(state.exploration || null) === JSON.stringify(exploration)) return true;
+      state = { ...state, exploration };
+      if (save()) return true;
+      // Do not leave a stale target available for recovery after a failed write.
+      state.exploration = null;
+      save();
+      return false;
     }
     async function ensureAccess(requiredUnits = 1, reason = 'continue') {
       read();
       if (state.initialWatched && state.units >= requiredUnits) return true;
       if (!await watchAd(!state.initialWatched ? 'initial' : reason)) return false;
       read();
-      state = { initialWatched: true, units: state.units + 10 };
+      state = { ...state, initialWatched: true, units: state.units + 10 };
       save();
       return true;
     }
     return {
-      snapshot() { return { ...read(), points: state.units / 10 }; },
+      snapshot() { read(); return { initialWatched:state.initialWatched, units:state.units, points:state.units / 10 }; },
+      loadExploration() { return JSON.parse(JSON.stringify(read().exploration || null)); },
+      saveExploration,
       async startup() {
         if (busy) return false;
         if (read().initialWatched) return true;
@@ -40,7 +53,7 @@
         busy = true;
         try { return await ensureAccess(); } finally { busy = false; }
       },
-      async search(kind, execute, { requireFullCost = false } = {}) {
+      async search(kind, execute, { requireFullCost = false, captureExploration, onExplorationError } = {}) {
         if (busy) return false;
         busy = true;
         try {
@@ -49,7 +62,16 @@
           if (await execute() === false) return false;
           read();
           state.units -= kind === 'secret' ? 5 : 2;
-          save();
+          if (captureExploration) {
+            try { state.exploration = captureExploration(); }
+            catch (_) { state.exploration = null; onExplorationError?.(); }
+          }
+          // Balance and the paid exploration are one atomic localStorage value.
+          if (!save() && captureExploration) {
+            state.exploration = null;
+            save();
+            onExplorationError?.();
+          }
           return true;
         } finally { busy = false; }
       }
@@ -212,6 +234,8 @@
       prepare: () => controller.prepare(),
       search: (kind, execute, options) => controller.search(kind, execute, options),
       snapshot: () => controller.snapshot(),
+      loadExploration: () => controller.loadExploration(),
+      saveExploration: value => controller.saveExploration(value),
       refreshLanguage: () => watchAd.refreshLanguage()
     });
   }

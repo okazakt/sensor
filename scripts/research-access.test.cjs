@@ -67,3 +67,19 @@ test('開始時の支払いはGPS取得待ちでも最初の検索一回に適�
   assert.equal(f.ads.snapshot().points,0.8);assert.equal(f.c.initialSearchAccessGranted,false);
   await f.c.executeSearch(true);assert.equal(f.ads.snapshot().points,0.6);
 });
+
+test('新規開始はポイントと復元状態を確定してから最初のAPIを呼ぶ',async()=>{
+ const f=fixture();const order=[];
+ f.c.SensorExplorationRecovery={checkpoint(){},capture(){order.push('snapshot');return {id:'paid',phase:'waiting'};}};
+ f.c.searchGeoapify=async()=>{
+  order.push('api');assert.equal(f.ads.snapshot().units,8);assert.equal(f.ads.loadExploration().id,'paid');
+  return {places:[]};
+ };
+ await f.c.runRewardedSearch('normal',()=>{
+  f.c.initialSearchAccessGranted=true;
+  f.c.executeSearch(); // The normal begin callback must defer this call until commit.
+  assert.deepEqual(order,[]);
+  return true;
+ });
+ assert.deepEqual(order,['snapshot','api']);assert.equal(f.c.appState.accessCommitPending,false);
+});
