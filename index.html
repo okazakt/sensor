@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="91">
+  <meta name="html-rev" content="94">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -155,6 +155,16 @@
       <div id="toast-title" style="font-size: 0.75rem; color: var(--sheikah-orange); letter-spacing: 2px;">DISCOVERY COMPLETED</div>
       <div id="toast-text" style="font-size: 1.05rem; font-weight: bold; margin-top: 5px; color: var(--sheikah-cyan);"></div>
     </div>
+
+    <dialog id="exploration-resume-dialog" class="challenge-dialog" aria-labelledby="exploration-resume-title">
+      <p id="exploration-resume-title">前回の探索を再開しますか？</p>
+      <p id="exploration-resume-details" style="white-space:pre-line;overflow-wrap:anywhere;"></p>
+      <p id="exploration-resume-note">再開でポイントは消費しません。</p>
+      <div class="challenge-dialog-actions">
+        <button type="button" id="exploration-resume-discard" class="btn-sheikah">終了する</button>
+        <button type="button" id="exploration-resume-accept" class="btn-sheikah" autofocus>再開する</button>
+      </div>
+    </dialog>
 
     <!-- 第1画面：チャレンジ一覧画面 -->
     <div class="slide-page" id="page-challenges">
@@ -528,13 +538,14 @@
   
   <script src="geoapify-config.js?v=075f4b92e9be37ad"></script>
   <script src="applixir-config.js?v=d45c497c7055d5bf"></script>
-  <script src="rewarded-ads.js?v=22d4af82abee18ae"></script>
+  <script src="rewarded-ads.js?v=b8a3c4f826271c3b"></script>
+  <script src="exploration-resume.js?v=164ca86af40931ee"></script>
   <script src="runtime-diagnostics.js?v=a383a28201d6a27a"></script>
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=72acf891e232bbd3';
+    scriptEl.src = 'script.js?v=23954e7c6eeeaa53';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {

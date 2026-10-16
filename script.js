@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162137";
+const BASE_JS_VERSION = "v0.26.101.162203";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1304,6 +1304,10 @@ if (savedWakeLockActive === null) {
 }
 
 let appState = {
+  explorationId: null,
+  explorationStartedAt: 0,
+  explorationPhase: "waiting",
+  accessCommitPending: false,
   isTracking: false,
   isPaused: false,
   soundMode: savedSoundMode,
@@ -1818,7 +1822,7 @@ function requestDestinationGeometry(target) {
         task.entry.metadata = details?.properties || null;
         task.entry.expires = features.cacheExpires || Date.now() + 5 * 24 * 60 * 60 * 1000;
       })
-      .catch(() => { task.entry.expires = Date.now() + 60 * 1000; })
+      .catch(() => { task.entry.failed = true; task.entry.expires = Date.now() + 60 * 1000; })
       .finally(() => {
         task.entry.done = true;
         for (const place of task.entry.targets) {
@@ -1829,6 +1833,7 @@ function requestDestinationGeometry(target) {
         state.running--;
         if (state.queue.length) requestDestinationGeometry({ id: state.queue[0].id });
         if (appState.isTracking && !appState.isPaused) evaluateSensorCycle();
+        globalThis.SensorExplorationRecovery?.checkpoint();
       });
   }
 }
@@ -1858,6 +1863,7 @@ function refreshOutOfRangeTargets(previousPos, db = loadSavedData()) {
 }
 
 function chooseSearchTarget(origin = appState.lastSearchedPos || appState.currentPos, db = loadSavedData()) {
+  const previousTarget = appState.randomTarget;
   const available = getSearchCandidates(db);
   const outsideArrivalRange = appState.activeChallenge?.mode === 'random'
     ? available.filter(place => destinationDistance(appState.currentPos, place) > 20)
@@ -1876,6 +1882,7 @@ function chooseSearchTarget(origin = appState.lastSearchedPos || appState.curren
   } else {
     appState.randomTarget = candidates[Math.floor(Math.random() * candidates.length)];
   }
+  if (previousTarget !== appState.randomTarget) globalThis.SensorExplorationRecovery?.checkpoint();
 }
 
 function maintainSearchTarget(db = loadSavedData()) {
@@ -1949,7 +1956,7 @@ function updateDetectionLabel() {
 
 function evaluateSensorCycle() {
   globalThis.SensorRuntimeDiagnostics?.count('sensor.cycle');
-  if (arrivalInProgressId !== null) return;
+  if (arrivalInProgressId !== null || appState.accessCommitPending) return;
   const db = window.SensorAppStorage
     ? { arrivals: window.SensorAppStorage.detection() } : loadSavedData();
   updateDetectionLabel();
@@ -2142,6 +2149,9 @@ async function updateArrivalRecordWithDetails(db, target, now) {
 
   const challenge = appState.activeChallenge;
   recordArrivalAssociation(db, db.arrivals.find(item => item.id === target.id), appState.activeKeyword, challenge, now);
+  if (appState.explorationId) {
+    db.completedExplorationIds = [...new Set([...(db.completedExplorationIds || []), appState.explorationId])].slice(-32);
+  }
   traceArrivalStage('saving');
   await saveAppData(db);
   traceArrivalStage('saved');
@@ -2628,6 +2638,7 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
       appState.pinpointTarget || (!refreshCandidates && appState.randomTarget) || !appState.activeKeyword) return false;
+  if (appState.accessCommitPending && !accessGranted) return false;
   const generation = searchGeneration;
   if (!accessGranted && initialSearchAccessGranted) {
     initialSearchAccessGranted = false;
@@ -2647,6 +2658,8 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
     return;
   }
   isSearchInProgress = true;
+  appState.explorationPhase = "searching";
+  globalThis.SensorExplorationRecovery?.checkpoint();
   const position = { ...appState.currentPos };
   appState.lastSearchedPos = position;
   const radius = RADIUS_OPTIONS[radiusIndex];
@@ -2658,6 +2671,7 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
       : await searchGeoapify(appState.activeKeyword.trim(), position, radius, currentLang, appState.challengeCategories);
     if (generation !== searchGeneration || !appState.isTracking) return false;
     if (result.partial) console.warn('One search source is unavailable; using available results.');
+    appState.explorationPhase = "ready";
     appState.places = result.places;
     const fixedTarget = refreshCandidates ? appState.randomTarget : null;
     if (fixedTarget && !appState.places.some(place => place.id === fixedTarget.id)) appState.places.push(fixedTarget);
@@ -2667,6 +2681,7 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
     return true;
   } catch (error) {
     if (generation !== searchGeneration || !appState.isTracking) return false;
+    appState.explorationPhase = 'failed';
     console.warn('Geoapify search unavailable.');
     if (!refreshCandidates) {
       appState.places = [];
@@ -2679,6 +2694,7 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   } finally {
     if (generation === searchGeneration) {
       isSearchInProgress = false;
+      globalThis.SensorExplorationRecovery?.checkpoint();
       evaluateSensorCycle();
     }
   }
@@ -3577,11 +3593,14 @@ for (const kind of ['target', 'sensor-detail']) {
       executeSearch();
     }
     evaluateSensorCycle();
+    globalThis.SensorExplorationRecovery?.checkpoint();
   });
 }
 updateConditionButtons();
 
 function stopSearchAndReset() {
+  appState.explorationId = null;
+  if (!appState.accessCommitPending) globalThis.SensorExplorationRecovery?.clear();
   releaseChallengeSettings();
   resetKeywordSearch();
   appState.pinpointTarget = null;
@@ -3610,12 +3629,19 @@ function runRewardedSearch(kind, execute, options) {
   window.SensorRewardAds.language = () => currentLang;
   return window.SensorRewardAds.search(kind, () => {
     appState.isPaused = previouslyPaused;
+    appState.accessCommitPending = true;
     const result = execute();
     launched = result !== false;
     return result;
-  }, options).finally(() => {
+  }, { ...options,
+    captureExploration: () => globalThis.SensorExplorationRecovery?.capture() || null,
+    onExplorationError: () => globalThis.SensorExplorationRecovery?.onError()
+  }).finally(() => {
+    appState.accessCommitPending = false;
     rewardedSearchPending = false;
     if (!launched) appState.isPaused = previouslyPaused;
+    globalThis.SensorExplorationRecovery?.checkpoint();
+    if (launched && initialSearchAccessGranted && !appState.lastSearchedPos) executeSearch();
     evaluateSensorCycle();
   });
 }
@@ -3640,6 +3666,7 @@ function startSearchFromSet(fromChallenge = false) {
     if (document.getElementById('keyword-input').value.trim() !== inputVal) return false;
     resetKeywordSearch();
     appState.activeKeyword = inputVal;
+    beginExplorationRecovery("waiting");
     initialSearchAccessGranted = true;
     appState.pinpointTarget = null;
     appState.isTracking = true;
@@ -3680,6 +3707,7 @@ document.getElementById('set-btn').addEventListener('click', () => {
     updateButtonStateUI();
     renderChallenges();
     evaluateSensorCycle();
+    globalThis.SensorExplorationRecovery?.checkpoint();
   }
 });
 
@@ -4236,7 +4264,9 @@ function setPinpointTargetAndStart(item, hydrated = false) {
   return runRewardedSearch('normal', () => {
     resetKeywordSearch();
     const t = I18N[currentLang];
+    beginExplorationRecovery('ready');
     appState.pinpointTarget = {
+      ...item,
       id: item.id,
       name: item.name,
       lat: item.lat,
@@ -4461,11 +4491,13 @@ document.getElementById('btn-safety-ok').addEventListener('click', async () => {
   initAudio();
   if (appState.wakeLockActive) requestWakeLock();
   window.SensorRewardAds.language = () => currentLang;
-  if (!await window.SensorRewardAds.startup()) {
+  const recovery = window.SensorExplorationRecovery.load();
+  if (!recovery && !await window.SensorRewardAds.startup()) {
     startupButton.disabled = false;
     return;
   }
   document.getElementById('safety-prompt-overlay').classList.remove('show');
+  if (recovery) offerExplorationRecovery(recovery);
   await compassPermission;
 });
 
@@ -4518,6 +4550,108 @@ window.SensorRuntimeDiagnostics?.setSnapshotProvider(() => ({
   audioState: audioCtx?.state || 'none', soundMode: appState.soundMode,
   silentAudioPlaying: Boolean(silentAudioElement && !silentAudioElement.paused)
 }));
+function beginExplorationRecovery(phase) {
+  appState.explorationId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  appState.explorationStartedAt = Date.now();
+  appState.explorationPhase = phase;
+}
+
+window.SensorExplorationRecovery = window.SensorExplorationResume.create({
+  access: window.SensorRewardAds,
+  blocked: () => rewardedSearchPending || appState.accessCommitPending,
+  completed: () => loadSavedData().completedExplorationIds || [],
+  validateGeometry: validDestinationGeometry,
+  validateChallenge: id => CHALLENGES.some(challenge => challenge.id === id),
+  onError: () => showToast(currentLang === 'ja'
+    ? '探索状態を保存できません。再起動後に再開できない場合があります。'
+    : 'Unable to save exploration. Recovery after a restart may be unavailable.'),
+  capture: () => {
+    if (!appState.isTracking || !appState.explorationId) return null;
+    const places = [...appState.places];
+    for (const target of [appState.randomTarget, appState.pinpointTarget]) {
+      if (target && !places.some(place => place.id === target.id)) places.push(target);
+    }
+    const cache = requestDestinationGeometry.state?.cache;
+    return {schema:1,id:appState.explorationId,startedAt:appState.explorationStartedAt,
+      keyword:appState.activeKeyword,radius:RADIUS_OPTIONS[radiusIndex],targetMode:appState.targetMode,
+      sensorDetail:appState.sensorDetail,phase:appState.explorationPhase,paused:appState.isPaused,
+      challengeId:appState.activeChallenge?.id || null,challengeSettings:appState.challengeSettings,
+      places,searchOrigin:appState.lastSearchedPos,randomTargetOrigin:appState.randomTargetOrigin,
+      randomTargetArrivalFallback:appState.randomTargetArrivalFallback,
+      randomTargetId:appState.randomTarget?.id,pinpointTargetId:appState.pinpointTarget?.id,
+      detailsResolvedIds:places.filter(place => {
+        const entry = cache?.get(`${currentLang}:${place.id}`);
+        return entry?.done && !entry.failed;
+      }).map(place => place.id)};
+  }
+});
+
+function restoreExploration(snapshot) {
+  resetKeywordSearch();
+  appState.explorationId = snapshot.id;
+  appState.explorationStartedAt = snapshot.startedAt;
+  appState.explorationPhase = snapshot.phase;
+  appState.activeKeyword = snapshot.keyword;
+  appState.targetMode = snapshot.targetMode;
+  appState.sensorDetail = snapshot.sensorDetail;
+  radiusIndex = RADIUS_OPTIONS.indexOf(snapshot.radius);
+  appState.activeChallenge = CHALLENGES.find(challenge => challenge.id === snapshot.challengeId) || null;
+  appState.challengeSettings = snapshot.challengeSettings;
+  appState.challengeCategories = appState.activeChallenge ? challengeCategoriesForGroup(appState.activeChallenge.group) : null;
+  appState.places = snapshot.places;
+  appState.randomTarget = snapshot.places.find(place => place.id === snapshot.randomTargetId) || null;
+  appState.pinpointTarget = snapshot.places.find(place => place.id === snapshot.pinpointTargetId) || null;
+  appState.randomTargetOrigin = snapshot.randomTargetOrigin;
+  appState.randomTargetArrivalFallback = snapshot.randomTargetArrivalFallback;
+  const ready = snapshot.phase === 'ready';
+  appState.lastSearchedPos = ready ? snapshot.searchOrigin : null;
+  initialSearchAccessGranted = !ready;
+  const state = requestDestinationGeometry.state ||= {cache:new Map(),queue:[],running:0};
+  for (const id of snapshot.detailsResolvedIds) {
+    const place = snapshot.places.find(item => item.id === id);
+    state.cache.set(`${currentLang}:${id}`, {done:true,targets:new Set(),geometry:place.geometry || null,
+      metadata:null,expires:Date.now() + GEOAPIFY_CACHE_TTL_MS});
+  }
+  const input = document.getElementById('keyword-input');
+  input.value = snapshot.keyword;
+  input.readOnly = input.disabled = Boolean(appState.activeChallenge);
+  appState.isTracking = true;
+  appState.isPaused = snapshot.paused;
+  updateRadiusAccess();
+  updateConditionButtons();
+  updateButtonStateUI();
+  checkMainInputClearState();
+  document.getElementById('target-meta-info').textContent = appState.pinpointTarget
+    ? I18N[currentLang].targetMetaPinpoint(appState.pinpointTarget.name)
+    : I18N[currentLang].targetMeta(snapshot.keyword,getRadiusText(snapshot.radius));
+  renderChallenges();
+  navigateToMain();
+  window.SensorExplorationRecovery.checkpoint();
+  if (!ready) executeSearch();
+  evaluateSensorCycle();
+}
+
+function offerExplorationRecovery(snapshot) {
+  const ja = currentLang === 'ja';
+  const dialog = document.getElementById('exploration-resume-dialog');
+  document.getElementById('exploration-resume-title').textContent = ja ? '前回の探索を再開しますか？' : 'Resume your previous exploration?';
+  document.getElementById('exploration-resume-details').textContent = snapshot.keyword + '\n' +
+    (snapshot.places.find(place => place.id === (snapshot.pinpointTargetId || snapshot.randomTargetId))?.name || getRadiusText(snapshot.radius));
+  document.getElementById('exploration-resume-note').textContent = ja ? '再開でポイントは消費しません。' : 'Resuming costs no points.';
+  const accept = document.getElementById('exploration-resume-accept');
+  const discard = document.getElementById('exploration-resume-discard');
+  accept.textContent = ja ? '再開する' : 'Resume';
+  discard.textContent = ja ? '終了する' : 'End';
+  accept.onclick = () => { dialog.close(); restoreExploration(snapshot); };
+  discard.onclick = () => { window.SensorExplorationRecovery.clear(); dialog.close(); };
+  dialog.oncancel = event => event.preventDefault();
+  dialog.showModal();
+}
+window.addEventListener('pagehide', () => window.SensorExplorationRecovery.checkpoint());
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) window.SensorExplorationRecovery.checkpoint();
+});
+
 function initializeOnLoad() {
   if (startupRefreshPending) return;
   bootstrapMapAndLocation();

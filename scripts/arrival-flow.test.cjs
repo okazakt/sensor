@@ -106,3 +106,11 @@ test('再起動調査用の記録は12段階までで、保存領域が使えな
   c.sessionStorage.getItem = () => {throw new Error('unavailable');};
   assert.doesNotThrow(() => c.traceArrivalStage('saved'));
 });
+
+test('到着の保存要求には復元を無効にする探索IDも含め、履歴は32件に制限する',async()=>{
+ const {c,db,target,resolveSave}=fixture();
+ c.appState.explorationId='current';db.completedExplorationIds=Array.from({length:40},(_,i)=>'old'+i);
+ const pending=c.handleArrival(target);
+ assert.equal(db.completedExplorationIds.length,32);assert.equal(db.completedExplorationIds.at(-1),'current');
+ resolveSave();await pending;
+});

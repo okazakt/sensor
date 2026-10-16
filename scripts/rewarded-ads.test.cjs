@@ -166,3 +166,31 @@ test('チャレンジ開始確認前の広告では消費せず、確認後の�
   assert.equal(await d.prepare(),false);
   assert.equal(d.snapshot().points,0);
 });
+
+test('ポイント消費と探索状態を一回で保存し、新しい起動でも追加消費せず読める',async()=>{
+ const writes=[];let saved=JSON.stringify({initialWatched:true,units:10});
+ const storage={getItem:()=>saved,setItem:(_key,value)=>{writes.push(JSON.parse(value));saved=value;}};
+ const {controller:c}=fixture(async()=>{throw Error('Unexpected video');},storage);
+ const recovery={id:'session',randomTargetId:'target',phase:'ready'};
+ await c.search('normal',()=>true,{captureExploration:()=>recovery});
+ assert.equal(writes.length,1);assert.equal(writes[0].units,8);assert.equal(writes[0].exploration.id,'session');
+ const {controller:restarted}=fixture(async()=>false,storage);
+ assert.equal(restarted.loadExploration().randomTargetId,'target');assert.equal(restarted.snapshot().units,8);
+ restarted.saveExploration({...recovery,paused:true});assert.equal(restarted.snapshot().units,8);
+});
+test('実行途中で落ちても未決済の新しい探索を保存せず、前回の保存を維持する',async()=>{
+ let saved=JSON.stringify({initialWatched:true,units:8,exploration:{id:'old'}});
+ const storage={getItem:()=>saved,setItem:(_key,value)=>{saved=value;}};
+ const {controller:c}=fixture(async()=>false,storage);
+ await assert.rejects(c.search('normal',()=>{throw Error('Interrupted');},{captureExploration:()=>({id:'new'})}));
+ assert.equal(JSON.parse(saved).units,8);assert.equal(JSON.parse(saved).exploration.id,'old');
+});
+test('探索保存失敗時は残高だけ保存して警告し、古い探索を残さない',async()=>{
+ let saved=JSON.stringify({initialWatched:true,units:10,exploration:{id:'old'}}),errors=0;
+ const storage={getItem:()=>saved,setItem:(_key,value)=>{
+   if(JSON.parse(value).exploration)throw Error('Quota');saved=value;
+ }};
+ const {controller:c}=fixture(async()=>false,storage);
+ await c.search('secret',()=>true,{captureExploration:()=>({id:'new'}),onExplorationError:()=>errors++});
+ assert.equal(errors,1);assert.equal(JSON.parse(saved).units,5);assert.equal(JSON.parse(saved).exploration,null);
+});
