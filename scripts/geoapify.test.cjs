@@ -18,6 +18,20 @@ function fixture(fetch) {
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
+test('調査情報は名称補完・ID統合前の各API応答を分離して保持する', async () => {
+  const c = fixture(async url => ({ok:true,json:async()=>({features:[{properties:{
+    place_id:'shared',lat:0.1,lon:0,address_line1:'道路名',
+    ...(url.pathname === '/v2/places' ? {categories:['religion.place_of_worship'],datasource:{raw:{amenity:'place_of_worship'}}} : {name:'興林寺'})
+  }}]})}));
+  await c.searchGeoapify('カフェ',{lat:0,lng:0},1000,'ja');
+  const records = [...c.fetchKeywordCandidates.diagnostics.values()];
+  assert.equal(records.length,2);
+  assert.equal(records.find(r=>r.source === '/v1/geocode/search').properties.name,'興林寺');
+  const place = records.find(r=>r.source === '/v2/places').properties;
+  assert.equal(Object.hasOwn(place,'name'),false);
+  assert.equal(place.address_line1,'道路名');
+  assert.equal(place.datasource.raw.amenity,'place_of_worship');
+});
 test('Geocodingは75%到達済みなら40件に拡張し、重複を除いて補充する', async () => {
   const urls = [];
   const first = Array.from({length:20}, (_, i) => feature(`first-${i}`, 0.1));

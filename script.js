@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162300";
+const BASE_JS_VERSION = "v0.26.101.162311";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2599,6 +2599,9 @@ async function fetchKeywordCandidates(path, parameters, excludeChallengePlaces =
     for (const feature of features) {
       const p = feature.properties || {};
       const id = p.place_id || JSON.stringify(feature);
+      // Temporary evidence: preserve each source before name fallback, filtering or ID merging.
+      const diagnostics = fetchKeywordCandidates.diagnostics ||= new Map();
+      diagnostics.set(`${path}:${id}`, { source: path, properties: JSON.parse(JSON.stringify(p)) });
       if (!collected.has(id)) newFeatures.push(feature);
       collected.set(id, feature);
     }
@@ -2684,6 +2687,57 @@ async function searchSecretChallenge(position, radius, language, mode) {
   };
 }
 
+function openSearchDiagnostics() {
+  const dialog = document.getElementById('search-diagnostics-dialog');
+  const select = document.getElementById('search-diagnostics-select');
+  const output = document.getElementById('search-diagnostics-output');
+  const status = document.getElementById('search-diagnostics-status');
+  const fetchButton = document.getElementById('search-diagnostics-fetch');
+  const records = [...(fetchKeywordCandidates.diagnostics?.values() || [])];
+  const report = { search: fetchKeywordCandidates.diagnosticContext || null, results: records, details: [] };
+  const render = () => { output.value = JSON.stringify(report, null, 2); };
+  select.replaceChildren();
+  for (const [index, record] of records.entries()) {
+    const p = record.properties;
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${p.name || p.address_line1 || '名称なし'} (${record.source})`;
+    select.appendChild(option);
+  }
+  status.textContent = records.length ? `${records.length}件の検索応答を表示しています。` : '検索情報がありません。範囲を選び、興林寺を検索してから開いてください。';
+  fetchButton.disabled = !records.some(record => record.properties.place_id);
+  fetchButton.onclick = async () => {
+    const id = records[Number(select.value)]?.properties.place_id;
+    if (!id) { status.textContent = 'この候補には詳細取得用IDがありません。'; return; }
+    fetchButton.disabled = true;
+    status.textContent = '詳細を取得中…';
+    try {
+      // Read only: do not apply names, outlines or arrival updates to the running search.
+      const features = await fetchGeoapify('/v2/place-details', { id, features: 'details', lang: currentLang });
+      report.details.push({ requestedId: id, properties: features.map(feature => feature.properties || {}) });
+      render();
+      status.textContent = '詳細応答を末尾に追加しました。「情報をコピー」で全体をコピーできます。';
+      output.scrollTop = output.scrollHeight;
+    } catch {
+      status.textContent = '詳細の取得に失敗しました。再試行してください。';
+    } finally {
+      fetchButton.disabled = false;
+    }
+  };
+  document.getElementById('search-diagnostics-copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(output.value);
+      status.textContent = '調査情報をコピーしました。';
+    } catch {
+      output.focus(); output.select();
+      status.textContent = '自動コピーできませんでした。選択された情報を手動でコピーしてください。';
+    }
+  };
+  document.getElementById('search-diagnostics-close').onclick = () => dialog.close();
+  render();
+  dialog.showModal();
+}
+
 async function executeSearch(refreshCandidates = false, accessGranted = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
@@ -2715,6 +2769,8 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   const radius = RADIUS_OPTIONS[radiusIndex];
   const rText = radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
   document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta(appState.activeKeyword, rText);
+  fetchKeywordCandidates.diagnostics = new Map();
+  fetchKeywordCandidates.diagnosticContext = { keyword: appState.activeKeyword, radius, language: currentLang, fetchedAt: new Date().toISOString() };
   try {
     const result = appState.activeChallenge?.group === 'secret'
       ? await searchSecretChallenge(position, radius, currentLang, appState.targetMode)
@@ -3764,6 +3820,7 @@ document.getElementById('set-btn').addEventListener('click', () => {
 document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
+document.getElementById('btn-search-diagnostics').addEventListener('click', openSearchDiagnostics);
 
 // ============================================================
 // 画面遷移 & スワイプ & フッターナビゲーション

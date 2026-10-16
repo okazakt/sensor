@@ -28,7 +28,7 @@ function sensorFixture() {
     getDistance: (_a, _b, lat) => lat,
     getBearing: () => 0, headingDelta: () => 0,
     updateDestinationOutlines() {}, updateVisualRing() {}, scheduleRadarSound() {}, clearTimeout() {},
-    resetKeywordSearch() {}, executeSearch() {}, handleArrival() {}
+    resetKeywordSearch() {}, executeSearch() {}, handleArrival() {}, fetchKeywordCandidates() {}
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('function readSensorSetting'),
