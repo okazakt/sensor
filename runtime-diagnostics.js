@@ -3,7 +3,7 @@
   'use strict';
   const KEY = 'sheikah_runtime_diagnostics_v1';
   const EVENTS = ['startup', 'js-error', 'promise-error', 'pagehide', 'pageshow', 'visible', 'hidden',
-    'map.created', 'map.removed', 'map.center', 'map.resize', 'map.error', 'map.context-lost', 'map.context-restored',
+    'map.created', 'map.removed', 'map.center', 'map.slide', 'map.resize', 'map.error', 'map.context-lost', 'map.context-restored',
     'gps.fix', 'compass.event', 'sensor.cycle', 'search.request', 'search.response'];
   const PHASES = ['detected', 'saving', 'saved', 'map', 'presentation', 'challenge-feedback',
     'feedback', 'feedback-error', 'complete', 'failed', 'cancelled'];
