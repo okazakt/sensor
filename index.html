@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="02">
+  <meta name="html-rev" content="03">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -284,21 +284,6 @@
           <button class="btn-set" id="set-btn">SET</button>
         </div>
 
-        <button class="btn-sheikah-sm" id="btn-search-diagnostics" style="align-self: flex-start;">検索結果の調査情報</button>
-        <dialog id="search-diagnostics-dialog" style="width: min(90vw, 600px); max-height: 85dvh; overflow: auto; background: #182229; color: #eee; border: 1px solid #c4a366; border-radius: 8px;">
-          <h3 style="margin-top: 0;">検索結果の調査情報（一時表示）</h3>
-          <p>到着不要です。検索応答と、選んだ候補の詳細応答を確認できます。図鑑には保存しません。</p>
-          <label for="search-diagnostics-select">詳細を確認する候補</label>
-          <select id="search-diagnostics-select" style="width: 100%; margin: 8px 0;"></select>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-            <button class="btn-sheikah-sm" id="search-diagnostics-fetch">選択候補の詳細を取得</button>
-            <button class="btn-sheikah-sm" id="search-diagnostics-copy">情報をコピー</button>
-            <button class="btn-sheikah-sm" id="search-diagnostics-close">閉じる</button>
-          </div>
-          <p id="search-diagnostics-status" role="status"></p>
-          <textarea id="search-diagnostics-output" aria-label="検索結果と詳細APIの応答" readonly style="box-sizing: border-box; width: 100%; height: 40dvh; font-size: 14px; user-select: text;"></textarea>
-        </dialog>
-
         <div class="status-panel">
           <div>
             <div class="target-meta-info" id="target-meta-info">[対象: 未設定 / 範囲: 3km]</div>
@@ -491,13 +476,6 @@
         <div class="detail-card-panel">
           <div class="spot-name-header" id="detail-spot-name">--</div>
           <div class="spot-address-text" id="detail-spot-address">--</div>
-          <!-- Temporary place identity diagnostics. -->
-          <div class="spot-address-text" id="detail-spot-classification" style="margin-top: 6px; overflow-wrap: anywhere; white-space: pre-line;"></div>
-          <div class="spot-address-text" style="margin-top: 6px;">
-            <span style="user-select: text; overflow-wrap: anywhere;">ID: <span id="detail-spot-id">--</span></span>
-            <button class="btn-sheikah-sm" id="detail-btn-copy-id" style="margin-top: 4px;">IDコピー</button>
-            <button class="btn-sheikah-sm" id="detail-btn-api-response" style="margin-top: 4px;">API応答を表示</button>
-          </div>
           <div class="spot-address-text" id="detail-spot-meta" style="margin-top: 6px; color: #99aabb;">--</div>
           <div class="spot-address-text" id="detail-spot-keyword" style="margin-top: 4px; color: #99aabb;">--</div>
           <div class="spot-address-text" id="detail-spot-challenges" style="margin-top: 4px;" hidden></div>
@@ -566,7 +544,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=a4cfa085152cb235';
+    scriptEl.src = 'script.js?v=83977d091cc515a2';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {

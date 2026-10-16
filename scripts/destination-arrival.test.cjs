@@ -13,33 +13,6 @@ function fixture(fetchGeoapify) {
 }
 const ring = size => [[-size,-size],[size,-size],[size,size],[-size,size],[-size,-size]];
 const target = { id:'place-id', lat:1, lng:1, geometry: {type:'Polygon', coordinates:[ring(0.01)]} };
-test('名称の調査表示はAPIの欠損・空文字・元名称を区別し、図鑑に保存しない', () => {
-  const c = fixture();
-  const item = {id:'place-id',name:'道路名'};
-  const saved = {...item};
-  const classification = {textContent:''};
-  c.appState.selectedSpotForDetail = item;
-  c.document = {getElementById:id => id === 'detail-spot-classification' ? classification : {textContent:''}, querySelectorAll:()=>[]};
-  c.loadSavedData = () => ({arrivals:[saved]});
-  c.saveAppData = () => {};
-  c.renderDestinationClassification(item);
-  assert.match(classification.textContent, /API名称 \(name\): 未取得/);
-  c.applyDestinationDetails(item, {name:'',datasource:{raw:{name:'東京ドーム'}}});
-  assert.match(classification.textContent, /API名称 \(name\): ""/);
-  assert.match(classification.textContent, /API名称 \(name_international.ja\): 項目なし/);
-  assert.match(classification.textContent, /元データ名称 \(raw.name\): "東京ドーム"/);
-  assert.equal(Object.hasOwn(saved,'names'),false);
-  assert.equal(Object.hasOwn(item,'names'),false);
-  c.renderDestinationClassification({id:'another-place'});
-  assert.doesNotMatch(classification.textContent, /東京ドーム/);
-});
-test('区分表示は施設と道路のAPIカテゴリ・元タグを保持し、名称から推測しない', () => {
-  const c = fixture();
-  assert.equal(c.destinationClassification({categories:['sport.stadium'], datasource:{raw:{leisure:'stadium'}}}),
-    'sport.stadium / leisure=stadium');
-  assert.equal(c.destinationClassification({datasource:{raw:{highway:'secondary'}}}), 'highway=secondary');
-  assert.equal(c.destinationClassification({name:'道路'}), '');
-});
 test('長時間の探索でも完了した目的地キャッシュが増え続けない', async () => {
   const c = fixture(async () => [{properties:{feature_type:'details'}, geometry:target.geometry}]);
   for (let i = 0; i < 200; i++) {

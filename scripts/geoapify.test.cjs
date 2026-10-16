@@ -18,20 +18,6 @@ function fixture(fetch) {
   return c;
 }
 const feature = (id, lat, name = id) => ({properties: {place_id:id, name, lat, lon:0, formatted:'住所'}});
-test('調査情報は名称補完・ID統合前の各API応答を分離して保持する', async () => {
-  const c = fixture(async url => ({ok:true,json:async()=>({features:[{properties:{
-    place_id:'shared',lat:0.1,lon:0,address_line1:'道路名',
-    ...(url.pathname === '/v2/places' ? {categories:['religion.place_of_worship'],datasource:{raw:{amenity:'place_of_worship'}}} : {name:'興林寺'})
-  }}]})}));
-  await c.searchGeoapify('カフェ',{lat:0,lng:0},1000,'ja');
-  const records = [...c.fetchKeywordCandidates.diagnostics.values()];
-  assert.equal(records.length,2);
-  assert.equal(records.find(r=>r.source === '/v1/geocode/search').properties.name,'興林寺');
-  const place = records.find(r=>r.source === '/v2/places').properties;
-  assert.equal(Object.hasOwn(place,'name'),false);
-  assert.equal(place.address_line1,'道路名');
-  assert.equal(place.datasource.raw.amenity,'place_of_worship');
-});
 test('Geocodingは75%到達済みなら40件に拡張し、重複を除いて補充する', async () => {
   const urls = [];
   const first = Array.from({length:20}, (_, i) => feature(`first-${i}`, 0.1));
@@ -119,6 +105,7 @@ test('シークレットは4分類を個別検索し、各分類から先頭以�
   const groups = vm.runInContext("CHALLENGE_GROUPS.filter(g => g.id !== 'secret')", c);
   urls.forEach((url, i) => {
     assert.equal(url.pathname, '/v2/places');
+    assert.equal(url.searchParams.get('conditions'), 'named');
     assert.equal(url.searchParams.get('categories'), groups[i].categories.join(','));
     assert.equal(url.searchParams.get('limit'), '20');
   });
@@ -248,6 +235,7 @@ test('文字とカテゴリを同時検索し、ID重複・範囲外・無効座
   assert.equal(urls[1].searchParams.get('categories'), 'catering.cafe');
   assert.equal(urls[1].searchParams.get('limit'), '20');
   assert.ok(urls.every(url => url.searchParams.get('filter') === 'circle:0,0,1000'));
+  assert.ok(urls.every(url => !url.searchParams.has('conditions')));
   assert.equal(JSON.stringify(result.places.map(p=>p.id)), '["near","shared"]');
   assert.equal(result.partial, false);
 });
@@ -292,8 +280,24 @@ test('チャレンジは指定カテゴリのみ検索し、チャレンジ名�
   assert.equal(urls.length, 1);
   assert.equal(urls[0].pathname, '/v2/places');
   assert.equal(urls[0].searchParams.get('categories'), 'catering.restaurant,catering.cafe');
+  assert.equal(urls[0].searchParams.get('conditions'), 'named');
   assert.equal(urls[0].searchParams.has('text'), false);
   assert.equal(result.places[0].id, 'category-target');
+});
+
+test('名前付き条件を付けたチャレンジは通常検索のキャッシュを再利用しない', async () => {
+  const urls = [];
+  const c = fixture(async url => {
+    urls.push(url);
+    return {ok:true,json:async()=>({features:[feature('named-place',0.1)]})};
+  });
+  await c.searchGeoapify('カフェ',{lat:0,lng:0},1000,'ja');
+  await c.searchGeoapify('challenge',{lat:0,lng:0},1000,'ja',['catering.cafe']);
+  await c.searchGeoapify('challenge',{lat:0,lng:0},1000,'ja',['catering.cafe']);
+  const places = urls.filter(url => url.pathname === '/v2/places');
+  assert.equal(places.length,2);
+  assert.equal(places[0].searchParams.get('conditions'),null);
+  assert.equal(places[1].searchParams.get('conditions'),'named');
 });
 
 

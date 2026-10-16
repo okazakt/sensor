@@ -18,7 +18,7 @@ function fixture({units=10, secret=false, watchAd=async()=>true}={}) {
     initialSearchAccessGranted:false,searchGeneration:0,isSearchInProgress:false,
     RADIUS_OPTIONS:[1000],radiusIndex:0,currentLang:'ja',I18N:{ja:{targetMeta:()=>''}},
     document:{getElementById:()=>({textContent:''})},console:{warn(){}},
-    evaluateSensorCycle(){},getSearchCandidates:()=>[],chooseSearchTarget(){},fetchKeywordCandidates(){},
+    evaluateSensorCycle(){},getSearchCandidates:()=>[],chooseSearchTarget(){},
     searchGeoapify:async()=>{calls.push('normal');return {places:[]};},
     searchSecretChallenge:async()=>{calls.push('secret');return {places:[]};},
     stopSearchAndReset(){calls.push('stop');c.searchGeneration++;c.appState.isTracking=false;

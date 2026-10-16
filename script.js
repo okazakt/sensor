@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162329";
+const BASE_JS_VERSION = "v0.26.101.162340";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1769,48 +1769,8 @@ function geoapifyPlaceIdentity(properties, fallbackName = '') {
   return { name: fullName, branch, brand };
 }
 
-function destinationClassification(properties) {
-  const raw = properties.datasource?.raw || {};
-  const categories = Array.isArray(properties.categories) ? properties.categories.filter(value => typeof value === 'string') : [];
-  const tags = ['highway', 'railway', 'building', 'amenity', 'leisure', 'sport', 'tourism', 'shop', 'office', 'landuse']
-    .filter(key => typeof raw[key] === 'string').map(key => `${key}=${raw[key]}`);
-  return [...categories, ...tags].join(' / ');
-}
-
-function renderDestinationClassification(place) {
-  if (typeof document === 'undefined') return;
-  const element = document.getElementById('detail-spot-classification');
-  if (!element) return;
-  const unknown = currentLang === 'ja' ? '未取得・区分情報なし' : 'Unavailable';
-  const diagnostics = destinationClassification.diagnostics?.get(place.id) || {};
-  element.textContent = currentLang === 'ja'
-    ? `検索時の区分: ${diagnostics.search || unknown}\n詳細取得後の区分: ${diagnostics.details || unknown}`
-    : `Search classification: ${diagnostics.search || unknown}\nDetail classification: ${diagnostics.details || unknown}`;
-  const names = diagnostics.names;
-  const pending = currentLang === 'ja' ? '未取得' : 'Not fetched';
-  const value = key => {
-    if (!names) return pending;
-    if (names[key] == null) return currentLang === 'ja' ? '項目なし' : 'Missing';
-    return JSON.stringify(names[key]);
-  };
-  const labels = currentLang === 'ja'
-    ? ['API名称 (name)', `API名称 (name_international.${currentLang})`, '元データ名称 (raw.name)', `元データ名称 (raw.name:${currentLang})`]
-    : ['API name (name)', `API name (name_international.${currentLang})`, 'Source name (raw.name)', `Source name (raw.name:${currentLang})`];
-  element.textContent += '\n' + labels.map((label, index) => `${label}: ${value(['name', 'localizedName', 'rawName', 'rawLocalizedName'][index])}`).join('\n');
-}
-
 function applyDestinationDetails(place, metadata) {
   if (!metadata) return;
-  const diagnostics = destinationClassification.diagnostics ||= new Map();
-  diagnostics.set(place.id, { ...diagnostics.get(place.id), details: destinationClassification(metadata), names: {
-    name: metadata.name,
-    localizedName: metadata.name_international?.[currentLang],
-    rawName: metadata.datasource?.raw?.name,
-    rawLocalizedName: metadata.datasource?.raw?.[`name:${currentLang}`]
-  } });
-  if (typeof document !== 'undefined' && appState.selectedSpotForDetail?.id === place.id) {
-    renderDestinationClassification(appState.selectedSpotForDetail);
-  }
   const identity = geoapifyPlaceIdentity(metadata, place.name);
   if (place.placeDetailsVersion === 1 && place.name === identity.name && place.branch === identity.branch && place.brand === identity.brand) return;
   Object.assign(place, identity);
@@ -2599,9 +2559,6 @@ async function fetchKeywordCandidates(path, parameters, excludeChallengePlaces =
     for (const feature of features) {
       const p = feature.properties || {};
       const id = p.place_id || JSON.stringify(feature);
-      // Temporary evidence: preserve each source before name fallback, filtering or ID merging.
-      const diagnostics = fetchKeywordCandidates.diagnostics ||= new Map();
-      diagnostics.set(`${path}:${id}`, { source: path, properties: JSON.parse(JSON.stringify(p)) });
       if (!collected.has(id)) newFeatures.push(feature);
       collected.set(id, feature);
     }
@@ -2622,7 +2579,7 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
   const requests = forcedCategories ? [] : [fetchKeywordCandidates('/v1/geocode/search', { ...common, text })];
   const categories = forcedCategories || categoriesForKeyword(text);
   if (categories.length) requests.push(fetchKeywordCandidates('/v2/places',
-    { ...common, categories: categories.join(',') }, Boolean(forcedCategories)));
+    { ...common, categories: categories.join(','), ...(forcedCategories ? { conditions: 'named' } : {}) }, Boolean(forcedCategories)));
   const responses = await Promise.allSettled(requests);
   const successful = responses.filter(result => result.status === 'fulfilled');
   if (!successful.length) throw new Error('Search unavailable');
@@ -2638,9 +2595,6 @@ async function searchGeoapify(text, position, radius, language, forcedCategories
     const name = identity.name;
     if (!name) continue;
     const id = p.place_id || `geo:${lat}:${lng}:${name}`;
-    // Temporary diagnostics stay in memory and never enter arrival records or exports.
-    const diagnostics = destinationClassification.diagnostics ||= new Map();
-    diagnostics.set(id, { ...diagnostics.get(id), search: destinationClassification(p) });
     const previous = places.get(id);
     places.set(id, {
       ...identity, id, name, lat, lng, formatted_address: p.formatted || previous?.formatted_address || '',
@@ -2687,59 +2641,6 @@ async function searchSecretChallenge(position, radius, language, mode) {
   };
 }
 
-function openSearchDiagnostics(place = null) {
-  const dialog = document.getElementById('search-diagnostics-dialog');
-  const select = document.getElementById('search-diagnostics-select');
-  const output = document.getElementById('search-diagnostics-output');
-  const status = document.getElementById('search-diagnostics-status');
-  const fetchButton = document.getElementById('search-diagnostics-fetch');
-  const records = place ? [{ source: 'compendium', properties: { place_id: place.id, name: place.name } }]
-    : [...(fetchKeywordCandidates.diagnostics?.values() || [])];
-  const report = { search: place ? null : fetchKeywordCandidates.diagnosticContext || null, results: records, details: [] };
-  const render = () => { output.value = JSON.stringify(report, null, 2); };
-  select.replaceChildren();
-  for (const [index, record] of records.entries()) {
-    const p = record.properties;
-    const option = document.createElement('option');
-    option.value = String(index);
-    option.textContent = `${index + 1}. ${p.name || p.address_line1 || '名称なし'} (${record.source})`;
-    select.appendChild(option);
-  }
-  status.textContent = place ? '図鑑のIDで詳細応答を取得します。' : records.length ? `${records.length}件の検索応答を表示しています。` : '検索情報がありません。検索してから開いてください。';
-  fetchButton.disabled = !records.some(record => record.properties.place_id);
-  const fetchDetails = async id => {
-    if (!id) { status.textContent = '詳細取得用IDを指定してください。'; return; }
-    fetchButton.disabled = true;
-    status.textContent = '詳細を取得中…';
-    try {
-      // Read only: do not apply names, outlines or arrival updates to the running search.
-      const features = await fetchGeoapify('/v2/place-details', { id, features: 'details', lang: currentLang });
-      report.details.push({ requestedId: id, features });
-      render();
-      status.textContent = '詳細応答を末尾に追加しました。「情報をコピー」で全体をコピーできます。';
-      output.scrollTop = output.scrollHeight;
-    } catch {
-      status.textContent = '詳細の取得に失敗しました。再試行してください。';
-    } finally {
-      fetchButton.disabled = !records.some(record => record.properties.place_id);
-    }
-  };
-  fetchButton.onclick = () => fetchDetails(records[Number(select.value)]?.properties.place_id);
-  document.getElementById('search-diagnostics-copy').onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(output.value);
-      status.textContent = '調査情報をコピーしました。';
-    } catch {
-      output.focus(); output.select();
-      status.textContent = '自動コピーできませんでした。選択された情報を手動でコピーしてください。';
-    }
-  };
-  document.getElementById('search-diagnostics-close').onclick = () => dialog.close();
-  render();
-  dialog.showModal();
-  if (place) return fetchDetails(place.id);
-}
-
 async function executeSearch(refreshCandidates = false, accessGranted = false) {
   if (typeof traceLocation === 'function') traceLocation('executeSearch', `gps=${Boolean(appState.currentPos)} active=${appState.isTracking}`);
   if (!appState.isTracking || appState.isPaused || !appState.currentPos || isSearchInProgress ||
@@ -2771,8 +2672,6 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   const radius = RADIUS_OPTIONS[radiusIndex];
   const rText = radius >= 1000 ? `${radius / 1000}km` : `${radius}m`;
   document.getElementById('target-meta-info').textContent = I18N[currentLang].targetMeta(appState.activeKeyword, rText);
-  fetchKeywordCandidates.diagnostics = new Map();
-  fetchKeywordCandidates.diagnosticContext = { keyword: appState.activeKeyword, radius, language: currentLang, fetchedAt: new Date().toISOString() };
   try {
     const result = appState.activeChallenge?.group === 'secret'
       ? await searchSecretChallenge(position, radius, currentLang, appState.targetMode)
@@ -3822,7 +3721,6 @@ document.getElementById('set-btn').addEventListener('click', () => {
 document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
-document.getElementById('btn-search-diagnostics').addEventListener('click', () => openSearchDiagnostics());
 
 // ============================================================
 // 画面遷移 & スワイプ & フッターナビゲーション
@@ -4436,18 +4334,6 @@ function openSpotDetailModal(item, orderedItems, hydrated = false) {
 
   document.getElementById('detail-spot-name').textContent = item.name;
   document.getElementById('detail-spot-address').textContent = t.loadingAddress;
-  // Temporary place identity diagnostics; keep the existing name-copy action intact.
-  document.getElementById('detail-spot-id').textContent = item.id || '--';
-  renderDestinationClassification(item);
-  const copyIdButton = document.getElementById('detail-btn-copy-id');
-  copyIdButton.textContent = currentLang === 'ja' ? 'IDコピー' : 'Copy ID';
-  copyIdButton.disabled = !item.id;
-  copyIdButton.onclick = () => copyPlaceNameToClipboard(item.id);
-  const apiResponseButton = document.getElementById('detail-btn-api-response');
-  apiResponseButton.textContent = currentLang === 'ja' ? 'API応答を表示' : 'Show API response';
-  apiResponseButton.disabled = !item.id;
-  apiResponseButton.onclick = () => openSearchDiagnostics(item);
-
   const d = new Date(item.date);
   const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
   let distStr = "";
