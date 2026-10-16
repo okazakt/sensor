@@ -9,8 +9,7 @@ const vm = require('node:vm');
 function fixture(devicePixelRatio) {
   const maps = [];
   const observers = [];
-  const timers = new globalThis.Map();
-  let clock = 0, timerId = 0;
+  const markers = [];
   function element() {
     return {style:{}, children:[], clientWidth:320, clientHeight:320,
       appendChild(child) {child.parentElement=this;this.children.push(child);},
@@ -33,34 +32,28 @@ function fixture(devicePixelRatio) {
       this.paint[layer + ':' + property] = value;
     }
     resize() { this.resized = true; }
-    remove() { this.removed = true; }
+    remove() { this.removed = true; this.removeCalls=(this.removeCalls || 0)+1; }
   }
   class ResizeObserver {
     constructor(callback) { this.callback = callback; observers.push(this); }
     observe() {}
     disconnect() { this.disconnected = true; }
   }
-  const context = { window: { maplibregl: { Map }, devicePixelRatio,
-    document:{getElementById:id => elements[id], createElement() {
-      const node = element();
-      Object.defineProperty(node,'clientWidth',{get:() => node.parentElement?.clientWidth*1.5 || 0});
-      Object.defineProperty(node,'clientHeight',{get:() => node.parentElement?.clientHeight*1.5 || 0});
-      return node;
-    }},
-    performance:{now:() => clock}, setTimeout(fn, delay) {timers.set(++timerId,{fn, due:clock+delay}); return timerId;},
-    clearTimeout:id => timers.delete(id)}, ResizeObserver };
+  class Marker {
+    constructor(options) { this.options=options; markers.push(this); }
+    setLngLat(position) { this.position=position; return this; }
+    addTo(map) { this.map=map; return this; }
+    remove() { this.removed=true; }
+  }
+  const context = { window: { maplibregl: { Map, Marker }, devicePixelRatio,
+    document:{getElementById:id => elements[id],createElement:element},
+    performance:{now:() => 0},
+    setTimeout() { throw new Error('camera updates must not be delayed or throttled'); }
+  }, ResizeObserver };
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   vm.runInNewContext(source.slice(source.indexOf('function initializeMapRenderer(global)'),
     source.indexOf('function initializeResponsiveLayout()')), context);
-  return { api: context.window.SensorMap, maps, observers, timers, elements, advance(ms) {
-    const end = clock + ms;
-    while (true) {
-      const next = [...timers].sort((a,b) => a[1].due - b[1].due)[0];
-      if (!next || next[1].due > end) break;
-      clock = next[1].due; timers.delete(next[0]); next[1].fn();
-    }
-    clock = end;
-  }};
+  return { api:context.window.SensorMap,maps,observers,elements,markers };
 }
 
 test('高密度端末でも地図の描画倍率を1.5倍以内に抑える', () => {
@@ -114,94 +107,47 @@ test('地図の破棄でサイズ監視も終了し、配信エラーを表示�
   assert.equal(maps[0].removed, true);
 });
 
-test('余白内の60fps位置更新は毎フレーム滑らかにスライドし、カメラを再描画しない', () => {
-  const {api, maps, timers, elements} = fixture(3);
-  const map = api.createMap('map', {lat:35,lng:139}, 'botw', null, {buffered:true});
-  const surface = elements.map.children[0];
-  assert.equal(maps[0].options.container,surface);
-  assert.equal(surface.clientWidth*maps[0].options.pixelRatio,320*1.5);
-  const translations = new Set();
-  let position;
-  for (let frame = 0; frame < 300; frame++) {
-    position = {lat:35, lng:139 + (frame+1)*0.0000003};
+test('60fpsの位置補間を間引かず、そのフレームで地図中心へ反映する', () => {
+  const {api,maps,elements} = fixture(3);
+  const map=api.createMap('map',{lat:35,lng:139},'botw');
+  assert.equal(maps[0].options.container,'map');
+  assert.equal(elements.map.children.length,0);
+  for (let frame=1;frame<=300;frame++) {
+    const position={lat:35,lng:139+frame*.0000003};
     map.setCenter(position);
-    translations.add(surface.style.transform);
+    assert.equal(maps[0].centerCalls,frame);
+    assert.deepEqual(Array.from(maps[0].center),[position.lng,position.lat]);
   }
+});
+
+test('同一位置・不正な位置・破棄後の更新と、非表示中のリサイズを無視する', () => {
+  const {api,maps,observers,elements} = fixture();
+  const map=api.createMap('map',{lat:35,lng:139},'botw');
+  map.setCenter({lat:35,lng:139});
+  map.setCenter({lat:NaN,lng:140});
   assert.equal(maps[0].centerCalls,0);
-  assert.equal(translations.size,300);
-  assert.equal(timers.size,0);
-  const x = Number(surface.style.transform.match(/translate3d\(([^p]+)px/)[1]);
-  assert.ok(Math.abs(x + (position.lng-139)/360*(512*2**16))<1e-7);
-  const finalTranslation = surface.style.transform;
-  map.setCenter(position);
-  assert.equal(surface.style.transform,finalTranslation);
-});
-
-test('余白が減ったときだけ補充し、描画完了まで古い地図のオフセットを維持する', () => {
-  const {api,maps,elements} = fixture(3);
-  const map = api.createMap('map',{lat:35,lng:139},'botw',null,{buffered:true});
-  const surface=elements.map.children[0];
-  map.setCenter({lat:35,lng:139.0006});
-  assert.equal(maps[0].centerCalls,1);
-  const before=surface.style.transform;
-  assert.ok(Number(before.match(/translate3d\(([^p]+)px/)[1]) < -48);
-  map.setCenter({lat:35,lng:139.00061});
-  assert.equal(maps[0].centerCalls,1);
-  maps[0].events.render();
-  const after=Number(surface.style.transform.match(/translate3d\(([^p]+)px/)[1]);
-  assert.ok(Math.abs(after + .00001/360*(512*2**16)) < 1e-7);
-  assert.equal(maps[0].centerCalls,1);
-});
-
-test('補充中も到着ピンは描画済み地図に固定し、描画切替で位置を飛ばさない', () => {
-  const {api,maps,elements} = fixture(3);
-  const map=api.createMap('map',{lat:35,lng:139},'botw',null,{buffered:true});
-  const pin=map.addMarker({lat:35,lng:139},true);
-  const surface=elements.map.children[0], marker=surface.children[0];
-  assert.equal(marker.style.left,'240px');
-  map.setCenter({lat:35,lng:139.0006});
-  assert.equal(marker.style.left,'240px');
-  const xBefore=Number.parseFloat(marker.style.left)+Number(surface.style.transform.match(/translate3d\(([^p]+)px/)[1]);
-  maps[0].events.render();
-  const xAfter=Number.parseFloat(marker.style.left)+Number(surface.style.transform.match(/translate3d\(([^p]+)px/)[1]);
-  assert.ok(Math.abs(xBefore-xAfter)<1e-7);
-  pin.remove();
-  assert.equal(surface.children.length,0);
-  map.setCenter({lat:35,lng:139.0012});
-  maps[0].events.render();
-  assert.equal(surface.children.length,0);
-});
-
-test('GPSの大きな飛びは余白で制限し、北と日付変更線を越えても位置が破綻しない', () => {
-  const {api,maps,elements} = fixture();
-  const map=api.createMap('map',{lat:0,lng:179.9999},'botw',null,{buffered:true});
-  const surface=elements.map.children[0];
-  map.setCenter({lat:0,lng:-179.9999});
-  assert.equal(maps[0].centerCalls,0);
-  assert.ok(Math.abs(Number(surface.style.transform.match(/translate3d\(([^p]+)px/)[1])+18.641351)<.001);
-  map.setCenter({lat:1,lng:139});
-  assert.equal(maps[0].centerCalls,1);
-  assert.equal(surface.style.transform,'translate3d(80px, 80px, 0)');
-  maps[0].events.render();
-  assert.equal(surface.style.transform,'translate3d(0px, 0px, 0)');
-});
-
-test('破棄した地図の描画通知と非表示中のリサイズは実行しない', () => {
-  const {api, maps, observers, timers, elements} = fixture();
-  const map = api.createMap('map', {lat:35,lng:139}, 'botw', null, {buffered:true});
   map.setCenter({lat:36,lng:140});
   map.setCenter({lat:36,lng:141});
-  assert.equal(maps[0].centerCalls,1);
-  elements.map.clientWidth = 0;
+  assert.equal(maps[0].centerCalls,2);
+  elements.map.clientWidth=0;
   observers[0].callback();
   assert.equal(maps[0].resized,undefined);
-  map.remove();
-  maps[0].events.render();
-  assert.equal(timers.size,0);
-  assert.equal(elements.map.children.length,0);
-  assert.equal(maps[0].centerCalls,1);
+  map.remove(); map.remove();
   map.setCenter({lat:37,lng:142});
-  assert.equal(maps[0].centerCalls,1);
+  assert.equal(maps[0].centerCalls,2);
+  assert.equal(maps[0].removeCalls,1);
+});
+
+test('到着ピンは地図ライブラリのマーカーとして位置管理・削除する', () => {
+  const {api,maps,markers} = fixture();
+  const map=api.createMap('map',{lat:35,lng:139},'botw');
+  const pin=map.addMarker({lat:35.001,lng:139.002},true,1,'Arrival');
+  assert.equal(pin,markers[0]);
+  assert.equal(pin.map,maps[0]);
+  assert.deepEqual(Array.from(pin.position),[139.002,35.001]);
+  assert.equal(pin.options.element.title,'Arrival');
+  pin.remove();
+  assert.equal(pin.removed,true);
 });
 
 test('コンパス回転は北をまたぐ最短方向で補間し、出典を回転しない', () => {

@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162105";
+const BASE_JS_VERSION = "v0.26.101.162137";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -148,99 +148,26 @@ function initializeMapRenderer(global) {
     return element;
   }
 
-  function createMap(container, position, mode, statusElement, options = {}) {
+  function createMap(container, position, mode, statusElement) {
     let theme = mode;
     let styleReady = false;
     let outlines = [];
     let outlinesSignature = '[]';
     let removed = false;
-    const bufferScale = options.buffered ? 1.5 : 1;
-    const viewport = options.buffered
-      ? (typeof container === 'string' ? global.document.getElementById(container) : container) : null;
-    const surface = options.buffered ? global.document.createElement('div') : null;
-    const previousPosition = viewport?.style.position;
-    if (surface) {
-      // Keep the same circular viewport; only the offscreen map has a margin.
-      viewport.style.position = 'relative';
-      surface.style.cssText = 'position:absolute;left:-25%;top:-25%;width:150%;height:150%;';
-      viewport.appendChild(surface);
-    }
     let centerTarget = { ...position };
-    let renderedCenter = { ...position };
-    let pendingRebase = null;
-    let lastTranslation = '';
-    const bufferedMarkers = new Set();
-    // Fixed zoom, no pitch/bearing in MapLibre. Compass rotation remains on the
-    // outer element, so this Mercator translation also moves markers/outlines.
-    const worldSize = 512 * 2 ** 16;
-    function worldPoint(pos) {
-      const latitude = Math.max(-85.051129, Math.min(85.051129, pos.lat)) * Math.PI / 180;
-      return { x: (pos.lng + 180) / 360 * worldSize,
-        y: (1 - Math.log(Math.tan(Math.PI / 4 + latitude / 2)) / Math.PI) / 2 * worldSize };
-    }
-    function offsetFromAnchor(pos) {
-      const from = worldPoint(renderedCenter), to = worldPoint(pos);
-      return { x: ((to.x - from.x + worldSize / 2) % worldSize + worldSize) % worldSize - worldSize / 2,
-        y: to.y - from.y };
-    }
-    function positionBufferedMarker(marker) {
-      const offset = offsetFromAnchor(marker.position);
-      marker.element.style.left = `${surface.clientWidth / 2 + offset.x}px`;
-      marker.element.style.top = `${surface.clientHeight / 2 + offset.y}px`;
-    }
-    function changeCamera(next) {
-      instance.setCenter([next.lng, next.lat]);
-      global.SensorRuntimeDiagnostics?.count('map.center');
-      global.SensorDiagnostics?.record('map.setCenter', '', 2000);
-    }
-    function slideCenter() {
-      if (removed || !surface || viewport.clientWidth <= 0 || viewport.clientHeight <= 0) return;
-      const offset = offsetFromAnchor(centerTarget);
-      const dx = offset.x, dy = offset.y;
-      const marginX = viewport.clientWidth * (bufferScale - 1) / 2;
-      const marginY = viewport.clientHeight * (bufferScale - 1) / 2;
-      // A GPS jump must not slide the old canvas completely off screen.
-      const x = Math.max(-marginX, Math.min(marginX, -dx));
-      const y = Math.max(-marginY, Math.min(marginY, -dy));
-      const translation = `translate3d(${x}px, ${y}px, 0)`;
-      if (translation !== lastTranslation) {
-        surface.style.transform = translation;
-        lastTranslation = translation;
-        global.SensorRuntimeDiagnostics?.count('map.slide');
-      }
-      // Refill before reaching the margin. Nearby frames only move the already
-      // rendered surface; MapLibre retains its existing vector tile cache.
-      if (!pendingRebase && (Math.abs(dx) > marginX * 0.6 || Math.abs(dy) > marginY * 0.6)) {
-        pendingRebase = { ...centerTarget };
-        changeCamera(pendingRebase);
-      }
-    }
     function repaintOutlines() {
       instance.getSource('destination-outlines').setData({ type: 'FeatureCollection',
         features: outlines.map(geometry => ({ type: 'Feature', properties: {}, geometry })) });
     }
-    let instance;
-    try { instance = new global.maplibregl.Map({
-      container: surface || container, style: createStyle(mode), center: [position.lng, position.lat],
+    const instance = new global.maplibregl.Map({
+      container, style: createStyle(mode), center: [position.lng, position.lat],
       // MapLibre uses 512px tiles; Google zoom 17 has the same scale as zoom 16.
       zoom: 16, interactive: false, attributionControl: false,
       // Bound GPU buffers on high-density phones and retained tiles while moving.
-      // Extra CSS coverage does not enlarge the framebuffer pixel budget.
-      pixelRatio: Math.min(global.devicePixelRatio || 1, 1.5) / bufferScale, maxTileCacheSize: 16,
+      pixelRatio: Math.min(global.devicePixelRatio || 1, 1.5), maxTileCacheSize: 16,
       canvasContextAttributes: { powerPreference: 'low-power' }
-    }); } catch (error) {
-      if (surface) { surface.remove(); viewport.style.position = previousPosition; }
-      throw error;
-    }
-    global.SensorRuntimeDiagnostics?.count('map.created');
-    instance.on('render', () => {
-      if (removed || !pendingRebase) return;
-      // Reset the CSS offset only once the replacement camera has painted.
-      renderedCenter = pendingRebase;
-      pendingRebase = null;
-      bufferedMarkers.forEach(positionBufferedMarker);
-      slideCenter();
     });
+    global.SensorRuntimeDiagnostics?.count('map.created');
     instance.on('webglcontextlost', () => {
       global.SensorRuntimeDiagnostics?.event('map.context-lost');
       if (statusElement) statusElement.hidden = false;
@@ -257,15 +184,13 @@ function initializeMapRenderer(global) {
             instance.areTilesLoaded()) { statusElement.hidden = true; global.SensorDiagnostics?.record('map.tiles.loaded', '', 3000); }
       });
     }
-    const element = viewport || instance.getContainer();
+    const element = instance.getContainer();
     let width = element.clientWidth, height = element.clientHeight;
     const resizeObserver = new ResizeObserver(() => {
       if (removed || element.clientWidth <= 0 || element.clientHeight <= 0 ||
           (width === element.clientWidth && height === element.clientHeight)) return;
       width = element.clientWidth; height = element.clientHeight;
       instance.resize();
-      bufferedMarkers.forEach(positionBufferedMarker);
-      slideCenter();
       global.SensorRuntimeDiagnostics?.count('map.resize');
     });
     resizeObserver.observe(element);
@@ -298,8 +223,11 @@ function initializeMapRenderer(global) {
         if (Math.abs(position.lat - centerTarget.lat) < 0.0000000001 &&
             Math.abs(position.lng - centerTarget.lng) < 0.0000000001) return;
         centerTarget = { ...position };
-        if (surface) slideCenter();
-        else changeCamera(centerTarget);
+        // Apply every animation frame supplied by the GPS interpolation.
+        // MapLibre reuses its tile cache while updating camera/marker positions.
+        instance.setCenter([position.lng, position.lat]);
+        global.SensorRuntimeDiagnostics?.count('map.center');
+        global.SensorDiagnostics?.record('map.setCenter', '', 2000);
       },
       setStyle: mode => {
         // Both themes have identical layers and data. Repaint without reloading tiles.
@@ -309,27 +237,13 @@ function initializeMapRenderer(global) {
       addMarker(position, day, opacity = 1, title = '') {
         const element = markerElement(day, opacity);
         element.title = title;
-        if (surface) {
-          // Native markers update on camera movement before its canvas paints.
-          // Position these in the painted buffer's coordinates instead, so a
-          // refill cannot make a history pin jump for a frame.
-          const marker = { element, position:{ ...position } };
-          element.style.cssText = 'position:absolute;transform:translate(-50%,-50%);pointer-events:none;';
-          positionBufferedMarker(marker);
-          bufferedMarkers.add(marker);
-          surface.appendChild(element);
-          return { remove() { bufferedMarkers.delete(marker); element.remove(); } };
-        }
         return new global.maplibregl.Marker({ element, rotationAlignment: 'map' })
           .setLngLat([position.lng, position.lat]).addTo(instance);
       },
       remove() {
         if (removed) return;
         removed = true;
-        pendingRebase = null;
-        bufferedMarkers.clear();
         resizeObserver.disconnect(); instance.remove();
-        if (surface) { surface.remove(); viewport.style.position = previousPosition; }
         global.SensorRuntimeDiagnostics?.count('map.removed');
       }
     };
@@ -1535,7 +1449,7 @@ function initMap(lat, lng) {
   if (!map) {
     try {
       map = SensorMap.createMap('map', centerPos, currentMapStyleMode,
-        document.getElementById('map-load-status'), { buffered:true });
+        document.getElementById('map-load-status'));
       redrawMarkersWithFade();
     } catch (error) {
       document.getElementById('map-load-status').hidden = false;
