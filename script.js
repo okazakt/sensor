@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162211";
+const BASE_JS_VERSION = "v0.26.101.162229";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1115,7 +1115,14 @@ function playBeep(freq = 1800, duration = 0.12) {
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
 
-    gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), audioCtx.currentTime);
+    // Keep the familiar lower levels; give the upper 30% more presence over music.
+    const volume = Math.max(0, Math.min(10, appState.soundVolume));
+    const boost = Math.max(0, (volume - 7) / 3);
+    const peak = 0.55 * (volume / 7) + boost * (1 - 0.55 * (10 / 7));
+    gain.gain.setValueAtTime(peak, audioCtx.currentTime);
+    if (boost > 0) {
+      gain.gain.setValueAtTime(peak, audioCtx.currentTime + duration * 0.3 * boost);
+    }
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
     osc.connect(gain);
