@@ -10,10 +10,11 @@
 <body><main>
 <a href="../index.html">← アプリに戻る</a><div class="eyebrow">SENSOR / SOUND LAB</div>
 <h1>音の試聴室</h1>
-<p class="intro">番号で選ぶ、探知音と到着音。まず現行音を聴いてから、響きや音色を比べてください。<br>「探知音は W02、到着音は A05」のように番号で指定できます。</p>
+<p class="intro">第2弾：ソナー8種・木琴3種・長めの到着音12種を追加。全51候補から聴き比べ。<br>「探知音は S05、到着音は A12」のように番号で指定できます。</p>
 <div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option></select></label><button id="stop" type="button">■ 停止</button></div>
 <p id="status" role="status" aria-live="polite">再生ボタンを押すと音が出ます。音量は控えめからお試しください。</p>
+<p class="description">新候補を上に表示しています。ソナーはP02、木琴はP01、到着音はA01・A02・A05・A08が比較の基準です。元の番号と音はそのまま残しています。長めの到着音は約5〜11秒で、旋律の展開と余韻を含みます。</p>
 <div id="catalog"></div>
 <section><h2>選択メモ</h2><p class="description">「候補にする」にチェックすると番号をまとめます。選択はこのブラウザに保存します。アプリへの採用は番号を伝えてください。</p><textarea id="memo" readonly aria-label="選択した音の番号"></textarea><div class="memo-actions"><button id="copy" type="button">メモをコピー</button><button id="clear" type="button">選択をクリア</button></div></section>
 <footer>すべてブラウザ内で生成する合成音です。水滴・鈴・鳥も録音素材ではなく音色の候補です。エコーは弱・中・強で比較できます。現行音の音程・波形・タイミングを再現し、試聴音量を共通で調整します。</footer>
-</main><script src="current-sounds.js"></script><script src="sound.js"></script></body></html>
+</main><script src="current-sounds.js"></script><script src="sound.js?v=2"></script></body></html>
