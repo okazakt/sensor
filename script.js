@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162203";
+const BASE_JS_VERSION = "v0.26.101.162211";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -4634,10 +4634,12 @@ function restoreExploration(snapshot) {
 function offerExplorationRecovery(snapshot) {
   const ja = currentLang === 'ja';
   const dialog = document.getElementById('exploration-resume-dialog');
-  document.getElementById('exploration-resume-title').textContent = ja ? '前回の探索を再開しますか？' : 'Resume your previous exploration?';
-  document.getElementById('exploration-resume-details').textContent = snapshot.keyword + '\n' +
-    (snapshot.places.find(place => place.id === (snapshot.pinpointTargetId || snapshot.randomTargetId))?.name || getRadiusText(snapshot.radius));
-  document.getElementById('exploration-resume-note').textContent = ja ? '再開でポイントは消費しません。' : 'Resuming costs no points.';
+  document.getElementById('exploration-resume-title').textContent = ja ? '再開しますか？' : 'Resume?';
+  const challenge = CHALLENGES.find(item => item.id === snapshot.challengeId);
+  const label = challenge ? challengeName(challenge) : snapshot.keyword;
+  document.getElementById('exploration-resume-details').textContent = ja
+    ? `${challenge ? 'チャレンジ' : '探索'}「${label}」`
+    : `${challenge ? 'Challenge' : 'Search'} “${label}”`;
   const accept = document.getElementById('exploration-resume-accept');
   const discard = document.getElementById('exploration-resume-discard');
   accept.textContent = ja ? '再開する' : 'Resume';

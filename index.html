@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="94">
+  <meta name="html-rev" content="95">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -157,9 +157,8 @@
     </div>
 
     <dialog id="exploration-resume-dialog" class="challenge-dialog" aria-labelledby="exploration-resume-title">
-      <p id="exploration-resume-title">前回の探索を再開しますか？</p>
+      <p id="exploration-resume-title">再開しますか？</p>
       <p id="exploration-resume-details" style="white-space:pre-line;overflow-wrap:anywhere;"></p>
-      <p id="exploration-resume-note">再開でポイントは消費しません。</p>
       <div class="challenge-dialog-actions">
         <button type="button" id="exploration-resume-discard" class="btn-sheikah">終了する</button>
         <button type="button" id="exploration-resume-accept" class="btn-sheikah" autofocus>再開する</button>
@@ -545,7 +544,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=23954e7c6eeeaa53';
+    scriptEl.src = 'script.js?v=347e453bb1cf4877';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
