@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="99">
+  <meta name="html-rev" content="01">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -290,8 +290,11 @@
           <p>到着不要です。検索応答と、選んだ候補の詳細応答を確認できます。図鑑には保存しません。</p>
           <label for="search-diagnostics-select">詳細を確認する候補</label>
           <select id="search-diagnostics-select" style="width: 100%; margin: 8px 0;"></select>
+          <label for="search-diagnostics-id">図鑑などのIDを直接指定</label>
+          <input id="search-diagnostics-id" type="text" placeholder="place_idを貼り付け" autocomplete="off" autocapitalize="off" spellcheck="false" style="box-sizing: border-box; width: 100%; margin: 8px 0; font-size: 16px;">
           <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
             <button class="btn-sheikah-sm" id="search-diagnostics-fetch">選択候補の詳細を取得</button>
+            <button class="btn-sheikah-sm" id="search-diagnostics-fetch-id">入力IDの詳細を取得</button>
             <button class="btn-sheikah-sm" id="search-diagnostics-copy">情報をコピー</button>
             <button class="btn-sheikah-sm" id="search-diagnostics-close">閉じる</button>
           </div>
@@ -565,7 +568,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=58c20148dc5a3225';
+    scriptEl.src = 'script.js?v=4201d0bc48fcd106';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
