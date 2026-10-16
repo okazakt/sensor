@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>音の試聴室 | SENSOR</title>
+<style>
+:root{color-scheme:dark;--bg:#0b141b;--panel:#14232d;--line:#2b4655;--accent:#8de2cf;--text:#e6f0f3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;line-height:1.7}main{max-width:1080px;margin:auto;padding:40px 20px 100px}a{color:var(--accent)}h1{font-size:clamp(26px,5vw,40px);margin:10px 0}h2{margin:36px 0 6px;font-size:21px}.eyebrow{color:var(--accent);letter-spacing:.2em;font-size:12px}.intro,.description{color:#adc2ce}.toolbar{position:sticky;top:0;z-index:2;background:#10212af5;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}button,select,textarea{font:inherit}button,select{border:1px solid var(--line);border-radius:8px;background:#203944;color:var(--text);padding:8px 12px;cursor:pointer}button:hover{border-color:var(--accent)}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.play{background:var(--accent);color:#10251f;font-weight:700}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-top:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}.card.playing{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.number{color:var(--accent);font:700 14px ui-monospace,monospace}.card h3{margin:5px 0;font-size:17px}.card p{font-size:13px;color:#adc2ce;min-height:44px}.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}label{cursor:pointer}#status{font-size:13px;color:var(--accent);margin:12px 0;min-height:24px}input[type=range]{width:130px;accent-color:var(--accent)}textarea{width:100%;min-height:130px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px}small{color:#adc2ce}.memo-actions{display:flex;gap:12px;margin-top:12px}footer{margin-top:32px;color:#adc2ce;font-size:13px}
+</style>
+</head>
+<body><main>
+<a href="../index.html">← アプリに戻る</a><div class="eyebrow">SENSOR / SOUND LAB</div>
+<h1>音の試聴室</h1>
+<p class="intro">番号で選ぶ、探知音と到着音。まず現行音を聴いてから、響きや音色を比べてください。<br>「探知音は W02、到着音は A05」のように番号で指定できます。</p>
+<div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option></select></label><button id="stop" type="button">■ 停止</button></div>
+<p id="status" role="status" aria-live="polite">再生ボタンを押すと音が出ます。音量は控えめからお試しください。</p>
+<div id="catalog"></div>
+<section><h2>選択メモ</h2><p class="description">「候補にする」にチェックすると番号をまとめます。選択はこのブラウザに保存します。アプリへの採用は番号を伝えてください。</p><textarea id="memo" readonly aria-label="選択した音の番号"></textarea><div class="memo-actions"><button id="copy" type="button">メモをコピー</button><button id="clear" type="button">選択をクリア</button></div></section>
+<footer>すべてブラウザ内で生成する合成音です。水滴・鈴・鳥も録音素材ではなく音色の候補です。エコーは弱・中・強で比較できます。現行音の音程・波形・タイミングを再現し、試聴音量を共通で調整します。</footer>
+</main><script src="current-sounds.js"></script><script src="sound.js"></script></body></html>
