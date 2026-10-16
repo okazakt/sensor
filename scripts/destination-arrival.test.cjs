@@ -13,6 +13,17 @@ function fixture(fetchGeoapify) {
 }
 const ring = size => [[-size,-size],[size,-size],[size,size],[-size,size],[-size,-size]];
 const target = { id:'place-id', lat:1, lng:1, geometry: {type:'Polygon', coordinates:[ring(0.01)]} };
+test('長時間の探索でも完了した目的地キャッシュが増え続けない', async () => {
+  const c = fixture(async () => [{properties:{feature_type:'details'}, geometry:target.geometry}]);
+  for (let i = 0; i < 200; i++) {
+    const place = {...target, id:`place-${i}`, geometry:null};
+    c.requestDestinationGeometry(place);
+    await new Promise(setImmediate);
+    assert.equal(place.geometry, target.geometry);
+    assert.ok(c.requestDestinationGeometry.state.cache.size <= 64);
+    assert.equal(c.requestDestinationGeometry.state.running, 0);
+  }
+});
 test('広い敷地内、境界上、境界から20m以内と外側を区別する', () => {
   const c = fixture();
   assert.equal(c.destinationDistance({lat:0,lng:0},target),0);

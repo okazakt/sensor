@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function fixture() {
+function fixture(devicePixelRatio) {
   const maps = [];
   const observers = [];
   class Map {
@@ -30,18 +30,26 @@ function fixture() {
     observe() {}
     disconnect() { this.disconnected = true; }
   }
-  const context = { window: { maplibregl: { Map } }, ResizeObserver };
+  const context = { window: { maplibregl: { Map }, devicePixelRatio }, ResizeObserver };
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   vm.runInNewContext(source.slice(source.indexOf('function initializeMapRenderer(global)'),
     source.indexOf('function initializeResponsiveLayout()')), context);
   return { api: context.window.SensorMap, maps, observers };
 }
 
+test('高密度端末でも地図の描画倍率を2倍以内に抑える', () => {
+  const { api, maps } = fixture(3);
+  api.createMap('map', {lat:35, lng:139}, 'botw');
+  assert.equal(maps[0].options.pixelRatio, 2);
+});
+
 test('OSM地図はGoogleなしで作成でき、緯度・経度の順序と表示倍率を変換する', () => {
   const { api, maps } = fixture();
   const map = api.createMap('map', { lat: 35, lng: 139 }, 'botw');
   assert.deepEqual(Array.from(maps[0].options.center), [139, 35]);
   assert.equal(maps[0].options.zoom, 16);
+  assert.equal(maps[0].options.maxTileCacheSize, 32);
+  assert.equal(maps[0].options.pixelRatio, 1);
   map.setCenter({ lat: 36, lng: 140 });
   assert.deepEqual(Array.from(maps[0].center), [140, 36]);
 });

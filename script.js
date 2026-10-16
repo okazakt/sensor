@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.141249";
+const BASE_JS_VERSION = "v0.26.101.162013";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -142,7 +142,9 @@ function initializeMapRenderer(global) {
     const instance = new global.maplibregl.Map({
       container, style: createStyle(mode), center: [position.lng, position.lat],
       // MapLibre uses 512px tiles; Google zoom 17 has the same scale as zoom 16.
-      zoom: 16, interactive: false, attributionControl: false
+      zoom: 16, interactive: false, attributionControl: false,
+      // Bound GPU buffers on high-density phones and retained tiles while moving.
+      pixelRatio: Math.min(global.devicePixelRatio || 1, 2), maxTileCacheSize: 32
     });
     if (statusElement) {
       instance.on('error', event => { statusElement.hidden = false; global.SensorDiagnostics?.record('map.error', event.error?.status ? `status=${event.error.status}` : 'tile/render error', 2000); });
@@ -1062,6 +1064,7 @@ function playBeep(freq = 1800, duration = 0.12) {
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
   } catch (e) {}
@@ -1100,6 +1103,7 @@ function playTreasureFanfare() {
 
       osc.connect(gain);
       gain.connect(audioCtx.destination);
+      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
       osc.start();
       osc.stop(audioCtx.currentTime + dur);
     }, idx * 115);
@@ -1726,6 +1730,10 @@ function applyDestinationDetails(place, metadata) {
 function requestDestinationGeometry(target) {
   if (typeof fetchGeoapify !== 'function' || typeof target.id !== 'string' || target.id.startsWith('geo:')) return;
   const state = requestDestinationGeometry.state ||= { cache: new Map(), queue: [], running: 0 };
+  // Evict completed details only: queued requests must keep their shared entry.
+  for (const [id, cached] of state.cache) {
+    if (cached.done && (Date.now() >= cached.expires || state.cache.size >= 64)) state.cache.delete(id);
+  }
   const cacheId = `${currentLang}:${target.id}`;
   let entry = state.cache.get(cacheId);
   if (entry?.done && Date.now() >= entry.expires) {
