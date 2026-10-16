@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162327";
+const BASE_JS_VERSION = "v0.26.101.162329";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2687,18 +2687,15 @@ async function searchSecretChallenge(position, radius, language, mode) {
   };
 }
 
-function openSearchDiagnostics() {
+function openSearchDiagnostics(place = null) {
   const dialog = document.getElementById('search-diagnostics-dialog');
   const select = document.getElementById('search-diagnostics-select');
   const output = document.getElementById('search-diagnostics-output');
   const status = document.getElementById('search-diagnostics-status');
   const fetchButton = document.getElementById('search-diagnostics-fetch');
-  const fetchIdButton = document.getElementById('search-diagnostics-fetch-id');
-  const idInput = document.getElementById('search-diagnostics-id');
-  idInput.value = '';
-  fetchIdButton.disabled = false;
-  const records = [...(fetchKeywordCandidates.diagnostics?.values() || [])];
-  const report = { search: fetchKeywordCandidates.diagnosticContext || null, results: records, details: [] };
+  const records = place ? [{ source: 'compendium', properties: { place_id: place.id, name: place.name } }]
+    : [...(fetchKeywordCandidates.diagnostics?.values() || [])];
+  const report = { search: place ? null : fetchKeywordCandidates.diagnosticContext || null, results: records, details: [] };
   const render = () => { output.value = JSON.stringify(report, null, 2); };
   select.replaceChildren();
   for (const [index, record] of records.entries()) {
@@ -2708,17 +2705,16 @@ function openSearchDiagnostics() {
     option.textContent = `${index + 1}. ${p.name || p.address_line1 || '名称なし'} (${record.source})`;
     select.appendChild(option);
   }
-  status.textContent = records.length ? `${records.length}件の検索応答を表示しています。` : '検索情報がありません。検索するか、IDを直接入力してください。';
+  status.textContent = place ? '図鑑のIDで詳細応答を取得します。' : records.length ? `${records.length}件の検索応答を表示しています。` : '検索情報がありません。検索してから開いてください。';
   fetchButton.disabled = !records.some(record => record.properties.place_id);
   const fetchDetails = async id => {
     if (!id) { status.textContent = '詳細取得用IDを指定してください。'; return; }
     fetchButton.disabled = true;
-    fetchIdButton.disabled = true;
     status.textContent = '詳細を取得中…';
     try {
       // Read only: do not apply names, outlines or arrival updates to the running search.
       const features = await fetchGeoapify('/v2/place-details', { id, features: 'details', lang: currentLang });
-      report.details.push({ requestedId: id, properties: features.map(feature => feature.properties || {}) });
+      report.details.push({ requestedId: id, features });
       render();
       status.textContent = '詳細応答を末尾に追加しました。「情報をコピー」で全体をコピーできます。';
       output.scrollTop = output.scrollHeight;
@@ -2726,11 +2722,9 @@ function openSearchDiagnostics() {
       status.textContent = '詳細の取得に失敗しました。再試行してください。';
     } finally {
       fetchButton.disabled = !records.some(record => record.properties.place_id);
-      fetchIdButton.disabled = false;
     }
   };
   fetchButton.onclick = () => fetchDetails(records[Number(select.value)]?.properties.place_id);
-  fetchIdButton.onclick = () => fetchDetails(idInput.value.replace(/\s/g, ''));
   document.getElementById('search-diagnostics-copy').onclick = async () => {
     try {
       await navigator.clipboard.writeText(output.value);
@@ -2743,6 +2737,7 @@ function openSearchDiagnostics() {
   document.getElementById('search-diagnostics-close').onclick = () => dialog.close();
   render();
   dialog.showModal();
+  if (place) return fetchDetails(place.id);
 }
 
 async function executeSearch(refreshCandidates = false, accessGranted = false) {
@@ -3827,7 +3822,7 @@ document.getElementById('set-btn').addEventListener('click', () => {
 document.getElementById('keyword-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') startSearchFromSet();
 });
-document.getElementById('btn-search-diagnostics').addEventListener('click', openSearchDiagnostics);
+document.getElementById('btn-search-diagnostics').addEventListener('click', () => openSearchDiagnostics());
 
 // ============================================================
 // 画面遷移 & スワイプ & フッターナビゲーション
@@ -4448,6 +4443,10 @@ function openSpotDetailModal(item, orderedItems, hydrated = false) {
   copyIdButton.textContent = currentLang === 'ja' ? 'IDコピー' : 'Copy ID';
   copyIdButton.disabled = !item.id;
   copyIdButton.onclick = () => copyPlaceNameToClipboard(item.id);
+  const apiResponseButton = document.getElementById('detail-btn-api-response');
+  apiResponseButton.textContent = currentLang === 'ja' ? 'API応答を表示' : 'Show API response';
+  apiResponseButton.disabled = !item.id;
+  apiResponseButton.onclick = () => openSearchDiagnostics(item);
 
   const d = new Date(item.date);
   const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
