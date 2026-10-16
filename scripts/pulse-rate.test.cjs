@@ -16,7 +16,7 @@ function fixture() {
     document: {getElementById: () => wave}
   };
   vm.createContext(context);
-  vm.runInContext(source.slice(source.indexOf('function scheduleRadarSound('), source.indexOf('function handleArrival(')), context);
+  vm.runInContext(source.slice(source.indexOf('function scheduleRadarSound('), source.indexOf('async function handleArrival(')), context);
   return {context, timers, tones, animations, cancelled};
 }
 test('normal and intermediate bands retain pitch and pulse type at all three rates', () => {

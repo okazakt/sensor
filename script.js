@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.162013";
+const BASE_JS_VERSION = "v0.26.101.162024";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -38,11 +38,28 @@ const BASE_JS_VERSION = "v0.26.101.162013";
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show, { once:true });
   else show();
   global.SensorDiagnostics.record('startup', `secure=${global.isSecureContext} gps=${'geolocation' in navigator}`);
+  try {
+    const previousArrival = JSON.parse(sessionStorage.getItem('sheikah_arrival_trace') || '[]');
+    if (Array.isArray(previousArrival)) previousArrival.slice(-12).forEach(entry => {
+      global.SensorDiagnostics.record('arrival.previous', `${entry.phase} ${entry.time} ${entry.version}`);
+    });
+  } catch (_) {}
   global.addEventListener('error', event => global.SensorDiagnostics.record('js.error', event.message));
 })(window);
 
 function traceLocation(event, detail = '', throttle = 0) {
   window.SensorDiagnostics?.record(event, detail, throttle);
+}
+
+function traceArrivalStage(phase) {
+  traceLocation(`arrival.${phase}`);
+  // Keep a small trail across a renderer restart, without place IDs or coordinates.
+  try {
+    const previous = JSON.parse(sessionStorage.getItem('sheikah_arrival_trace') || '[]');
+    const entries = Array.isArray(previous) ? previous.slice(-11) : [];
+    entries.push({ phase, time: new Date().toISOString(), version: BASE_JS_VERSION });
+    sessionStorage.setItem('sheikah_arrival_trace', JSON.stringify(entries));
+  } catch (_) {}
 }
 
 // Enable only when diagnosing compass acquisition or heading.
@@ -1085,28 +1102,29 @@ function playTreasureFanfare() {
 
   if (appState.isMuted) return;
   if (!audioCtx) initAudio();
-  if (!audioCtx) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!audioCtx || audioCtx.state !== 'running') return;
 
   const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
+  const startedAt = audioCtx.currentTime;
   notes.forEach((freq, idx) => {
-    setTimeout(() => {
+    try {
       if (appState.isMuted || !audioCtx) return;
+      const start = startedAt + idx * 0.115;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(freq, start);
 
       const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
-      gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
 
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.onended = () => { osc.disconnect(); gain.disconnect(); };
-      osc.start();
-      osc.stop(audioCtx.currentTime + dur);
-    }, idx * 115);
+      osc.start(start);
+      osc.stop(start + dur);
+    } catch (_) {}
   });
 }
 
@@ -1891,6 +1909,7 @@ function updateDetectionLabel() {
 }
 
 function evaluateSensorCycle() {
+  if (arrivalInProgressId !== null) return;
   const db = window.SensorAppStorage
     ? { arrivals: window.SensorAppStorage.detection() } : loadSavedData();
   updateDetectionLabel();
@@ -2018,26 +2037,46 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
   pulse();
 }
 
-function handleArrival(target) {
+async function handleArrival(target) {
   if (arrivalInProgressId !== null) return;
   arrivalInProgressId = target.id;
-  const flash = document.getElementById('arrival-flash-overlay');
-  if (flash) {
-    flash.classList.remove('flash-anim');
-    void flash.offsetWidth;
-    flash.classList.add('flash-anim');
+  const generation = searchGeneration;
+  const challenge = appState.activeChallenge;
+  appState.isPaused = true;
+  if (radarTimer) { clearTimeout(radarTimer); radarTimer = null; }
+  scheduledInterval = null;
+  traceArrivalStage('detected');
+  try {
+    const db = loadSavedData();
+    const completed = await updateArrivalRecordWithDetails(db, target, new Date().toISOString());
+    if (!completed) { traceArrivalStage('cancelled'); return; }
+    traceArrivalStage('feedback');
+    // Optional feedback must never prevent recording an arrival.
+    try {
+      const flash = document.getElementById('arrival-flash-overlay');
+      if (flash) {
+        flash.classList.remove('flash-anim');
+        void flash.offsetWidth;
+        flash.classList.add('flash-anim');
+      }
+      // Challenge completion already plays its own fanfare.
+      if (!challenge) playTreasureFanfare();
+    } catch (_) { traceArrivalStage('feedback-error'); }
+    traceArrivalStage('complete');
+  } catch (_) {
+    traceArrivalStage('failed');
+    if (generation !== searchGeneration) return;
+    // Keep exploration paused rather than repeatedly retrying a failed write.
+    updateButtonStateUI();
+    showToast(currentLang === 'ja' ? '到着処理を完了できませんでした。履歴を確認してください。'
+      : 'Unable to complete arrival. Please check your history.');
+  } finally {
+    if (generation === searchGeneration && arrivalInProgressId === target.id) arrivalInProgressId = null;
   }
-
-  playTreasureFanfare();
-
-  const db = loadSavedData();
-  const now = new Date().toISOString();
-
-  updateArrivalRecordWithDetails(db, target, now);
 }
 
-function updateArrivalRecordWithDetails(db, target, now) {
-  arrivalInProgressId = null;
+async function updateArrivalRecordWithDetails(db, target, now) {
+  const generation = searchGeneration;
   const existing = db.arrivals.find(a => a.id === target.id);
   const area = appState.currentPos ? destinationGeometryReading(appState.currentPos, target) : null;
   const arrivalPosition = area?.boundary || { lat: target.lat, lng: target.lng };
@@ -2063,26 +2102,32 @@ function updateArrivalRecordWithDetails(db, target, now) {
 
   const challenge = appState.activeChallenge;
   recordArrivalAssociation(db, db.arrivals.find(item => item.id === target.id), appState.activeKeyword, challenge, now);
-  saveAppData(db);
+  traceArrivalStage('saving');
+  await saveAppData(db);
+  traceArrivalStage('saved');
+  // A user may end exploration or start another search while IndexedDB commits.
+  if (generation !== searchGeneration) return false;
 
+  // Stop detection before updating map buffers or starting completion feedback.
+  stopSearchAndReset();
+  traceArrivalStage('map');
   redrawMarkersWithFade();
 
   hideOtherSettingToasts();
 
   if (challenge) {
-    stopSearchAndReset();
     document.getElementById('keyword-input').value = '';
     checkMainInputClearState();
     renderChallenges();
     navigateToMain();
+    traceArrivalStage('challenge-feedback');
     showChallengePresentation(challenge, true, target);
-    return;
+    return true;
   }
 
+  traceArrivalStage('presentation');
   showChallengePresentation(null, false, target);
-
-  appState.pinpointTarget = null;
-  stopSearchAndReset();
+  return true;
 }
 
 let mapRotationFrame = null;
@@ -4401,6 +4446,9 @@ document.getElementById('challenge-start-dialog').addEventListener('cancel', () 
 });
 window.addEventListener('sensor-storage-change', () => {
   savedOutlineSignature = null;
+  // Arrival refreshes markers/outlines after its write resolves; avoid starting
+  // a second detail load and GPU update from the same storage notification.
+  if (arrivalInProgressId !== null) return;
   updateDestinationOutlines();
 });
 window.addEventListener('sensor-storage-error', () => {

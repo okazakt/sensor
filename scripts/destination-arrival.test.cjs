@@ -82,9 +82,9 @@ test('到着地点に最も近い輪郭上の点を求め、内部でも輪郭�
   assert.ok(Math.abs(inside.boundary.lat - 0.003) < 1e-10);
 });
 
-test('到着位置と輪郭を永続記録し、探索用代表座標を維持する', () => {
+test('到着位置と輪郭を永続記録し、探索用代表座標を維持する', async () => {
   const c = fixture();
-  Object.assign(c, { arrivalInProgressId:null, toastBannerTimer:null,
+  Object.assign(c, { arrivalInProgressId:null, toastBannerTimer:null, searchGeneration:0, traceArrivalStage(){},
     showChallengePresentation: (challenge, completed, arrival) => {
       assert.equal(challenge, null);
       assert.equal(completed, false);
@@ -94,16 +94,16 @@ test('到着位置と輪郭を永続記録し、探索用代表座標を維持�
     recordArrivalAssociation(){}, saveAppData(db){ c.saved = JSON.parse(JSON.stringify(db)); },
     redrawMarkersWithFade(){}, hideOtherSettingToasts(){}, setTimeout(){}, stopSearchAndReset(){} });
   c.appState.currentPos = {lat:0.003,lng:0.0101};
-  vm.runInContext(source.slice(source.indexOf('function updateArrivalRecordWithDetails'),source.indexOf('let mapRotationFrame')),c);
+  vm.runInContext(source.slice(source.indexOf('async function updateArrivalRecordWithDetails'),source.indexOf('let mapRotationFrame')),c);
   const db = {arrivals:[]};
-  c.updateArrivalRecordWithDetails(db,target,'2026-10-09');
+  await c.updateArrivalRecordWithDetails(db,target,'2026-10-09');
   const record = c.saved.arrivals[0];
   assert.equal(record.lat,target.lat);
   assert.equal(record.lng,target.lng);
   assert.ok(Math.abs(record.arrivalPosition.lng - 0.01) < 1e-10);
   assert.equal(JSON.stringify(record.geometry),JSON.stringify(target.geometry));
   c.appState.currentPos = {lat:0.01,lng:0.002};
-  c.updateArrivalRecordWithDetails(db,target,'2026-10-10');
+  await c.updateArrivalRecordWithDetails(db,target,'2026-10-10');
   assert.equal(db.arrivals.length,1);
   assert.ok(Math.abs(c.saved.arrivals[0].arrivalPosition.lng - 0.002) < 1e-10);
 });

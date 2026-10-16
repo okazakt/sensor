@@ -63,10 +63,10 @@ test('長い到着場所は表示時間を延ばし、新しい開始通知は�
   assert.equal(elements['challenge-presentation-name'].hidden, false);
   assert(!classes.has('is-arrival'));
 });
-test('チャレンジ到着時は履歴一覧を開かず、メイン画面で達成演出を始める', () => {
+test('チャレンジ到着時は履歴一覧を開かず、メイン画面で達成演出を始める', async () => {
   const challenge = {name: 'グルメ1km最寄り'}, target = {id: 'spot', name: 'トワサンク', lat: 1, lng: 1};
   const actions = [];
-  const context = {appState: {activeChallenge: challenge}, arrivalInProgressId: null,
+  const context = {appState: {activeChallenge: challenge}, arrivalInProgressId: null, searchGeneration:0, traceArrivalStage(){},
     document: {getElementById: () => ({value: ''})},
     recordArrivalAssociation() {}, saveAppData() {}, redrawMarkersWithFade() {}, hideOtherSettingToasts() {},
     stopSearchAndReset() {context.appState.activeChallenge = null;},
@@ -78,7 +78,7 @@ test('チャレンジ到着時は履歴一覧を開かず、メイン画面で�
       actions.push('complete');
     }};
   vm.createContext(context);
-  vm.runInContext(source.slice(source.indexOf('function updateArrivalRecordWithDetails'), source.indexOf('let mapRotationFrame')), context);
-  context.updateArrivalRecordWithDetails({arrivals: []}, target, '2026-10-10');
+  vm.runInContext(source.slice(source.indexOf('async function updateArrivalRecordWithDetails'), source.indexOf('let mapRotationFrame')), context);
+  await context.updateArrivalRecordWithDetails({arrivals: []}, target, '2026-10-10');
   assert.deepEqual(actions, ['main', 'complete']);
 });
