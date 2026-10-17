@@ -6,7 +6,7 @@ function initAudio() {}
 let context, bus, nodes = [], timers = [], generation = 0;
 const $ = id => document.getElementById(id);
 const catalog = [];
-const favorites = new Set(['P01', 'P02', 'A01', 'A02', 'A05', 'A08']);
+const favorites = new Set(['P01', 'P02', 'A01', 'A02', 'A05', 'A08', 'A31', 'A33']);
 function add(group, id, name, description, play, duration = 2.5, options = {}) {
   catalog.push({group, id, name, description, play, duration, ...options});
 }
@@ -226,8 +226,8 @@ for (const score of fastArrivals) {
 
 // Selected N variants stay unchanged: only the repeat interval changes by distance.
 const mixedDetectionStages = [
-  {suffix:'N', name:'通常 / R01-N', source:'R01-N', suite:detectionSuites[0], interval:2.6},
-  {suffix:'H', name:'近距離 / R02-N', source:'R02-N', suite:detectionSuites[1], interval:.8},
+  {suffix:'N', name:'通常 / R02-N', source:'R02-N', suite:detectionSuites[1], interval:2.6},
+  {suffix:'H', name:'近距離 / R01-N', source:'R01-N', suite:detectionSuites[0], interval:.8},
   {suffix:'D', name:'至近距離 / R03-N', source:'R03-N', suite:detectionSuites[2], interval:.45}
 ];
 for (const stage of mixedDetectionStages) {
@@ -236,13 +236,13 @@ for (const stage of mixedDetectionStages) {
     () => { echo(2); detectionPulse(stage.suite, 'normal', context.currentTime + .025); }, 1.6,
     {pulseInterval:stage.interval});
 }
-add('第4弾 / 選択したソナーの組み合わせ', 'X01-ALL', 'R01-N → R02-N → R03-N / 接近の流れ',
-  '約15秒。通常は基本ソナー、近距離は低いソナー、至近距離は揺らぐソナーへ。音色は各Nのまま、探知間隔だけが速くなります。', () => {
+add('第4弾 / 選択したソナーの組み合わせ', 'X01-ALL', 'R02-N → R01-N → R03-N / 接近の流れ',
+  '約15秒。通常は低いソナー、近距離は基本ソナー、至近距離は揺らぐソナーへ。音色は各Nのまま、探知間隔だけが速くなります。', () => {
     echo(2); const t = context.currentTime + .025; let offset = 0;
     for (const [index, interval, count, label] of [
-      [0, 2.6, 2, '通常 / R01-N・2.6秒間隔'],
-      [0, 1.5, 2, '通常 / R01-N・1.5秒間隔'],
-      [1, .8, 3, '近距離 / R02-N・0.8秒間隔'],
+      [0, 2.6, 2, '通常 / R02-N・2.6秒間隔'],
+      [0, 1.5, 2, '通常 / R02-N・1.5秒間隔'],
+      [1, .8, 3, '近距離 / R01-N・0.8秒間隔'],
       [2, .45, 4, '至近距離 / R03-N・0.45秒間隔'],
       [2, .35, 4, '詳細モード最速 / R03-N・0.35秒間隔']
     ]) {
@@ -259,11 +259,22 @@ const shortArrivals = [
   {id:'A33', name:'木琴 / 小さなゴール', voice:'mallet', notes:[60,67,64,72,67,76,72,67,65,69,74,72,67,64,67,72], tail:.6, echo:1},
   {id:'A34', name:'ソナー / 短い到着メロディ', voice:'sonar', notes:[55,59,62,67,71,67,62,59,60,64,67,71,69,67], tail:.65, echo:1}
 ];
+// Controlled comparisons keep the selected A31/A33 references unchanged.
+const warmReference = shortArrivals.find(score => score.id === 'A31');
+const woodReference = shortArrivals.find(score => score.id === 'A33');
+shortArrivals.push(
+  {...warmReference, id:'A35', name:'A31派生 / 響きを少し豊かに', echo:2, group:'A31を掘り下げる', comparison:'A31と同じ旋律・音色。エコーだけ弱→中にして、広がりを比較。'},
+  {...warmReference, id:'A36', name:'A31派生 / 簡潔な上昇と着地', notes:[55,60,64,67,72,67,64,62,65,69,71,72], tail:.65, group:'A31を掘り下げる', comparison:'三角波の温かさを残し、旋律を12音にまとめた短い候補。'},
+  {...warmReference, id:'A37', name:'A31派生 / 折り返すメロディ', notes:[55,60,64,67,72,76,74,72,69,65,62,65,67,71,74,72], group:'A31を掘り下げる', comparison:'A31と同じ音数・音色・エコー。旋律だけを変え、上昇後に折り返す展開に。'},
+  {...woodReference, id:'A38', name:'A33派生 / 空間のある木琴', echo:2, group:'A33を掘り下げる', comparison:'A33と同じ旋律・音色。エコーだけ弱→中にして、木琴の余韻を比較。'},
+  {...woodReference, id:'A39', name:'A33派生 / 低く丸い木琴', notes:woodReference.notes.map(note => note - 5), group:'A33を掘り下げる', comparison:'A33の旋律を5半音下げた候補。長さ・テンポ・エコーは同じ。'},
+  {...woodReference, id:'A40', name:'A33派生 / 跳ねる応答', notes:[60,64,67,72,69,65,69,74,67,64,67,72,76,74,71,72], group:'A33を掘り下げる', comparison:'A33と同じ音数・木琴の音色・エコー。上下する旋律に変え、応答する印象に。'}
+);
 for (const score of shortArrivals) {
   const last = (score.notes.length - 1) * ORIGINAL_ARRIVAL_STEP;
-  const duration = Math.ceil((.025 + last + score.tail + .525 + .1) * 10) / 10;
-  add('第4弾 / 短めのファンファーレ', score.id, score.name,
-    `約${duration}秒（余韻込み）。${score.notes.length}音・現行と同じ1音0.115秒。短い旋律と弱いエコーで、すっきり終わります。`, () => {
+  const duration = Math.ceil((.025 + last + score.tail + (score.echo === 2 ? .9 : .525) + .1) * 10) / 10;
+  add(score.group || '第4弾 / 短めのファンファーレ', score.id, score.name,
+    `約${duration}秒（余韻込み）。${score.notes.length}音・現行と同じ1音0.115秒。${score.comparison || '短い旋律と弱いエコーで、すっきり終わります。'}`, () => {
       echo(score.echo); const t = context.currentTime + .025;
       score.notes.forEach((note, i) => {
         const start = t + i * ORIGINAL_ARRIVAL_STEP;
@@ -313,18 +324,20 @@ async function play(item) {
     timers.push(setTimeout(() => { if (token === generation) { stop(); $('status').textContent = `試聴済み：${item.id} ${item.name}`; } }, ((count - 1) * interval + item.duration + .2) * 1000));
   } catch (error) { stop(); $('status').textContent = '音を再生できませんでした。対応ブラウザで開き、もう一度再生してください。'; }
 }
+const activeIds = new Set(['X01-N', 'X01-H', 'X01-D', 'X01-ALL', 'A31', 'A33', 'A35', 'A36', 'A37', 'A38', 'A39', 'A40']);
 let selected = new Set();
 try { selected = new Set(JSON.parse(localStorage.getItem('sensor-sound-lab-selection') || '[]')); } catch (_) {}
 function memo() {
+  const archived = catalog.filter(item => !activeIds.has(item.id));
+  const selectedCount = archived.filter(item => selected.has(item.id)).length;
+  $('archive-summary').textContent = `過去の候補を表示（${archived.length}件${selectedCount ? `・選択済み${selectedCount}件` : ''}）`;
   $('memo').value = catalog.filter(x => selected.has(x.id)).map(x => `${x.id}：${x.name}`).join('\n');
   try { localStorage.setItem('sensor-sound-lab-selection', JSON.stringify([...selected])); } catch (_) {}
 }
-const groupRank = group => group.startsWith('第4弾') ? 0 : group.startsWith('第3弾') ? 1 : group.startsWith('新候補') ? 2 : 3;
-const orderedGroups = [...new Set(catalog.map(x => x.group))].sort((a, b) => groupRank(a) - groupRank(b));
-for (const group of orderedGroups) {
+function renderGroup(group, items, target) {
   const section = document.createElement('section'), title = document.createElement('h2'), grid = document.createElement('div');
   title.textContent = group; grid.className = 'grid'; section.append(title, grid);
-  for (const item of catalog.filter(x => x.group === group)) {
+  for (const item of items) {
     const card = document.createElement('article'); card.className = 'card'; card.dataset.id = item.id;
     card.innerHTML = `<span class="number">${item.id}${favorites.has(item.id) ? ' / 比較の基準' : ''}</span><h3>${item.name}</h3><p>${item.description}</p><div class="actions"><button type="button" class="play" aria-label="${item.id} ${item.name}を再生">▶ 再生</button><label><input type="checkbox"> 候補にする</label></div>`;
     card.querySelector('button').onclick = () => play(item);
@@ -332,8 +345,23 @@ for (const group of orderedGroups) {
     checkbox.onchange = () => { if (checkbox.checked) selected.add(item.id); else selected.delete(item.id); memo(); };
     grid.append(card);
   }
-  $('catalog').append(section);
+  target.append(section);
 }
+renderGroup('探知音 / R02-N → R01-N → R03-N', catalog.filter(item => item.id.startsWith('X01-')), $('catalog'));
+renderGroup('比較の基準 / A31・A33', catalog.filter(item => ['A31', 'A33'].includes(item.id)), $('catalog'));
+for (const group of ['A31を掘り下げる', 'A33を掘り下げる']) {
+  renderGroup(group, catalog.filter(item => item.group === group), $('catalog'));
+}
+const archived = catalog.filter(item => !activeIds.has(item.id));
+for (const group of new Set(archived.map(item => item.group))) {
+  renderGroup(group, archived.filter(item => item.group === group), $('archive-catalog'));
+}
+$('archive').addEventListener('toggle', () => {
+  if (!$('archive').open && $('archive-catalog').querySelector('.playing')) {
+    stop(); $('status').textContent = '過去の候補を閉じたため停止しました。';
+  }
+});
+
 memo();
 $('volume').oninput = () => { $('volume-value').value = `${$('volume').value}%`; if (master) master.gain.value = Number($('volume').value) / 100; };
 $('stop').onclick = () => { stop(); $('status').textContent = '停止しました。'; };
