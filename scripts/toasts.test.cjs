@@ -89,7 +89,7 @@ test('音量は5%刻みの20段階で保存され、上下限を超えない', (
   const playing = {output:{gain:{value:0}}};
   const c = {appState: {soundVolume: 0.5, isMuted: false}, selectedSoundVoices:new Set([playing]),
     localStorage: {setItem: (_, value) => saved.push(value)},
-    playRadarSonar(stage) { assert.equal(stage, 'normal'); }, showVolumeModeToast() {}};
+    playRadarSonar(stage, echoLevel) { assert.equal(stage, 'near'); assert.equal(echoLevel, 1); }, showVolumeModeToast() {}};
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('function changeSoundVolume'), source.indexOf("document.getElementById('volume-down-btn')", source.indexOf('function changeSoundVolume'))), c);
   c.changeSoundVolume(-1);

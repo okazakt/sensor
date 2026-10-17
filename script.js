@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171508";
+const BASE_JS_VERSION = "v0.26.101.171517";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1242,9 +1242,9 @@ function playSelectedSound(kind, render) {
   } catch (_) { /* An unavailable audio device must not interrupt exploration or recording. */ }
 }
 
-function playRadarSonar(stage) {
+function playRadarSonar(stage, echoLevel = 2) {
   return playSelectedSound('radar', ({tone, echo, start}) => {
-    echo(2);
+    echo(echoLevel);
     const deep = stage === 'normal';
     const frequency = deep ? 440 : 660, end = deep ? 470 : 720;
     const attack = stage === 'near' ? .025 : .04;
@@ -3622,7 +3622,7 @@ function changeSoundVolume(step) {
   for (const voice of selectedSoundVoices) voice.output.gain.value = nextVolume / 7;
   localStorage.setItem('sheikah_sound_volume', String(appState.soundVolume));
 
-  playRadarSonar('normal');
+  playRadarSonar('near', 1);
   showVolumeModeToast();
 }
 
