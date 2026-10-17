@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="11">
+  <meta name="html-rev" content="12">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -146,7 +146,16 @@
           「Sensor Challenge（センサーチャレンジ）」をプレイする際は、交通ルールを遵守し、周囲の安全に十分注意しながらお楽しみください。
         </div>
 
-        <button class="btn-safety-ok" id="btn-safety-ok" disabled>更新確認中… / Checking for updates…</button>
+        <button class="btn-safety-ok" id="btn-safety-ok" disabled>更新確認中…</button>
+        <script>
+          // Match the selected language while the main script is still loading.
+          (() => {
+            let language;
+            try { language = localStorage.getItem('sheikah_lang'); } catch (_) {}
+            const japanese = (language || navigator.language || 'ja').toLowerCase().startsWith('ja');
+            document.getElementById('btn-safety-ok').textContent = japanese ? '更新確認中…' : 'Checking for updates…';
+          })();
+        </script>
         <div class="modal-version"><span class="app-build-ver-span"></span></div>
       </div>
     </div>
@@ -550,7 +559,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=6f7ca3903f347bae';
+    scriptEl.src = 'script.js?v=dd39aa40fbee7de7';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
