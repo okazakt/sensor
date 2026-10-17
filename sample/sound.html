@@ -5,17 +5,148 @@
 <title>音の試聴室 | SENSOR</title>
 <style>
 :root{color-scheme:dark;--bg:#0b141b;--panel:#14232d;--line:#2b4655;--accent:#8de2cf;--text:#e6f0f3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;line-height:1.7}main{max-width:1080px;margin:auto;padding:40px 20px 100px}a{color:var(--accent)}h1{font-size:clamp(26px,5vw,40px);margin:10px 0}h2{margin:36px 0 6px;font-size:21px}.eyebrow{color:var(--accent);letter-spacing:.2em;font-size:12px}.intro,.description{color:#adc2ce}.toolbar select{max-width:100%}.toolbar label{min-width:0}.toolbar{position:sticky;top:0;z-index:2;background:#10212af5;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}button,select,textarea{font:inherit}button,select{border:1px solid var(--line);border-radius:8px;background:#203944;color:var(--text);padding:8px 12px;cursor:pointer}button:hover{border-color:var(--accent)}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.play{background:var(--accent);color:#10251f;font-weight:700}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-top:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}.card.playing{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.number{color:var(--accent);font:700 14px ui-monospace,monospace}.card h3{margin:5px 0;font-size:17px}.card p{font-size:13px;color:#adc2ce;min-height:44px}.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}label{cursor:pointer}#status{font-size:13px;color:var(--accent);margin:12px 0;min-height:24px}input[type=range]{width:130px;accent-color:var(--accent)}textarea{width:100%;min-height:130px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px}small{color:#adc2ce}.memo-actions{display:flex;gap:12px;margin-top:12px}details{margin-top:32px;border:1px solid var(--line);border-radius:12px;padding:14px}summary{cursor:pointer;color:var(--accent);font-weight:700}summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}footer{margin-top:32px;color:#adc2ce;font-size:13px}
+.challenge-presentation {
+  --announcement-color: #e9dda0;
+  --announcement-tint: rgba(218, 207, 145, .58);
+  --announcement-center: rgba(239, 228, 171, .76);
+  position: absolute;
+  inset: calc(env(safe-area-inset-top, 0px) + 76px) 0 auto;
+  z-index: 450;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+.challenge-presentation.is-complete {
+  --announcement-color: #ffe9a2;
+  --announcement-tint: rgba(224, 193, 98, .65);
+  --announcement-center: rgba(248, 224, 139, .8);
+}
+.challenge-presentation.is-visible {
+  visibility: visible;
+  opacity: 1;
+  animation: challenge-announcement .6s ease both;
+}
+.challenge-presentation.is-visible.is-leaving { animation: challenge-announcement-fade 1.4s ease both; }
+.challenge-presentation-band {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 24px 18px;
+  text-align: center;
+  color: #252317;
+  background: linear-gradient(90deg, transparent, var(--announcement-tint) 14%, var(--announcement-center) 50%, var(--announcement-tint) 86%, transparent);
+  border-block: 1px solid var(--announcement-color);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--announcement-color) 20%, transparent);
+  text-shadow: 0 1px 2px rgba(255, 249, 211, .5);
+}
+.challenge-presentation-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 225, .45) 50%, transparent 65%);
+  transform: translateX(-110%);
+}
+.is-visible .challenge-presentation-band::before { animation: challenge-light-sweep 1.1s .12s ease-out both; }
+.challenge-presentation-label {
+  color: #595032;
+  font-size: 11px;
+  letter-spacing: .18em;
+  margin-bottom: 8px;
+}
+.challenge-presentation-label::before { content: '◇'; margin-right: 8px; }
+.challenge-presentation-name {
+  font-size: clamp(20px, 6cqw, 30px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.challenge-presentation-state {
+  color: #595032;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  letter-spacing: .14em;
+  margin-top: 10px;
+}
+.is-complete .challenge-presentation-state {
+  color: #fff9df;
+  text-shadow: 0 1px 4px rgba(100, 73, 19, .8);
+  font-size: 27px;
+  letter-spacing: .06em;
+}
+.challenge-presentation-state { opacity: 0; }
+.is-complete-visible .challenge-presentation-state { animation: challenge-state-reveal .4s both; }
+
+.challenge-presentation-place {
+  margin: 10px 0;
+  font-size: clamp(18px, 5cqw, 22px);
+  font-weight: 800;
+  line-height: 1.6;
+  color: #252317;
+  overflow-wrap: anywhere;
+}
+.is-place-visible .challenge-presentation-place { animation: challenge-state-reveal .6s ease both; }
+.challenge-presentation-name[hidden],
+.challenge-presentation-state[hidden],
+.challenge-presentation-place[hidden] { display: none; }
+.is-complete.is-arrival .challenge-presentation-place[hidden] {
+  display: block;
+  visibility: hidden;
+}
+.is-complete .challenge-presentation-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 10% 30%, #ffe9a2 0 1px, transparent 3px), radial-gradient(circle at 80% 20%, #fff6d7 0 1px, transparent 3px), radial-gradient(circle at 90% 75%, #ffe9a2 0 1px, transparent 3px), radial-gradient(circle at 20% 85%, #fff6d7 0 1px, transparent 3px);
+}
+.is-visible.is-complete .challenge-presentation-band::after { animation: challenge-state-reveal .8s .25s both; }
+@keyframes challenge-announcement {
+  0% { opacity: 0; clip-path: inset(0 50%); }
+  100% { opacity: 1; clip-path: inset(0); }
+}
+@keyframes challenge-announcement-fade { from { opacity: 1; } to { opacity: 0; } }
+@keyframes challenge-light-sweep { to { transform: translateX(110%); } }
+@keyframes challenge-state-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .challenge-presentation.is-visible { animation: none; opacity: 1; }
+  .challenge-presentation.is-visible.is-leaving { animation: none; opacity: 0; }
+  .is-complete-visible .challenge-presentation-state,
+  .is-place-visible .challenge-presentation-place,
+  .is-visible .challenge-presentation-band::before,
+  .is-visible.is-complete .challenge-presentation-band::after { animation: none; }
+  .is-complete-visible .challenge-presentation-state { opacity: 1; }
+}
+
+
+#completion-dialog{width:min(680px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--text);padding:18px}
+#completion-dialog::backdrop{background:#000b}.completion-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.completion-controls h2{margin:0;font-size:18px}.completion-stage{position:relative;container-type:inline-size;min-height:300px;overflow:hidden;border-radius:8px;background:radial-gradient(ellipse at center,#274136,#0b171c)}
+#completion-dialog .challenge-presentation{inset:30px 0 auto}#completion-phase{color:var(--accent);min-height:28px}#completion-progress{width:100%;margin-top:14px;accent-color:var(--accent)}
 </style>
 </head>
 <body><main>
 <a href="../index.html">← アプリに戻る</a><div class="eyebrow">SENSOR / SOUND LAB</div>
 <h1>音の試聴室</h1>
-<p class="intro">探知音の組み合わせを修正し、A31とA33を基準に派生候補を追加しました。<br>現在の比較候補12件を表示。過去の候補は下の「過去の候補を表示」から開けます。</p>
+<p class="intro">A31・A33に、COMPLETEと場所名の表示に合わせた軽い合図音を追加しました。<br>「表示と合わせて試聴」で本番と同じ時間差を確認できます。過去の候補は折りたたみ内に残しています。</p>
 <div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option><option value="radar">探知音を実際の間隔で6回（R・X系の各段階用）</option></select></label><button id="stop" type="button">■ 停止</button></div>
 <p id="status" role="status" aria-live="polite">再生ボタンを押すと音が出ます。音量は控えめからお試しください。</p>
-<p class="description">X01は通常＝R02-N、近距離＝R01-N、至近距離＝R03-N。音程・長さは各Nのまま、反復間隔が変わります。A35〜A37はA31の派生、A38〜A40はA33の派生です。テンポは元の1音0.115秒を維持し、約2.6〜3.6秒にまとめています。</p>
+<p class="description">T1は軽い一音、T2は短い二音。開始1.5秒後にCOMPLETE、4.4秒後に場所名を表示して合図を添えます。元のA31・A33も下で比較できます。表示を含む試聴は約12秒、1回ずつ再生します。</p>
 <div id="catalog"></div>
 <details id="archive"><summary id="archive-summary">過去の候補を表示</summary><p class="description">以前の番号・音・選択内容を保持しています。必要なときだけ開いて比較できます。</p><div id="archive-catalog"></div></details>
 <section><h2>選択メモ</h2><p class="description">「候補にする」にチェックすると番号をまとめます。選択はこのブラウザに保存します。アプリへの採用は番号を伝えてください。</p><textarea id="memo" readonly aria-label="選択した音の番号"></textarea><div class="memo-actions"><button id="copy" type="button">メモをコピー</button><button id="clear" type="button">選択をクリア</button></div></section>
 <footer>すべてブラウザ内で生成する合成音です。水滴・鈴・鳥も録音素材ではなく音色の候補です。エコーは弱・中・強で比較できます。現行音の音程・波形・タイミングを再現し、試聴音量を共通で調整します。</footer>
-</main><script src="current-sounds.js"></script><script src="sound.js?v=5"></script></body></html>
+</main><dialog id="completion-dialog" aria-labelledby="completion-title">
+<div class="completion-controls"><h2 id="completion-title">チャレンジ達成の試聴</h2><button id="completion-close" type="button">停止して閉じる</button></div>
+<p id="completion-phase" role="status" aria-live="polite">ファンファーレ開始</p>
+<div class="completion-stage">
+<div id="completion-presentation" class="challenge-presentation is-complete is-arrival" aria-hidden="true"><div class="challenge-presentation-band">
+<div class="challenge-presentation-label">チャレンジ</div><div class="challenge-presentation-name">サンプルチャレンジ</div>
+<div class="challenge-presentation-state">COMPLETE</div><div id="completion-place" class="challenge-presentation-place" hidden>サンプルスポットへの到達を記録しました</div>
+</div></div></div>
+<progress id="completion-progress" max="12.3" value="0" aria-label="演出の進行"></progress>
+<p class="description">0秒：ファンファーレ → 1.5秒：COMPLETE ＋ 合図 → 4.4秒：場所名 ＋ 合図</p>
+<button id="completion-replay" type="button">もう一度試聴</button>
+</dialog>
+<script src="current-sounds.js"></script><script src="sound.js?v=6"></script></body></html>

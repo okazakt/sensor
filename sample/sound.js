@@ -270,24 +270,89 @@ shortArrivals.push(
   {...woodReference, id:'A39', name:'A33派生 / 低く丸い木琴', notes:woodReference.notes.map(note => note - 5), group:'A33を掘り下げる', comparison:'A33の旋律を5半音下げた候補。長さ・テンポ・エコーは同じ。'},
   {...woodReference, id:'A40', name:'A33派生 / 跳ねる応答', notes:[60,64,67,72,69,65,69,74,67,64,67,72,76,74,71,72], group:'A33を掘り下げる', comparison:'A33と同じ音数・木琴の音色・エコー。上下する旋律に変え、応答する印象に。'}
 );
+function playShortArrival(score, t = context.currentTime + .025) {
+  echo(score.echo);
+  score.notes.forEach((note, i) => {
+    const start = t + i * ORIGINAL_ARRIVAL_STEP;
+    const length = i === score.notes.length - 1 ? score.tail : .18;
+    if (score.voice === 'sonar') sonar(start, hz(note), length, hz(note) * 1.045, .012);
+    else if (score.voice === 'mallet') mallet(start, hz(note), length, .25);
+    else tone(hz(note), start, length, .25, score.voice, null, .008);
+  });
+}
 for (const score of shortArrivals) {
   const last = (score.notes.length - 1) * ORIGINAL_ARRIVAL_STEP;
   const duration = Math.ceil((.025 + last + score.tail + (score.echo === 2 ? .9 : .525) + .1) * 10) / 10;
   add(score.group || '第4弾 / 短めのファンファーレ', score.id, score.name,
-    `約${duration}秒（余韻込み）。${score.notes.length}音・現行と同じ1音0.115秒。${score.comparison || '短い旋律と弱いエコーで、すっきり終わります。'}`, () => {
-      echo(score.echo); const t = context.currentTime + .025;
-      score.notes.forEach((note, i) => {
-        const start = t + i * ORIGINAL_ARRIVAL_STEP;
-        const length = i === score.notes.length - 1 ? score.tail : .18;
-        if (score.voice === 'sonar') sonar(start, hz(note), length, hz(note) * 1.045, .012);
-        else if (score.voice === 'mallet') mallet(start, hz(note), length, .25);
-        else tone(hz(note), start, length, .25, score.voice, null, .008);
-      });
-    }, duration);
+    `約${duration}秒（余韻込み）。${score.notes.length}音・現行と同じ1音0.115秒。${score.comparison || '短い旋律と弱いエコーで、すっきり終わります。'}`,
+    () => playShortArrival(score), duration);
+}
+
+// Match production: COMPLETE's CSS reveal starts at 1.5s; place text at 4.4s.
+const completionTiming = {complete:1.5, place:4.4, fade:10.9, end:12.3};
+const completionPreviews = [];
+function completionCue(score, t, midi, amplitude, duration) {
+  if (score.voice === 'mallet') mallet(t, hz(midi), duration, amplitude);
+  else tone(hz(midi), t, duration, amplitude, 'triangle', null, .012);
+}
+for (const baseId of ['A31', 'A33']) {
+  const score = shortArrivals.find(item => item.id === baseId);
+  for (const style of [1, 2]) {
+    const id = `${baseId}-T${style}`;
+    completionPreviews.push(id);
+    add('チャレンジ達成 / 表示と音を合わせて試聴', id,
+      `${baseId} ＋ ${style === 1 ? '軽い一音' : '短い二音'}`,
+      `${baseId}の旋律はそのまま。1.5秒のCOMPLETEと4.4秒の場所名に、小さな${score.voice === 'mallet' ? '木琴' : '柔らかい三角波'}の合図を追加。画面も再現します（演出約12秒）。`,
+      (t = context.currentTime + .025) => {
+        playShortArrival(score, t);
+        const complete = t + completionTiming.complete, place = t + completionTiming.place;
+        completionCue(score, complete, 79, .075, .16);
+        completionCue(score, place, 76, .05, .14);
+        if (style === 2) {
+          completionCue(score, complete + .075, 84, .06, .14);
+          completionCue(score, place + .075, 79, .045, .13);
+        }
+      }, completionTiming.end, {presentation:true, baseId});
+  }
+}
+let previewFrame = null;
+let lastCompletionPreview = null;
+function beginCompletionPreview(item, startTime) {
+  const dialog = $('completion-dialog'), banner = $('completion-presentation');
+  lastCompletionPreview = item;
+  $('completion-title').textContent = `${item.id} / ${item.name}`;
+  $('completion-phase').textContent = 'ファンファーレ開始';
+  $('completion-progress').value = 0;
+  banner.classList.remove('is-visible', 'is-complete-visible', 'is-place-visible', 'is-leaving');
+  $('completion-place').hidden = true;
+  dialog.showModal();
+  const token = generation;
+  let phase = '';
+  function frame() {
+    if (token !== generation) return;
+    const elapsed = Math.max(0, context.currentTime - startTime);
+    if (context.currentTime >= startTime) banner.classList.add('is-visible');
+    if (elapsed >= completionTiming.complete) banner.classList.add('is-complete-visible');
+    if (elapsed >= completionTiming.place) {
+      $('completion-place').hidden = false;
+      banner.classList.add('is-place-visible');
+    }
+    if (elapsed >= completionTiming.fade) banner.classList.add('is-leaving');
+    const next = elapsed >= completionTiming.fade ? '演出のフェードアウト' :
+      elapsed >= completionTiming.place ? '場所名を表示 ＋ 軽い合図音' :
+      elapsed >= completionTiming.complete ? 'COMPLETEを表示 ＋ 軽い合図音' : 'ファンファーレ開始';
+    if (next !== phase) { $('completion-phase').textContent = next; phase = next; }
+    $('completion-progress').value = elapsed;
+    if (elapsed < completionTiming.end) previewFrame = requestAnimationFrame(frame);
+    else { previewFrame = null; $('completion-phase').textContent = '試聴終了'; }
+  }
+  previewFrame = requestAnimationFrame(frame);
 }
 
 function stop() {
   generation++;
+  if (previewFrame !== null) { cancelAnimationFrame(previewFrame); previewFrame = null; }
+  if ($('completion-dialog').open) $('completion-dialog').close();
   timers.forEach(clearTimeout); timers = [];
   nodes.forEach(n => { try { if (n.stop) n.stop(); n.disconnect(); } catch (_) {} }); nodes = [];
   if (bus) bus.disconnect();
@@ -312,9 +377,11 @@ async function play(item) {
     $('status').textContent = `再生中：${item.id} ${item.name}`;
     // Echo wiring is created once per playback, so repeated previews use separate buses.
     const radarRepeat = $('mode').value === 'radar' && item.pulseInterval;
-    const count = radarRepeat ? 6 : $('mode').value === 'repeat' ? 3 : 1;
+    const count = item.presentation ? 1 : radarRepeat ? 6 : $('mode').value === 'repeat' ? 3 : 1;
     const interval = radarRepeat ? item.pulseInterval : Math.max(item.duration, 2.5);
-    item.play();
+    const startTime = context.currentTime + .025;
+    if (item.presentation) beginCompletionPreview(item, startTime);
+    item.play(startTime);
     // Repeats rebuild the bus to avoid stacking echo taps.
     for (let i = 1; i < count; i++) timers.push(setTimeout(() => {
       if (token !== generation) return;
@@ -324,7 +391,7 @@ async function play(item) {
     timers.push(setTimeout(() => { if (token === generation) { stop(); $('status').textContent = `試聴済み：${item.id} ${item.name}`; } }, ((count - 1) * interval + item.duration + .2) * 1000));
   } catch (error) { stop(); $('status').textContent = '音を再生できませんでした。対応ブラウザで開き、もう一度再生してください。'; }
 }
-const activeIds = new Set(['X01-N', 'X01-H', 'X01-D', 'X01-ALL', 'A31', 'A33', 'A35', 'A36', 'A37', 'A38', 'A39', 'A40']);
+const activeIds = new Set(['X01-N', 'X01-H', 'X01-D', 'X01-ALL', 'A31', 'A33', ...completionPreviews]);
 let selected = new Set();
 try { selected = new Set(JSON.parse(localStorage.getItem('sensor-sound-lab-selection') || '[]')); } catch (_) {}
 function memo() {
@@ -339,7 +406,7 @@ function renderGroup(group, items, target) {
   title.textContent = group; grid.className = 'grid'; section.append(title, grid);
   for (const item of items) {
     const card = document.createElement('article'); card.className = 'card'; card.dataset.id = item.id;
-    card.innerHTML = `<span class="number">${item.id}${favorites.has(item.id) ? ' / 比較の基準' : ''}</span><h3>${item.name}</h3><p>${item.description}</p><div class="actions"><button type="button" class="play" aria-label="${item.id} ${item.name}を再生">▶ 再生</button><label><input type="checkbox"> 候補にする</label></div>`;
+    card.innerHTML = `<span class="number">${item.id}${favorites.has(item.id) ? ' / 比較の基準' : ''}</span><h3>${item.name}</h3><p>${item.description}</p><div class="actions"><button type="button" class="play" aria-label="${item.id} ${item.name}を再生">${item.presentation ? '▶ 表示と合わせて試聴' : '▶ 再生'}</button><label><input type="checkbox"> 候補にする</label></div>`;
     card.querySelector('button').onclick = () => play(item);
     const checkbox = card.querySelector('input'); checkbox.checked = selected.has(item.id);
     checkbox.onchange = () => { if (checkbox.checked) selected.add(item.id); else selected.delete(item.id); memo(); };
@@ -347,11 +414,9 @@ function renderGroup(group, items, target) {
   }
   target.append(section);
 }
+renderGroup('チャレンジ達成 / 表示と音を合わせて試聴', catalog.filter(item => item.presentation), $('catalog'));
 renderGroup('探知音 / R02-N → R01-N → R03-N', catalog.filter(item => item.id.startsWith('X01-')), $('catalog'));
 renderGroup('比較の基準 / A31・A33', catalog.filter(item => ['A31', 'A33'].includes(item.id)), $('catalog'));
-for (const group of ['A31を掘り下げる', 'A33を掘り下げる']) {
-  renderGroup(group, catalog.filter(item => item.group === group), $('catalog'));
-}
 const archived = catalog.filter(item => !activeIds.has(item.id));
 for (const group of new Set(archived.map(item => item.group))) {
   renderGroup(group, archived.filter(item => item.group === group), $('archive-catalog'));
@@ -368,3 +433,7 @@ $('stop').onclick = () => { stop(); $('status').textContent = '停止しまし�
 $('clear').onclick = () => { selected.clear(); document.querySelectorAll('input[type=checkbox]').forEach(x => x.checked = false); memo(); };
 $('copy').onclick = async () => { try { await navigator.clipboard.writeText($('memo').value); $('status').textContent = '選択メモをコピーしました。'; } catch (_) { $('memo').focus(); $('memo').select(); $('status').textContent = '選択メモを選択しました。コピーしてください。'; } };
 document.addEventListener('visibilitychange', () => { if (document.hidden) { stop(); $('status').textContent = '画面を離れたため停止しました。'; } });
+
+$('completion-close').onclick = () => { stop(); $('status').textContent = '停止しました。'; };
+$('completion-dialog').addEventListener('cancel', event => { event.preventDefault(); stop(); $('status').textContent = '停止しました。'; });
+$('completion-replay').onclick = () => { if (lastCompletionPreview) play(lastCompletionPreview); };
