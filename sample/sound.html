@@ -10,11 +10,11 @@
 <body><main>
 <a href="../index.html">← アプリに戻る</a><div class="eyebrow">SENSOR / SOUND LAB</div>
 <h1>音の試聴室</h1>
-<p class="intro">第3弾：ソナーの探知音セット4系統と、元のテンポで旋律を延ばした到着音8種を追加。全75候補。<br>「探知音は R01セット、到着音は A22」のように番号で指定できます。</p>
-<div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option><option value="radar">探知音を実際の間隔で6回（R系の単音・二連用）</option></select></label><button id="stop" type="button">■ 停止</button></div>
+<p class="intro">選択したソナーの組み合わせと、約2.4〜3.2秒の短いファンファーレを追加。全85候補。<br>まずはX01-ALLで接近の流れ、A29〜A34で短い到着音を試してください。</p>
+<div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option><option value="radar">探知音を実際の間隔で6回（R・X系の各段階用）</option></select></label><button id="stop" type="button">■ 停止</button></div>
 <p id="status" role="status" aria-live="polite">再生ボタンを押すと音が出ます。音量は控えめからお試しください。</p>
-<p class="description">新しい候補を上に表示しています。R01〜R04は通常（N）・近距離（H）・二連（D）・接近の流れ（ALL）を比較できます。「実際の間隔で6回」では各段階の速さも確認できます。A21〜A28は現行A01と同じ1音0.115秒で、音数を増やした到着音です。これまでの番号と音も残しています。</p>
+<p class="description">X01は通常＝R01-N、近距離＝R02-N、至近距離＝R03-N。各音の音程・長さはそのままで、反復間隔が変わります。至近距離も単音です。A29〜A34は元のテンポを保った短い旋律です。アプリへの採用前に、このページで組み合わせを確認できます。これまでの候補も残しています。</p>
 <div id="catalog"></div>
 <section><h2>選択メモ</h2><p class="description">「候補にする」にチェックすると番号をまとめます。選択はこのブラウザに保存します。アプリへの採用は番号を伝えてください。</p><textarea id="memo" readonly aria-label="選択した音の番号"></textarea><div class="memo-actions"><button id="copy" type="button">メモをコピー</button><button id="clear" type="button">選択をクリア</button></div></section>
 <footer>すべてブラウザ内で生成する合成音です。水滴・鈴・鳥も録音素材ではなく音色の候補です。エコーは弱・中・強で比較できます。現行音の音程・波形・タイミングを再現し、試聴音量を共通で調整します。</footer>
-</main><script src="current-sounds.js"></script><script src="sound.js?v=3"></script></body></html>
+</main><script src="current-sounds.js"></script><script src="sound.js?v=4"></script></body></html>

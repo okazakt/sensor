@@ -223,6 +223,58 @@ for (const score of fastArrivals) {
     }, duration);
 }
 
+
+// Selected N variants stay unchanged: only the repeat interval changes by distance.
+const mixedDetectionStages = [
+  {suffix:'N', name:'通常 / R01-N', source:'R01-N', suite:detectionSuites[0], interval:2.6},
+  {suffix:'H', name:'近距離 / R02-N', source:'R02-N', suite:detectionSuites[1], interval:.8},
+  {suffix:'D', name:'至近距離 / R03-N', source:'R03-N', suite:detectionSuites[2], interval:.45}
+];
+for (const stage of mixedDetectionStages) {
+  add('第4弾 / 選択したソナーの組み合わせ', `X01-${stage.suffix}`, stage.name,
+    `${stage.source}の音程・長さ・中エコーをそのまま使用。「実際の間隔で6回」で${stage.interval}秒間隔。至近距離も指定どおり単音です。`,
+    () => { echo(2); detectionPulse(stage.suite, 'normal', context.currentTime + .025); }, 1.6,
+    {pulseInterval:stage.interval});
+}
+add('第4弾 / 選択したソナーの組み合わせ', 'X01-ALL', 'R01-N → R02-N → R03-N / 接近の流れ',
+  '約15秒。通常は基本ソナー、近距離は低いソナー、至近距離は揺らぐソナーへ。音色は各Nのまま、探知間隔だけが速くなります。', () => {
+    echo(2); const t = context.currentTime + .025; let offset = 0;
+    for (const [index, interval, count, label] of [
+      [0, 2.6, 2, '通常 / R01-N・2.6秒間隔'],
+      [0, 1.5, 2, '通常 / R01-N・1.5秒間隔'],
+      [1, .8, 3, '近距離 / R02-N・0.8秒間隔'],
+      [2, .45, 4, '至近距離 / R03-N・0.45秒間隔'],
+      [2, .35, 4, '詳細モード最速 / R03-N・0.35秒間隔']
+    ]) {
+      timers.push(setTimeout(() => { $('status').textContent = `再生中：X01-ALL ${label}`; }, offset * 1000));
+      for (let i = 0; i < count; i++) detectionPulse(mixedDetectionStages[index].suite, 'normal', t + offset + i * interval);
+      offset += count * interval;
+    }
+  }, 15.5);
+const shortArrivals = [
+  {id:'A29', name:'現行の上昇 / 余韻をコンパクトに', voice:'triangle', notes:originalRun, tail:.65, echo:1},
+  {id:'A30', name:'短い続編 / 上昇して着地', voice:'triangle', notes:[...originalRun,74,71,67,72], tail:.7, echo:1},
+  {id:'A31', name:'あたたかいファンファーレ / 小さな展開', voice:'triangle', notes:[55,60,64,67,72,67,64,60,62,65,69,74,76,74,71,72], tail:.8, echo:1},
+  {id:'A32', name:'やさしいチャイム / 短い祝福', voice:'sine', notes:[60,64,67,72,76,72,67,64,67,71,74,72], tail:.65, echo:1},
+  {id:'A33', name:'木琴 / 小さなゴール', voice:'mallet', notes:[60,67,64,72,67,76,72,67,65,69,74,72,67,64,67,72], tail:.6, echo:1},
+  {id:'A34', name:'ソナー / 短い到着メロディ', voice:'sonar', notes:[55,59,62,67,71,67,62,59,60,64,67,71,69,67], tail:.65, echo:1}
+];
+for (const score of shortArrivals) {
+  const last = (score.notes.length - 1) * ORIGINAL_ARRIVAL_STEP;
+  const duration = Math.ceil((.025 + last + score.tail + .525 + .1) * 10) / 10;
+  add('第4弾 / 短めのファンファーレ', score.id, score.name,
+    `約${duration}秒（余韻込み）。${score.notes.length}音・現行と同じ1音0.115秒。短い旋律と弱いエコーで、すっきり終わります。`, () => {
+      echo(score.echo); const t = context.currentTime + .025;
+      score.notes.forEach((note, i) => {
+        const start = t + i * ORIGINAL_ARRIVAL_STEP;
+        const length = i === score.notes.length - 1 ? score.tail : .18;
+        if (score.voice === 'sonar') sonar(start, hz(note), length, hz(note) * 1.045, .012);
+        else if (score.voice === 'mallet') mallet(start, hz(note), length, .25);
+        else tone(hz(note), start, length, .25, score.voice, null, .008);
+      });
+    }, duration);
+}
+
 function stop() {
   generation++;
   timers.forEach(clearTimeout); timers = [];
@@ -267,7 +319,7 @@ function memo() {
   $('memo').value = catalog.filter(x => selected.has(x.id)).map(x => `${x.id}：${x.name}`).join('\n');
   try { localStorage.setItem('sensor-sound-lab-selection', JSON.stringify([...selected])); } catch (_) {}
 }
-const groupRank = group => group.startsWith('第3弾') ? 0 : group.startsWith('新候補') ? 1 : 2;
+const groupRank = group => group.startsWith('第4弾') ? 0 : group.startsWith('第3弾') ? 1 : group.startsWith('新候補') ? 2 : 3;
 const orderedGroups = [...new Set(catalog.map(x => x.group))].sort((a, b) => groupRank(a) - groupRank(b));
 for (const group of orderedGroups) {
   const section = document.createElement('section'), title = document.createElement('h2'), grid = document.createElement('div');
