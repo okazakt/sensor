@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171117";
+const BASE_JS_VERSION = "v0.26.101.171121";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -3600,7 +3600,7 @@ function changeSoundVolume(step) {
   for (const voice of selectedSoundVoices) voice.output.gain.value = nextVolume / 7;
   localStorage.setItem('sheikah_sound_volume', String(appState.soundVolume));
 
-  playBeep(2000, 0.08);
+  playRadarSonar('normal');
   showVolumeModeToast();
 }
 
@@ -3764,7 +3764,7 @@ function startSearchFromSet(fromChallenge = false) {
     return;
   }
   initAudio();
-  playBeep(2200);
+  if (!fromChallenge) playRadarSonar('normal');
   if (appState.wakeLockActive) requestWakeLock();
 
   const inputVal = document.getElementById('keyword-input').value.trim();
