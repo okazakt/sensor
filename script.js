@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171149";
+const BASE_JS_VERSION = "v0.26.101.171152";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -3023,8 +3023,7 @@ function renderChallengeArrivals() {
   const t = I18N[currentLang];
   const container = document.getElementById('challenge-arrivals-list-container');
   document.getElementById('back-to-challenges').textContent = currentLang === 'ja' ? '◀チャレンジ一覧' : '◀Challenges';
-  document.getElementById('challenge-arrivals-title').textContent = currentLang === 'ja' ? '到達スポット一覧' : 'Arrived spots';
-  document.getElementById('challenge-arrivals-name').textContent = challengeName(challenge);
+  document.getElementById('challenge-arrivals-title').textContent = challengeName(challenge);
   container.replaceChildren();
   const items = getChallengeArrivals(db, challenge).sort((a, b) => new Date(b.date) - new Date(a.date));
   if (!items.length) {

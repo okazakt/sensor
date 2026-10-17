@@ -22,7 +22,7 @@
     - 変更手順: index.html を修正した際、下記の metaタグの content をインクリメントする
     ============================================================
   -->
-  <meta name="html-rev" content="10">
+  <meta name="html-rev" content="11">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sensor Challenge</title>
@@ -38,7 +38,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.2/dist/maplibre-gl.css">
 
-  <link rel="stylesheet" href="style.css?v=385048eb8130bc92">
+  <link rel="stylesheet" href="style.css?v=4d0b0a456b783e44">
 </head>
 <body>
   <div id="app-container">
@@ -178,9 +178,9 @@
         <div class="header-left-group">
           <button class="back-btn" id="back-to-challenges">◀チャレンジ一覧</button>
         </div>
-        <div class="page-title-text" id="challenge-arrivals-title">到達スポット一覧</div>
+        <div class="page-title-text" id="challenge-arrivals-title" style="width: auto;">チャレンジ</div>
+        <div style="width: 40px;" aria-hidden="true"></div>
       </div>
-      <div class="challenge-arrivals-name" id="challenge-arrivals-name"></div>
       <div class="list-scroll" id="challenge-arrivals-list-container"></div>
     </div>
 
@@ -550,7 +550,7 @@
   <script src="app-storage.js?v=4632f4643436b6ce"></script>
   <script>
     const scriptEl = document.createElement('script');
-    scriptEl.src = 'script.js?v=8659a092f8336966';
+    scriptEl.src = 'script.js?v=6f7ca3903f347bae';
     scriptEl.id = 'main-script';
     window.SensorAppStorage = SensorStorage.create({
       onError(error) {
