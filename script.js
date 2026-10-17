@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171112";
+const BASE_JS_VERSION = "v0.26.101.171117";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -3556,7 +3556,7 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
 
   if (!appState.isMuted) {
     initAudio();
-    playBeep(2000, 0.08);
+    playRadarSonar('normal');
   }
 
   updateButtonStateUI();
