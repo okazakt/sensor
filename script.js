@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171141";
+const BASE_JS_VERSION = "v0.26.101.171149";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -3137,7 +3137,8 @@ function renderChallenges() {
       } : { gourmet: 'Restaurants, cafes, bakeries and food shops', life: 'Shops, stations, libraries, post offices and healthcare',
         leisure: 'Entertainment, playgrounds, sports facilities and beaches', deep: 'Historic sites, places of worship, heritage and local sights', secret: 'All places from the four groups' };
       row.title = descriptions[group.id];
-      status.innerHTML = I18N[currentLang].arrivalCount(`<span class="arrival-count-number">${getChallengeArrivals(db, challenge).length}</span>`) + ' · '
+      const arrivalCount = getChallengeArrivals(db, challenge).length;
+      status.innerHTML = I18N[currentLang].arrivalCount(arrivalCount > 0 ? `<span class="arrival-count-number">${arrivalCount}</span>` : arrivalCount) + ' · '
         + (available ? (ja ? '挑戦可能' : 'Available') : (ja ? '未開放' : 'Locked'));
       if (completed) {
         const stateLabel = document.createElement('span');
@@ -4091,7 +4092,7 @@ function renderKeywordsList() {
       <div class="list-item-row">
         <div class="list-item-left">
           <span class="list-item-title">${escapeHtml(k)}</span>
-          <div class="list-item-sub">${t.arrivalCount(`<span class="arrival-count-number">${count}</span>`)}</div>
+          <div class="list-item-sub">${t.arrivalCount(count > 0 ? `<span class="arrival-count-number">${count}</span>` : count)}</div>
         </div>
         <div class="item-right-actions">
           <button class="btn-sheikah-sm btn-reset-search" data-key="${escapeHtml(k)}">SET</button>
