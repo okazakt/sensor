@@ -86,7 +86,8 @@ test('音量更新は20本の棒を再利用し、最後の操作から1秒で�
 test('音量は5%刻みの20段階で保存され、上下限を超えない', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../script.js'), 'utf8');
   const saved = [];
-  const c = {appState: {soundVolume: 0.5, isMuted: false},
+  const playing = {output:{gain:{value:0}}};
+  const c = {appState: {soundVolume: 0.5, isMuted: false}, selectedSoundVoices:new Set([playing]),
     localStorage: {setItem: (_, value) => saved.push(value)},
     playBeep() {}, showVolumeModeToast() {}};
   vm.createContext(c);
@@ -97,6 +98,7 @@ test('音量は5%刻みの20段階で保存され、上下限を超えない', (
     c.changeSoundVolume(1);
     assert.equal(c.appState.soundVolume * 10, level * 5);
     assert.equal(Number(saved.at(-1)), level / 2);
+    assert.equal(playing.output.gain.value, c.appState.soundVolume / 7);
   }
   c.changeSoundVolume(1);
   assert.equal(c.appState.soundVolume, 10);

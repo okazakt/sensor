@@ -19,6 +19,7 @@ function fixture() {
   let timerId = 0;
   const context = {currentLang: 'ja', appState: {isMuted: true}, challengeName: c => c.name,
     document: {getElementById: id => elements[id]},
+    stopSelectedSounds() {}, playChallengePlaceCue() {},
     setTimeout: (fn, delay) => {timers.set(++timerId, {fn, delay}); return timerId;},
     clearTimeout: id => timers.delete(id)};
   vm.createContext(context);
@@ -81,4 +82,32 @@ test('チャレンジ到着時は履歴一覧を開かず、メイン画面で�
   vm.runInContext(source.slice(source.indexOf('async function updateArrivalRecordWithDetails'), source.indexOf('let mapRotationFrame')), context);
   await context.updateArrivalRecordWithDetails({arrivals: []}, target, '2026-10-10');
   assert.deepEqual(actions, ['main', 'complete']);
+});
+
+// The place cue belongs to the reveal callback, rather than a separate uncancellable timer.
+test('採用したA31は開始時だけ、追加の上昇二音は場所名の表示と同じコールバックで鳴る', () => {
+  const {context:c, elements, next} = fixture();
+  const sounds = [];
+  c.playChallengeFanfare = completed => sounds.push(completed ? 'A31' : 'start');
+  c.playChallengePlaceCue = () => {
+    assert.equal(elements['challenge-presentation-place'].hidden, false);
+    sounds.push('place');
+  };
+  c.showChallengePresentation({name:'Challenge'}, true, {name:'Place'});
+  assert.deepEqual(sounds, ['A31']);
+  assert.equal(next(), 4400);
+  assert.deepEqual(sounds, ['A31', 'place']);
+});
+test('次の演出は古い場所名の合図と再生中の到着音を取り消す', () => {
+  const {context:c, timers} = fixture();
+  const stopped = [], sounds = [];
+  c.stopSelectedSounds = kind => stopped.push(kind);
+  c.playChallengeFanfare = () => {};
+  c.playChallengePlaceCue = () => sounds.push('place');
+  c.showChallengePresentation({name:'Old'}, true, {name:'Old place'});
+  c.showChallengePresentation({name:'New'}, false);
+  assert.deepEqual(stopped, ['presentation', 'presentation']);
+  assert.equal(timers.size, 1);
+  assert.equal([...timers.values()][0].delay, 2800);
+  assert.deepEqual(sounds, []);
 });

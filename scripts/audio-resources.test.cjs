@@ -10,11 +10,12 @@ test('探知音と到着音を繰り返しても終了した音声接続を保�
   let connections = 0;
   const parameter = { setValueAtTime() {}, exponentialRampToValueAtTime() {} };
   function node() {
-    return { connect() { connections++; }, disconnect() { connections--; } };
+    let outgoing = 0;
+    return { connect() { connections++; outgoing++; }, disconnect() { connections -= outgoing; outgoing = 0; } };
   }
   const context = {
     appState: { isMuted:false, soundVolume:7 }, navigator: {},
-    setTimeout(callback) { callback(); },
+    setTimeout(callback) { callback(); }, clearTimeout() {},
     audioCtx: {
       state:'running', currentTime:0, destination:{},
       createOscillator() {
@@ -22,7 +23,9 @@ test('探知音と到着音を繰り返しても終了した音声接続を保�
         oscillators.push(oscillator);
         return oscillator;
       },
-      createGain() { return {...node(), gain:parameter}; }
+      createGain() { return {...node(), gain:parameter}; },
+      createDelay() { return {...node(), delayTime:{value:0}}; },
+      createBiquadFilter() { return {...node(), frequency:{value:0}}; }
     }
   };
   vm.createContext(context);
@@ -31,8 +34,13 @@ test('探知音と到着音を繰り返しても終了した音声接続を保�
   for (let i = 0; i < 200; i++) {
     context.playBeep();
     context.playTreasureFanfare();
+    context.playRadarSonar('close');
+    context.playSelectedFanfare(true);
+    context.playChallengePlaceCue();
+    assert.equal(oscillators.length, 54);
     while (oscillators.length) oscillators.shift().onended();
     assert.equal(connections, 0);
+    assert.equal(vm.runInContext('selectedSoundVoices.size', context), 0);
   }
 });
 
@@ -78,4 +86,36 @@ test('探知音は70%以下を維持し、最大ではピーク1と短い持続�
   context.appState.isMuted = true;
   context.playBeep();
   assert.equal(events.length, 0);
+});
+
+test('ミュートは採用音の予約音・エコーを即座に切断し、以降の場所名の音も生成しない', () => {
+  const nodes = [], oscillators = [], timers = new Map();
+  let connections = 0, sequence = 0;
+  const parameter = () => ({value:0, setValueAtTime() {}, exponentialRampToValueAtTime() {}});
+  function node() {
+    let outgoing = 0;
+    const n = {connect() { connections++; outgoing++; }, disconnect() { connections -= outgoing; outgoing = 0; }};
+    nodes.push(n); return n;
+  }
+  const c = {appState:{soundMode:'headphone', isMuted:false, soundVolume:7}, navigator:{},
+    setTimeout(fn) {timers.set(++sequence,fn); return sequence;}, clearTimeout(id) {timers.delete(id);},
+    audioCtx:{state:'running', currentTime:0, destination:{},
+      createGain:()=>({...node(),gain:parameter()}), createDelay:()=>({...node(),delayTime:parameter()}),
+      createBiquadFilter:()=>({...node(),frequency:parameter()}),
+      createOscillator() {const n={...node(),frequency:parameter(),start(){},stop(){this.stopped=true;}};oscillators.push(n);return n;}
+    }};
+  vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('function playBeep('), source.indexOf('const CHALLENGE_GROUPS')), c);
+  vm.runInContext(source.slice(source.indexOf('function initAudio('), source.indexOf('function startCompassListening(')), c);
+  c.playRadarSonar('close'); c.playSelectedFanfare(true);
+  assert.equal(oscillators.length,19);
+  assert(connections>0);
+  c.appState.soundMode='muted'; c.initAudio();
+  assert.equal(connections,0);
+  assert(oscillators.every(n=>n.stopped&&n.onended===null));
+  assert.equal(vm.runInContext('selectedSoundVoices.size',c),0);
+  assert.equal(timers.size,0);
+  const count=nodes.length;
+  c.playChallengePlaceCue(); c.playRadarSonar('normal');
+  assert.equal(nodes.length,count);
 });

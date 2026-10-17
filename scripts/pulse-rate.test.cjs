@@ -12,14 +12,14 @@ function fixture() {
     radarTimer: null, scheduledInterval: null,
     setTimeout(fn, delay) { timers.push({fn, delay}); return timers.length; },
     clearTimeout: id => cancelled.push(id),
-    playBeep: pitch => tones.push(pitch), playDoubleBeep: () => tones.push('double'),
+    playRadarSonar: stage => tones.push(stage),
     document: {getElementById: () => wave}
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('function scheduleRadarSound('), source.indexOf('async function handleArrival(')), context);
   return {context, timers, tones, animations, cancelled};
 }
-test('normal and intermediate bands retain pitch and pulse type at all three rates', () => {
+test('approved sonars and visual pulse types follow normal/intermediate bands at all three rates', () => {
   for (const interval of [2600, 1500, 800, 450, 2050, 1150, 625, 350]) {
     for (const [mode, factor] of [['max', 1], ['mid', 2], ['low', 4]]) {
       for (const double of [false, true]) {
@@ -27,7 +27,7 @@ test('normal and intermediate bands retain pitch and pulse type at all three rat
         c.appState.pulseRate = mode;
         c.scheduleRadarSound(interval, double);
         assert.equal(timers[0].delay, interval * factor);
-        assert.equal(tones[0], double ? 'double' : interval <= 900 ? 2100 : 1750);
+        assert.equal(tones[0], double ? 'close' : interval <= 900 ? 'near' : 'normal');
         assert.equal(animations[0], double ? 'pulse-double-anim' : 'pulse-anim');
       }
     }

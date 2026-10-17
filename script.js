@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.170006";
+const BASE_JS_VERSION = "v0.26.101.171112";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -999,6 +999,7 @@ function initAudio() {
   // MUTEDでは音声系を起動しない。
   // playback状態から切り替わった場合もtransientへ戻す。
   if (appState.isMuted) {
+    stopSelectedSounds();
     if (navigator.audioSession) {
       navigator.audioSession.type = 'transient';
     }
@@ -1153,37 +1154,123 @@ function playDoubleBeep() {
   }, 85);
 }
 
-function playTreasureFanfare() {
-  if ('vibrate' in navigator) {
-    navigator.vibrate([200, 100, 300, 100, 600]);
+// Adopted from sound lab: R02-N / R01-N / R03-N, A31-T2 and A33-K.
+const selectedSoundVoices = new Set();
+
+function stopSelectedSounds(kind = null) {
+  for (const voice of selectedSoundVoices) {
+    if (!kind || voice.kind === kind) voice.dispose();
   }
+}
 
+function playSelectedSound(kind, render) {
   if (appState.isMuted) return;
-  if (!audioCtx) initAudio();
-  if (!audioCtx || audioCtx.state !== 'running') return;
-
-  const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66, 1318.51];
-  const startedAt = audioCtx.currentTime;
-  notes.forEach((freq, idx) => {
+  try {
+    if (!audioCtx) initAudio();
+    if (!audioCtx || audioCtx.state === 'closed') return;
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    const ctx = audioCtx;
+    const voice = {kind, nodes:new Set(), oscillators:new Set(), timer:null, disposed:false};
+    voice.dispose = () => {
+      if (voice.disposed) return;
+      voice.disposed = true;
+      clearTimeout(voice.timer);
+      for (const oscillator of voice.oscillators) {
+        oscillator.onended = null;
+        try { oscillator.stop(); } catch (_) {}
+      }
+      for (const node of voice.nodes) { try { node.disconnect(); } catch (_) {} }
+      voice.nodes.clear(); voice.oscillators.clear(); selectedSoundVoices.delete(voice);
+    };
+    selectedSoundVoices.add(voice);
     try {
-      if (appState.isMuted || !audioCtx) return;
-      const start = startedAt + idx * 0.115;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, start);
+      const track = node => { voice.nodes.add(node); return node; };
+      const output = track(ctx.createGain()), bus = track(ctx.createGain());
+      voice.output = output;
+      output.gain.value = Math.max(0, Math.min(10, appState.soundVolume)) / 7;
+      bus.connect(output); output.connect(ctx.destination);
+      let echoTail = 0;
+      const echo = level => {
+        echoTail = (level === 2 ? .18 : .105) * 5;
+        for (let i = 1; i <= 5; i++) {
+          const delay = track(ctx.createDelay(2)), gain = track(ctx.createGain());
+          const filter = track(ctx.createBiquadFilter());
+          delay.delayTime.value = (level === 2 ? .18 : .105) * i;
+          gain.gain.value = (level === 2 ? .38 : .22) ** i;
+          filter.type = 'lowpass'; filter.frequency.value = 4800 - i * 500;
+          bus.connect(delay); delay.connect(filter); filter.connect(gain); gain.connect(output);
+        }
+      };
+      const tone = (frequency, time, duration, amplitude = .3, type = 'sine', endFrequency, attack = .008) => {
+        const oscillator = track(ctx.createOscillator()), gain = track(ctx.createGain());
+        voice.oscillators.add(oscillator);
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, time);
+        if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, time + duration * .7);
+        gain.gain.setValueAtTime(.0001, time);
+        gain.gain.exponentialRampToValueAtTime(amplitude, time + attack);
+        gain.gain.exponentialRampToValueAtTime(.0001, time + duration);
+        oscillator.connect(gain); gain.connect(bus);
+        oscillator.onended = () => {
+          if (voice.disposed) return;
+          oscillator.disconnect(); gain.disconnect();
+          voice.nodes.delete(oscillator); voice.nodes.delete(gain); voice.oscillators.delete(oscillator);
+          if (!voice.oscillators.size) voice.timer = setTimeout(voice.dispose, echoTail * 1000 + 30);
+        };
+        oscillator.start(time); oscillator.stop(time + duration);
+      };
+      const mallet = (time, frequency, duration, amplitude = .25) => {
+        tone(frequency, time, duration, amplitude);
+        tone(frequency * 3, time, duration * .24, amplitude * .2);
+      };
+      // Radar pulses share their start with the visual wave; arrival previews used a 25ms lead.
+      render({tone, mallet, echo, start:ctx.currentTime + (kind === 'radar' ? 0 : .025)});
+      if (!voice.oscillators.size) voice.dispose();
+      return voice;
+    } catch (_) { voice.dispose(); }
+  } catch (_) { /* An unavailable audio device must not interrupt exploration or recording. */ }
+}
 
-      const dur = (idx === notes.length - 1) ? 1.5 : 0.18;
-      gain.gain.setValueAtTime(0.55 * (appState.soundVolume / 7), start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
-      osc.start(start);
-      osc.stop(start + dur);
-    } catch (_) {}
+function playRadarSonar(stage) {
+  return playSelectedSound('radar', ({tone, echo, start}) => {
+    echo(2);
+    const deep = stage === 'normal';
+    const frequency = deep ? 440 : 660, end = deep ? 470 : 720;
+    const attack = stage === 'near' ? .025 : .04;
+    tone(frequency, start, .35, .34, 'sine', end, attack);
+    if (stage === 'close') {
+      tone(frequency * 1.006, start, .35 * 1.1, .065, 'sine', end * 1.006, attack);
+      tone(frequency * 2, start, .35 * .65, .035, 'sine', end * 2, attack);
+    }
   });
+}
+
+function playSelectedFanfare(challenge) {
+  return playSelectedSound('presentation', ({tone, mallet, echo, start}) => {
+    echo(1);
+    const notes = challenge
+      ? [55,60,64,67,72,67,64,60,62,65,69,74,76,74,71,72]
+      : [60,67,64,72,67,76,72,67,65,69,74,72,67,64,67,72];
+    notes.forEach((note, index) => {
+      const frequency = 440 * 2 ** ((note - 69) / 12), time = start + index * .115;
+      const duration = index === notes.length - 1 ? (challenge ? .8 : .6) : .18;
+      if (challenge) tone(frequency, time, duration, .25, 'triangle');
+      else mallet(time, frequency, duration);
+    });
+  });
+}
+
+function playChallengePlaceCue() {
+  return playSelectedSound('presentation', ({tone, echo, start}) => {
+    echo(1);
+    tone(440 * 2 ** ((76 - 69) / 12), start, .14, .05, 'triangle', null, .012);
+    tone(440 * 2 ** ((79 - 69) / 12), start + .075, .13, .045, 'triangle', null, .012);
+  });
+}
+
+function playTreasureFanfare() {
+  if ('vibrate' in navigator) navigator.vibrate([200, 100, 300, 100, 600]);
+  return playSelectedFanfare(false);
 }
 
 const CHALLENGE_GROUPS = [
@@ -2067,7 +2154,7 @@ function evaluateSensorCycle() {
 }
 
 function scheduleRadarSound(interval, isDoubleBeep = false) {
-  // Keep pitch and double-beep spacing unchanged; only slow the repeat cycle.
+  // Preserve the approved five/nine-level timing; only the repeat cycle follows pulseRate.
   const baseInterval = interval;
   const rate = { max: 1, mid: 0.5, low: 0.25 }[appState.pulseRate] || 1;
   interval = baseInterval / rate;
@@ -2085,11 +2172,7 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
       return;
     }
 
-    if (isDoubleBeep) {
-      playDoubleBeep();
-    } else {
-      playBeep(baseInterval <= 900 ? 2100 : 1750);
-    }
+    playRadarSonar(isDoubleBeep ? 'close' : baseInterval <= 900 ? 'near' : 'normal');
 
     const wave = document.getElementById('radar-pulse');
     if (wave) {
@@ -2778,6 +2861,7 @@ let challengePresentationTimer = null;
 function showChallengePresentation(challenge, completed = false, arrival = null) {
   const banner = document.getElementById('challenge-presentation');
   if (!banner) return;
+  stopSelectedSounds('presentation');
   clearTimeout(challengePresentationTimer);
   banner.classList.remove('is-visible', 'is-leaving', 'is-place-visible');
   banner.classList.toggle('is-complete', completed);
@@ -2815,6 +2899,7 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
       place.textContent = arrivalMessage;
       place.hidden = false;
       banner.classList.add('is-place-visible');
+      playChallengePlaceCue();
       challengePresentationTimer = setTimeout(fadeOut, readingTime);
       return;
     }
@@ -2825,10 +2910,12 @@ function showChallengePresentation(challenge, completed = false, arrival = null)
 
 function playChallengeFanfare(completed) {
   if (appState.isMuted) return;
+  if (completed) return playSelectedFanfare(true);
   try {
     if (!audioCtx) initAudio();
     if (!audioCtx || audioCtx.state !== 'running') return;
-    const notes = completed ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 783.99];
+    // The challenge-start chime stays unchanged; completion uses A31 above.
+    const notes = [523.25, 783.99];
     notes.forEach((frequency, index) => {
       const start = audioCtx.currentTime + index * 0.12;
       const oscillator = audioCtx.createOscillator();
@@ -3458,6 +3545,7 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
   const currentIndex = modes.indexOf(appState.soundMode);
   appState.soundMode = modes[(currentIndex + 1) % modes.length];
   appState.isMuted = appState.soundMode === 'muted';
+  if (appState.isMuted) stopSelectedSounds();
 
   localStorage.setItem('sheikah_sound_mode', appState.soundMode);
 
@@ -3509,6 +3597,7 @@ function changeSoundVolume(step) {
   }
 
   appState.soundVolume = nextVolume;
+  for (const voice of selectedSoundVoices) voice.output.gain.value = nextVolume / 7;
   localStorage.setItem('sheikah_sound_volume', String(appState.soundVolume));
 
   playBeep(2000, 0.08);
@@ -3620,6 +3709,7 @@ for (const kind of ['target', 'sensor-detail']) {
 updateConditionButtons();
 
 function stopSearchAndReset() {
+  stopSelectedSounds('radar');
   appState.explorationId = null;
   if (!appState.accessCommitPending) globalThis.SensorExplorationRecovery?.clear();
   releaseChallengeSettings();
