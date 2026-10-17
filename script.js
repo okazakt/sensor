@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171230";
+const BASE_JS_VERSION = "v0.26.101.171508";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2028,6 +2028,9 @@ function sensorInfoNotice(now = Date.now()) {
 }
 
 function sensorReaction(distance, angle) {
+  if (appState.sensorDetail === 'standard' && !appState.isWalking) {
+    return { level: 'idle', interval: null, double: false };
+  }
   const radius = RADIUS_OPTIONS[radiusIndex];
   const strong = Math.max(100, radius * 0.1);
   const medium = Math.max(150, radius * 0.3);
@@ -2072,6 +2075,7 @@ function updateDetectionLabel() {
 }
 
 function evaluateSensorCycle() {
+  updateStoppedState(Date.now());
   globalThis.SensorRuntimeDiagnostics?.count('sensor.cycle');
   if (arrivalInProgressId !== null || appState.accessCommitPending) return;
   const db = window.SensorAppStorage
@@ -2177,6 +2181,13 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
   scheduledInterval = interval;
 
   function pulse() {
+    if (appState.sensorDetail === 'standard') {
+      updateStoppedState(Date.now());
+      if (!appState.isWalking) {
+        evaluateSensorCycle();
+        return;
+      }
+    }
     if (!appState.isTracking || appState.isPaused) {
       radarTimer = null;
       scheduledInterval = null;

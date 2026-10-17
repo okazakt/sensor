@@ -14,6 +14,7 @@ function sensorFixture() {
     appState: {
       targetMode: "random", sensorDetail: "standard", isTracking: true, isPaused: false,
       currentPos: { lat: 0, lng: 0 }, currentHeading: 0,
+      isWalking: true, lastWalkTimestamp: Date.now(),
       pinpointTarget: null, randomTarget: null, places: []
     },
     RADIUS_OPTIONS: [3000], radiusIndex: 0,
@@ -35,6 +36,8 @@ function sensorFixture() {
     source.indexOf('function getSearchCandidates')), context);
   vm.runInContext(source.slice(source.indexOf('function getSearchCandidates'),
     source.indexOf('function scheduleRadarSound')), context);
+  vm.runInContext(source.slice(source.indexOf('function enterStoppedState'),
+    source.indexOf('function confirmStopped')), context);
   return { context, elements, records };
 }
 
@@ -372,4 +375,32 @@ test('探知判定は保存データを一度だけ読み、IndexedDB時は軽�
     assert.equal(detectionReads, indexed ? 1 : 0);
     assert.equal(outlineUpdates, 0);
   }
+});
+
+test('通常は停止中に反応せず、移動再開とHI-SENSで反応する', () => {
+  const { context: c } = sensorFixture();
+  c.appState.places = [{ id: 'target', lat: 100, lng: 0 }];
+  let level;
+  c.updateVisualRing = value => { level = value; };
+  c.evaluateSensorCycle();
+  assert.notEqual(level, 'idle');
+  c.appState.lastWalkTimestamp = Date.now() - 5001;
+  c.evaluateSensorCycle();
+  assert.equal(c.appState.isWalking, false);
+  assert.equal(level, 'idle');
+  assert.equal(c.scheduledInterval, null);
+  c.appState.sensorDetail = 'detailed';
+  c.evaluateSensorCycle();
+  assert.notEqual(level, 'idle');
+  c.appState.sensorDetail = 'standard';
+  c.appState.isWalking = true;
+  c.appState.lastWalkTimestamp = Date.now();
+  c.evaluateSensorCycle();
+  assert.notEqual(level, 'idle');
+  c.appState.isWalking = false;
+  let arrived;
+  c.handleArrival = target => { arrived = target.id; };
+  c.appState.places[0].lat = 10;
+  c.evaluateSensorCycle();
+  assert.equal(arrived, 'target');
 });
