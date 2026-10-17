@@ -124,29 +124,177 @@
 #completion-dialog{width:min(680px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--text);padding:18px}
 #completion-dialog::backdrop{background:#000b}.completion-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.completion-controls h2{margin:0;font-size:18px}.completion-stage{position:relative;container-type:inline-size;min-height:300px;overflow:hidden;border-radius:8px;background:radial-gradient(ellipse at center,#274136,#0b171c)}
 #completion-dialog .challenge-presentation{inset:30px 0 auto}#completion-phase{color:var(--accent);min-height:28px}#completion-progress{width:100%;margin-top:14px;accent-color:var(--accent)}
+
+#radar-dialog{width:min(680px,calc(100% - 24px));max-height:94dvh;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--text);padding:16px;--sheikah-cyan:#70f0ec;--sheikah-cyan-glow:#70f0ecaa;--sheikah-orange:#f6b46c}
+#radar-dialog::backdrop{background:#000b}.radar-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.radar-controls label{min-width:0}.radar-controls select{max-width:100%}#radar-phase{min-height:28px;color:var(--accent)}#radar-stage{display:grid;place-items:center;padding:20px;overflow:hidden}#radar-progress{width:100%;accent-color:var(--accent)}
+#radar-stage .circle-map-wrapper{position:relative;isolation:isolate;width:min(70vw,320px);aspect-ratio:1;border-radius:50%;padding:6px;border:1px solid #6ba7a7}
+#radar-stage .map-signal-glow{position:absolute;inset:0;border-radius:50%;box-shadow:var(--map-ring-shadow);pointer-events:none;z-index:-1;animation-duration:inherit;animation-timing-function:inherit;animation-iteration-count:inherit}
+.lab-map{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:#10232a}.lab-map-grid{position:absolute;inset:0;background-image:linear-gradient(#41696540 1px,transparent 1px),linear-gradient(90deg,#41696540 1px,transparent 1px);background-size:30px 30px;transform:rotate(20deg) scale(1.5)}.lab-player{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--sheikah-cyan);font-size:24px}.lab-map-caption{position:absolute;bottom:10%;width:100%;text-align:center;font-size:12px;color:#adc2ce}
+.signal-level1>.map-signal-glow,.signal-level1-half>.map-signal-glow{animation-name:ring-light-1}.signal-level2>.map-signal-glow,.signal-level2-half>.map-signal-glow{animation-name:ring-light-2}.signal-level3>.map-signal-glow,.signal-level3-half>.map-signal-glow{animation-name:ring-light-3}.signal-level4>.map-signal-glow,.signal-level4-half>.map-signal-glow{animation-name:ring-light-4}
+.circle-map-wrapper.signal-idle {
+  --map-ring-shadow: 0 0 15px rgba(0, 0, 0, 0.8), inset 0 0 10px #000;
+  animation: none;
+}
+.circle-map-wrapper.signal-level1 {
+  --map-ring-shadow: 0 0 20px var(--sheikah-cyan-glow), inset 0 0 10px var(--sheikah-cyan);
+  animation: ring-pulse-1 2.5s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level2 {
+  --map-ring-shadow: 0 0 32px var(--sheikah-cyan), inset 0 0 14px #fff;
+  animation: ring-pulse-2 1.5s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level3 {
+  --map-ring-shadow: 0 0 42px var(--sheikah-cyan), 0 0 20px var(--sheikah-orange), inset 0 0 18px #fff;
+  animation: ring-pulse-3 0.8s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level4 {
+  --map-ring-shadow: 0 0 55px var(--sheikah-orange), 0 0 30px var(--sheikah-cyan), inset 0 0 25px #fff;
+  animation: ring-pulse-4 0.45s infinite ease-in-out;
+  border: 2px solid #fff;
+}
+
+.day-mode .circle-map-wrapper.signal-level1 {
+  --map-ring-shadow: 0 0 20px var(--botw-yellow-glow), inset 0 0 10px var(--botw-yellow);
+}
+.day-mode .circle-map-wrapper.signal-level2 {
+  --map-ring-shadow: 0 0 32px var(--botw-yellow), inset 0 0 14px #fff;
+}
+.day-mode .circle-map-wrapper.signal-level3 {
+  --map-ring-shadow: 0 0 42px var(--botw-yellow), 0 0 22px var(--botw-amber), inset 0 0 18px #fff;
+}
+.day-mode .circle-map-wrapper.signal-level4 {
+  --map-ring-shadow: 0 0 55px var(--botw-amber), 0 0 30px var(--botw-yellow), inset 0 0 25px #fff;
+  border: 2px solid var(--botw-yellow);
+}
+
+@keyframes ring-pulse-1 {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.01); }
+}
+@keyframes ring-light-1 {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+@keyframes ring-pulse-2 {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+@keyframes ring-light-2 {
+  0%, 100% { filter: brightness(1.1); }
+  50% { filter: brightness(1.35); }
+}
+@keyframes ring-pulse-3 {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes ring-light-3 {
+  0%, 100% { filter: brightness(1.2); }
+  50% { filter: brightness(1.55); }
+}
+@keyframes ring-pulse-4 {
+  0%, 100% { transform: scale(1.01); }
+  50% { transform: scale(1.05); }
+}
+@keyframes ring-light-4 {
+  0%, 100% { filter: brightness(1.4) contrast(1.2); }
+  50% { filter: brightness(1.9) contrast(1.5); }
+}
+
+.circle-map-wrapper.signal-level1-half {
+  --map-ring-shadow: 0 0 26px var(--sheikah-cyan), inset 0 0 12px var(--sheikah-cyan);
+  animation: ring-pulse-1 2.05s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level2-half {
+  --map-ring-shadow: 0 0 37px var(--sheikah-cyan), inset 0 0 16px #fff;
+  animation: ring-pulse-2 1.15s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level3-half {
+  --map-ring-shadow: 0 0 48px var(--sheikah-cyan), 0 0 25px var(--sheikah-orange), inset 0 0 21px #fff;
+  animation: ring-pulse-3 0.625s infinite ease-in-out;
+}
+.circle-map-wrapper.signal-level4-half {
+  --map-ring-shadow: 0 0 62px var(--sheikah-orange), 0 0 35px var(--sheikah-cyan), inset 0 0 28px #fff;
+  animation: ring-pulse-4 0.35s infinite ease-in-out;
+  border: 2px solid #fff;
+}
+.radar-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid var(--sheikah-cyan);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.day-mode .radar-pulse-ring {
+  border-color: var(--botw-yellow);
+}
+
+.pulse-anim {
+  animation: pulse-out-anim 0.65s ease-out forwards;
+}
+.pulse-double-anim {
+  animation: pulse-out-double 0.4s ease-out forwards;
+}
+
+@keyframes pulse-out-anim {
+  0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
+  100% { width: 340px; height: 340px; opacity: 0; border-color: var(--sheikah-cyan); }
+}
+.day-mode .pulse-anim {
+  animation-name: pulse-out-anim-day;
+}
+@keyframes pulse-out-anim-day {
+  0% { width: 30px; height: 30px; opacity: 1; border-color: #fff; }
+  100% { width: 340px; height: 340px; opacity: 0; border-color: var(--botw-yellow); }
+}
+
+@keyframes pulse-out-double {
+  0% { width: 30px; height: 30px; opacity: 1; border-color: var(--sheikah-orange); }
+  100% { width: 340px; height: 340px; opacity: 0; border-color: #fff; }
+}
+.day-mode .pulse-double-anim {
+  animation-name: pulse-out-double-day;
+}
+@keyframes pulse-out-double-day {
+  0% { width: 30px; height: 30px; opacity: 1; border-color: var(--botw-amber); }
+  100% { width: 340px; height: 340px; opacity: 0; border-color: var(--botw-yellow); }
+}
+
 </style>
 </head>
 <body><main>
 <a href="../index.html">← アプリに戻る</a><div class="eyebrow">SENSOR / SOUND LAB</div>
 <h1>音の試聴室</h1>
-<p class="intro">A31・A33に、COMPLETEと場所名の表示に合わせた軽い合図音を追加しました。<br>「表示と合わせて試聴」で本番と同じ時間差を確認できます。過去の候補は折りたたみ内に残しています。</p>
+<p class="intro">COMPLETE時の追加音を外し、場所名だけに合図を添える5パターンに更新しました。<br>キーワード到着と、探索の通常5段階・詳細9段階も、表示と合わせて試せます。</p>
 <div class="toolbar"><label>試聴音量 <input id="volume" type="range" min="0" max="100" value="45"> <output id="volume-value">45%</output></label><label>再生方法 <select id="mode"><option value="once">1回</option><option value="repeat">3回（探知音の反復比較）</option><option value="radar">探知音を実際の間隔で6回（R・X系の各段階用）</option></select></label><button id="stop" type="button">■ 停止</button></div>
 <p id="status" role="status" aria-live="polite">再生ボタンを押すと音が出ます。音量は控えめからお試しください。</p>
-<p class="description">T1は軽い一音、T2は短い二音。開始1.5秒後にCOMPLETE、4.4秒後に場所名を表示して合図を添えます。元のA31・A33も下で比較できます。表示を含む試聴は約12秒、1回ずつ再生します。</p>
+<p class="description">T1・T2は場所名だけに合図。追加のT3は低い一音、T4は下降する二音、T5は小さな和音です。Kはキーワード到着、D05・D09は探索表示の試聴です。各デモは1回ずつ再生します。</p>
 <div id="catalog"></div>
 <details id="archive"><summary id="archive-summary">過去の候補を表示</summary><p class="description">以前の番号・音・選択内容を保持しています。必要なときだけ開いて比較できます。</p><div id="archive-catalog"></div></details>
 <section><h2>選択メモ</h2><p class="description">「候補にする」にチェックすると番号をまとめます。選択はこのブラウザに保存します。アプリへの採用は番号を伝えてください。</p><textarea id="memo" readonly aria-label="選択した音の番号"></textarea><div class="memo-actions"><button id="copy" type="button">メモをコピー</button><button id="clear" type="button">選択をクリア</button></div></section>
 <footer>すべてブラウザ内で生成する合成音です。水滴・鈴・鳥も録音素材ではなく音色の候補です。エコーは弱・中・強で比較できます。現行音の音程・波形・タイミングを再現し、試聴音量を共通で調整します。</footer>
-</main><dialog id="completion-dialog" aria-labelledby="completion-title">
+</main><dialog id="radar-dialog" aria-labelledby="radar-title">
+<div class="completion-controls"><h2 id="radar-title">探索の表示と音</h2><button id="radar-close" type="button">停止して閉じる</button></div>
+<div class="radar-controls"><label>感度 <select id="radar-mode"><option value="standard">通常5段階</option><option value="detailed">詳細9段階</option></select></label><label>段階 <select id="radar-level"></select></label><label>探知速度 <select id="radar-rate"><option value="1">最大</option><option value="0.5">中</option><option value="0.25">低</option></select></label></div>
+<p id="radar-phase" role="status" aria-live="polite"></p>
+<div id="radar-stage"><div id="lab-radar-ring" class="circle-map-wrapper signal-idle"><div class="map-signal-glow"></div><div class="lab-map"><div class="lab-map-grid"></div><span class="lab-player">▲</span><div id="lab-radar-pulse" class="radar-pulse-ring"></div><span class="lab-map-caption">模擬地図</span></div></div></div>
+<progress id="radar-progress" max="1" value="0" aria-label="探索試聴の進行"></progress>
+<p class="description">待機を含め通常は5段階、詳細は9段階。音と中心から広がる波紋の発生時刻を合わせます。外周の明滅は本体と同じ独立した周期です。至近距離も指定のR03-N単音です。</p>
+<div class="memo-actions"><button id="radar-prev" type="button">前の段階</button><button id="radar-next" type="button">次の段階</button><button id="radar-replay" type="button">最初から</button></div>
+</dialog>
+<dialog id="completion-dialog" aria-labelledby="completion-title">
 <div class="completion-controls"><h2 id="completion-title">チャレンジ達成の試聴</h2><button id="completion-close" type="button">停止して閉じる</button></div>
 <p id="completion-phase" role="status" aria-live="polite">ファンファーレ開始</p>
 <div class="completion-stage">
 <div id="completion-presentation" class="challenge-presentation is-complete is-arrival" aria-hidden="true"><div class="challenge-presentation-band">
-<div class="challenge-presentation-label">チャレンジ</div><div class="challenge-presentation-name">サンプルチャレンジ</div>
-<div class="challenge-presentation-state">COMPLETE</div><div id="completion-place" class="challenge-presentation-place" hidden>サンプルスポットへの到達を記録しました</div>
+<div id="completion-label" class="challenge-presentation-label">チャレンジ</div><div id="completion-name" class="challenge-presentation-name">サンプルチャレンジ</div>
+<div id="completion-state" class="challenge-presentation-state">COMPLETE</div><div id="completion-place" class="challenge-presentation-place" hidden>サンプルスポットへの到達を記録しました</div>
 </div></div></div>
 <progress id="completion-progress" max="12.3" value="0" aria-label="演出の進行"></progress>
-<p class="description">0秒：ファンファーレ → 1.5秒：COMPLETE ＋ 合図 → 4.4秒：場所名 ＋ 合図</p>
+<p id="completion-timeline" class="description"></p>
 <button id="completion-replay" type="button">もう一度試聴</button>
 </dialog>
-<script src="current-sounds.js"></script><script src="sound.js?v=6"></script></body></html>
+<script src="current-sounds.js"></script><script src="radar-preview.js?v=1"></script><script src="sound.js?v=7"></script></body></html>
