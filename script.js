@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.171517";
+const BASE_JS_VERSION = "v0.26.101.200747";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1003,6 +1003,61 @@ mapContrastBtn.addEventListener('click', () => {
 
 let audioCtx = null;
 let silentAudioElement = null;
+let audioRecoveryTimer = null;
+
+function resetAudioOutput() {
+  clearTimeout(audioRecoveryTimer);
+  stopSelectedSounds();
+  if (silentAudioElement) {
+    silentAudioElement.pause();
+    silentAudioElement = null;
+  }
+  const previous = audioCtx;
+  audioCtx = null;
+  if (previous && previous.state !== 'closed') {
+    try { previous.close().catch(() => {}); } catch (_) {}
+  }
+  // Release the old playback route before requesting it again.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'transient';
+  } catch (_) {}
+}
+
+function recoverAudioOutput(reset = false) {
+  clearTimeout(audioRecoveryTimer);
+  if (document.hidden || appState.soundMode === 'muted') return;
+  if (reset) resetAudioOutput();
+  initAudio();
+  const context = audioCtx;
+  if (!context) return;
+  const startTime = context.currentTime;
+  // Some browsers report running while their audio clock has stopped.
+  // Retry once only; a later tap can unlock autoplay-restricted playback.
+  audioRecoveryTimer = setTimeout(() => {
+    if (document.hidden || appState.soundMode === 'muted' || audioCtx !== context) return;
+    if (context.state !== 'running' || context.currentTime <= startTime) {
+      resetAudioOutput();
+      initAudio();
+    }
+  }, 700);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearTimeout(audioRecoveryTimer);
+  } else if (audioCtx || silentAudioElement) {
+    recoverAudioOutput(appState.soundMode === 'speaker');
+  }
+});
+window.addEventListener('pageshow', event => {
+  if (event.persisted && (audioCtx || silentAudioElement)) {
+    recoverAudioOutput(appState.soundMode === 'speaker');
+  }
+});
+// Keep a user-gesture retry available after an interruption or autoplay denial.
+window.addEventListener('pointerdown', () => {
+  if (audioCtx && audioCtx.state !== 'running' && !document.hidden) recoverAudioOutput();
+});
 
 function initAudio() {
   appState.isMuted = appState.soundMode === 'muted';
@@ -1010,7 +1065,7 @@ function initAudio() {
   // MUTEDでは音声系を起動しない。
   // playback状態から切り替わった場合もtransientへ戻す。
   if (appState.isMuted) {
-    stopSelectedSounds();
+    resetAudioOutput();
     if (navigator.audioSession) {
       navigator.audioSession.type = 'transient';
     }
@@ -1034,12 +1089,12 @@ function initAudio() {
     silentAudioElement.play().catch(() => {});
   } catch (e) {}
 
-  if (!audioCtx) {
+  if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+    audioCtx.resume().catch(() => {});
   }
 
   try {
@@ -1130,7 +1185,7 @@ function playBeep(freq = 1800, duration = 0.12) {
   if (appState.isMuted) return;
   if (!audioCtx) initAudio();
   if (!audioCtx) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') audioCtx.resume().catch(() => {});
 
   try {
     const osc = audioCtx.createOscillator();
@@ -1179,7 +1234,7 @@ function playSelectedSound(kind, render) {
   try {
     if (!audioCtx) initAudio();
     if (!audioCtx || audioCtx.state === 'closed') return;
-    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') audioCtx.resume().catch(() => {});
     const ctx = audioCtx;
     const voice = {kind, nodes:new Set(), oscillators:new Set(), timer:null, disposed:false};
     voice.dispose = () => {
@@ -3571,13 +3626,11 @@ document.getElementById('mute-toggle-btn').addEventListener('click', () => {
 
   localStorage.setItem('sheikah_sound_mode', appState.soundMode);
 
-  if (navigator.audioSession) {
-    navigator.audioSession.type =
-      appState.soundMode === 'speaker' ? 'playback' : 'transient';
-  }
-
-  if (!appState.isMuted) {
+  if (appState.isMuted) {
     initAudio();
+  } else {
+    // Recreate even a nominally running engine when selecting a new route.
+    recoverAudioOutput(true);
     playRadarSonar('normal');
   }
 

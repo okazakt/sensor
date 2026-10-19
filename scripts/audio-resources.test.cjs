@@ -97,7 +97,7 @@ test('ミュートは採用音の予約音・エコーを即座に切断し、�
     const n = {connect() { connections++; outgoing++; }, disconnect() { connections -= outgoing; outgoing = 0; }};
     nodes.push(n); return n;
   }
-  const c = {appState:{soundMode:'headphone', isMuted:false, soundVolume:7}, navigator:{},
+  const c = {audioRecoveryTimer:null, silentAudioElement:null, appState:{soundMode:'headphone', isMuted:false, soundVolume:7}, navigator:{},
     setTimeout(fn) {timers.set(++sequence,fn); return sequence;}, clearTimeout(id) {timers.delete(id);},
     audioCtx:{state:'running', currentTime:0, destination:{},
       createGain:()=>({...node(),gain:parameter()}), createDelay:()=>({...node(),delayTime:parameter()}),
@@ -106,6 +106,7 @@ test('ミュートは採用音の予約音・エコーを即座に切断し、�
     }};
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('function playBeep('), source.indexOf('const CHALLENGE_GROUPS')), c);
+  vm.runInContext(source.slice(source.indexOf('function resetAudioOutput('), source.indexOf('function recoverAudioOutput(')), c);
   vm.runInContext(source.slice(source.indexOf('function initAudio('), source.indexOf('function startCompassListening(')), c);
   c.playRadarSonar('close'); c.playSelectedFanfare(true);
   assert.equal(oscillators.length,19);
