@@ -91,6 +91,7 @@ test('音量は5%刻みの20段階で保存され、上下限を超えない', (
     localStorage: {setItem: (_, value) => saved.push(value)},
     playRadarSonar(stage, echoLevel) { assert.equal(stage, 'near'); assert.equal(echoLevel, 1); }, showVolumeModeToast() {}};
   vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('function getSoundVolumeGain('), source.indexOf('function getSoundOutput(')), c);
   vm.runInContext(source.slice(source.indexOf('function changeSoundVolume'), source.indexOf("document.getElementById('volume-down-btn')", source.indexOf('function changeSoundVolume'))), c);
   c.changeSoundVolume(-1);
   assert.equal(c.appState.soundVolume, 0.5);
@@ -98,7 +99,7 @@ test('音量は5%刻みの20段階で保存され、上下限を超えない', (
     c.changeSoundVolume(1);
     assert.equal(c.appState.soundVolume * 10, level * 5);
     assert.equal(Number(saved.at(-1)), level / 2);
-    assert.equal(playing.output.gain.value, c.appState.soundVolume / 7);
+    assert.equal(playing.output.gain.value, c.getSoundVolumeGain(c.appState.soundVolume));
   }
   c.changeSoundVolume(1);
   assert.equal(c.appState.soundVolume, 10);

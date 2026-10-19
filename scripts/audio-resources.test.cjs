@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../script.js'), 'utf8');
 
+function limiter(node = {connect() {}, disconnect() {}}) {
+  return {...node, threshold:{}, knee:{}, ratio:{}, attack:{}, release:{}};
+}
+
 test('探知音と到着音を繰り返しても終了した音声接続を保持しない', () => {
   const oscillators = [];
   let connections = 0;
@@ -18,6 +22,7 @@ test('探知音と到着音を繰り返しても終了した音声接続を保�
     setTimeout(callback) { callback(); }, clearTimeout() {},
     audioCtx: {
       state:'running', currentTime:0, destination:{},
+      createDynamicsCompressor: () => limiter(node()),
       createOscillator() {
         const oscillator = {...node(), frequency:parameter, start() {}, stop() {}};
         oscillators.push(oscillator);
@@ -39,17 +44,18 @@ test('探知音と到着音を繰り返しても終了した音声接続を保�
     context.playChallengePlaceCue();
     assert.equal(oscillators.length, 54);
     while (oscillators.length) oscillators.shift().onended();
-    assert.equal(connections, 0);
+    assert.equal(connections, 1);
     assert.equal(vm.runInContext('selectedSoundVoices.size', context), 0);
   }
 });
 
-test('探知音は70%以下を維持し、最大ではピーク1と短い持続区間を使う', () => {
+test('音量は低音量を細かく調整でき、最大ゲインは従来の3倍になる', () => {
   const events = [];
   const context = {
     appState: { isMuted: false, soundVolume: 7 },
     audioCtx: {
       state: 'running', currentTime: 2, destination: {},
+      createDynamicsCompressor: () => limiter(),
       createOscillator() {
         return { frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
           connect() {}, start() {}, stop() {} };
@@ -70,16 +76,10 @@ test('探知音は70%以下を維持し、最大ではピーク1と短い持続�
     context.appState.soundVolume = volume;
     context.playBeep();
     const peak = events[0][1];
-    assert.ok(peak > 0 && peak <= 1);
-    if (volume <= 7) {
-      assert.equal(peak, 0.55 * (volume / 7));
-      assert.equal(events.length, 2);
-    } else {
-      assert.ok(peak > 0.55 * volume / 7);
-      assert.equal(events[1][1], peak);
-      assert.ok(events[1][2] > 2 && events[1][2] < 2.12);
-    }
-    if (volume === 10) assert.equal(peak, 1);
+    assert.ok(peak > 0 && peak <= 3);
+    assert.ok(Math.abs(peak - 3 * (volume / 10) ** 2) < 1e-12);
+    assert.equal(events.length, 2);
+    if (volume === 10) assert.ok(Math.abs(peak - 3) < 1e-12);
     assert.deepEqual(events.at(-1), ['ramp', 0.001, 2.12]);
   }
   events.length = 0;
@@ -100,6 +100,7 @@ test('ミュートは採用音の予約音・エコーを即座に切断し、�
   const c = {audioRecoveryTimer:null, silentAudioElement:null, appState:{soundMode:'headphone', isMuted:false, soundVolume:7}, navigator:{},
     setTimeout(fn) {timers.set(++sequence,fn); return sequence;}, clearTimeout(id) {timers.delete(id);},
     audioCtx:{state:'running', currentTime:0, destination:{},
+      createDynamicsCompressor:()=>limiter(node()),
       createGain:()=>({...node(),gain:parameter()}), createDelay:()=>({...node(),delayTime:parameter()}),
       createBiquadFilter:()=>({...node(),frequency:parameter()}),
       createOscillator() {const n={...node(),frequency:parameter(),start(){},stop(){this.stopped=true;}};oscillators.push(n);return n;}
@@ -119,4 +120,21 @@ test('ミュートは採用音の予約音・エコーを即座に切断し、�
   const count=nodes.length;
   c.playChallengePlaceCue(); c.playRadarSonar('normal');
   assert.equal(nodes.length,count);
+});
+
+test('音量カーブは単調増加し、リミッターは同じ音声エンジンで共有する', () => {
+  const c = {appState:{soundVolume:10}};
+  vm.createContext(c);
+  vm.runInContext(source.slice(source.indexOf('function getSoundVolumeGain('), source.indexOf('function playDoubleBeep(')), c);
+  assert.equal(c.getSoundVolumeGain(0), 0);
+  assert.equal(c.getSoundVolumeGain(10), 3 * (10 / 7));
+  assert.equal(c.getSoundVolumeGain(5), c.getSoundVolumeGain(10) / 4);
+  for (let v = 1; v <= 20; v++) assert.ok(c.getSoundVolumeGain(v / 2) > c.getSoundVolumeGain((v - 1) / 2));
+  let connected = 0;
+  const ctx = {destination:{}, createDynamicsCompressor:()=>limiter({connect(){connected++;}})};
+  const output = c.getSoundOutput(ctx);
+  assert.equal(output, c.getSoundOutput(ctx));
+  assert.equal(connected, 1);
+  assert.equal(output.threshold.value, -3);
+  assert.equal(output.ratio.value, 20);
 });

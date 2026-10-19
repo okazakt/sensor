@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.200747";
+const BASE_JS_VERSION = "v0.26.101.200754";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -481,7 +481,7 @@ const I18N = {
     soundModeSpeaker: "for SPEAKER",
     soundModeMuted: "MUTED",
     soundModeHeadphoneDesc: "イヤホンモード：音楽と探知音を同時に再生できます。消音モードではイヤホンをご利用ください。",
-    soundModeSpeakerDesc: "スピーカーモード：消音モードでも探知音を再生します。音楽などは停止する場合があります。もしも音が聞こえない場合は、アプリを開き直すか、再起動をお試しください。",
+    soundModeSpeakerDesc: "スピーカーモード：消音モードでも探知音を再生します。音楽などは停止する場合があります。音が出ない場合は、まずスピーカーモードに設定し直してください。改善しない場合は、アプリを開き直すか、再起動をお試しください。",
     soundModeMutedDesc: "サウンドOFF：探知音を再生しません。",
     wakeLockOn: "KEEP SCREEN ON",
     wakeLockOff: "KEEP SCREEN OFF",
@@ -574,7 +574,7 @@ const I18N = {
     soundModeSpeaker: "for SPEAKER",
     soundModeMuted: "MUTED",
     soundModeHeadphoneDesc: "Headphone mode: Music and detection sounds can play together. Use headphones when Silent Mode is on.",
-    soundModeSpeakerDesc: "Speaker mode: Detection sounds play even in Silent Mode. Music or other audio may stop. If you cannot hear any sound, try reopening or restarting the app.",
+    soundModeSpeakerDesc: "Speaker mode: Detection sounds play even in Silent Mode. Music or other audio may stop. If you cannot hear any sound, first switch back to Speaker mode. If that does not help, try reopening or restarting the app.",
     soundModeMutedDesc: "Sound off: Detection sounds will not play.",
     wakeLockOn: "KEEP SCREEN ON",
     wakeLockOff: "KEEP SCREEN OFF",
@@ -1014,6 +1014,7 @@ function resetAudioOutput() {
   }
   const previous = audioCtx;
   audioCtx = null;
+  if (previous?.soundOutputLimiter) previous.soundOutputLimiter.disconnect();
   if (previous && previous.state !== 'closed') {
     try { previous.close().catch(() => {}); } catch (_) {}
   }
@@ -1194,22 +1195,37 @@ function playBeep(freq = 1800, duration = 0.12) {
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(freq * 1.05, audioCtx.currentTime + duration * 0.7);
 
-    // Keep the familiar lower levels; give the upper 30% more presence over music.
-    const volume = Math.max(0, Math.min(10, appState.soundVolume));
-    const boost = Math.max(0, (volume - 7) / 3);
-    const peak = 0.55 * (volume / 7) + boost * (1 - 0.55 * (10 / 7));
+    const peak = 0.7 * getSoundVolumeGain();
     gain.gain.setValueAtTime(peak, audioCtx.currentTime);
-    if (boost > 0) {
-      gain.gain.setValueAtTime(peak, audioCtx.currentTime + duration * 0.3 * boost);
-    }
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(getSoundOutput(audioCtx));
     osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
   } catch (e) {}
+}
+
+// Quadratic audio taper: finer control at low levels, 3x the former maximum
+// signal gain. Perceived loudness still depends on the device and OS volume.
+function getSoundVolumeGain(volume = appState.soundVolume) {
+  const level = Math.max(0, Math.min(10, volume)) / 10;
+  return (30 / 7) * level * level;
+}
+
+function getSoundOutput(context) {
+  if (!context.soundOutputLimiter) {
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.1;
+    limiter.connect(context.destination);
+    context.soundOutputLimiter = limiter;
+  }
+  return context.soundOutputLimiter;
 }
 
 function playDoubleBeep() {
@@ -1253,8 +1269,8 @@ function playSelectedSound(kind, render) {
       const track = node => { voice.nodes.add(node); return node; };
       const output = track(ctx.createGain()), bus = track(ctx.createGain());
       voice.output = output;
-      output.gain.value = Math.max(0, Math.min(10, appState.soundVolume)) / 7;
-      bus.connect(output); output.connect(ctx.destination);
+      output.gain.value = getSoundVolumeGain();
+      bus.connect(output); output.connect(getSoundOutput(ctx));
       let echoTail = 0;
       const echo = level => {
         echoTail = (level === 2 ? .18 : .105) * 5;
@@ -2991,7 +3007,7 @@ function playChallengeFanfare(completed) {
   try {
     if (!audioCtx) initAudio();
     if (!audioCtx || audioCtx.state !== 'running') return;
-    // The challenge-start chime stays unchanged; completion uses A31 above.
+    // Completion uses A31 above; the start chime shares the volume curve.
     const notes = [523.25, 783.99];
     notes.forEach((frequency, index) => {
       const start = audioCtx.currentTime + index * 0.12;
@@ -3000,10 +3016,10 @@ function playChallengeFanfare(completed) {
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(frequency, start);
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.16 * (appState.soundVolume / 7), start + 0.015);
+      gain.gain.linearRampToValueAtTime(0.16 * getSoundVolumeGain(), start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
       oscillator.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(getSoundOutput(audioCtx));
       oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
       oscillator.start(start);
       oscillator.stop(start + 0.5);
@@ -3672,7 +3688,7 @@ function changeSoundVolume(step) {
   }
 
   appState.soundVolume = nextVolume;
-  for (const voice of selectedSoundVoices) voice.output.gain.value = nextVolume / 7;
+  for (const voice of selectedSoundVoices) voice.output.gain.value = getSoundVolumeGain(nextVolume);
   localStorage.setItem('sheikah_sound_volume', String(appState.soundVolume));
 
   playRadarSonar('near', 1);
