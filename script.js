@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.200758";
+const BASE_JS_VERSION = "v0.26.101.210854";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1519,6 +1519,7 @@ let appState = {
   locationHistory: [],
   isWalking: false,
   lastWalkTimestamp: 0,
+  lastMovementHeadingTimestamp: null,
   movementCandidate: null,
   stopCandidate: null,
   filteredCompassHeading: null,
@@ -2415,6 +2416,7 @@ function headingDelta(target, current) {
 
 function enterStoppedState() {
   appState.isWalking = false;
+  appState.lastMovementHeadingTimestamp = null;
   appState.movementCandidate = null;
   appState.stopCandidate = null;
   appState.locationHistory = [];
@@ -2476,7 +2478,7 @@ function determineMovementHeading(coords, newPos, now) {
   confirmStopped(coords, newPos, now);
   const inferredHeading = calculateSmoothedHeading(newPos, accuracy, now);
   const speed = coords.speed;
-  const minSpeed = appState.isWalking ? 0.8 : 1.2;
+  const minSpeed = 0.8;
   let heading = null;
   if (Number.isFinite(speed)) {
     if (speed >= minSpeed) {
@@ -2489,15 +2491,25 @@ function determineMovementHeading(coords, newPos, now) {
     heading = inferredHeading;
   }
 
-  if (heading === null) {
+  // Movement evidence does not depend on GPS supplying a direction.
+  const moving = Number.isFinite(speed) ? speed >= minSpeed : inferredHeading !== null;
+  if (!moving) {
     appState.movementCandidate = null;
     return null;
   }
-  heading = (heading % 360 + 360) % 360;
+  const movementHeading = heading;
+  const compassReliable = appState.compassSource === 'absolute' &&
+    !appState.compassNeedsCalibration && Number.isFinite(appState.filteredCompassHeading) &&
+    Number.isFinite(appState.lastCompassTimestamp) && now - appState.lastCompassTimestamp <= 1500 &&
+    (appState.compassAccuracy === null || (Number.isFinite(appState.compassAccuracy) &&
+      appState.compassAccuracy >= 0 && appState.compassAccuracy <= 35));
+  if (heading === null && compassReliable) heading = appState.filteredCompassHeading;
+  if (heading !== null) heading = (heading % 360 + 360) % 360;
   if (!appState.isWalking) {
     const candidate = appState.movementCandidate;
     if (!candidate || now - candidate.lastTime > 4000 ||
-        Math.abs(headingDelta(heading, candidate.heading)) > 45) {
+        (heading !== null && candidate.heading !== null &&
+         Math.abs(headingDelta(heading, candidate.heading)) > 45)) {
       appState.movementCandidate = { heading, since: now, lastTime: now };
       return null;
     }
@@ -2506,6 +2518,7 @@ function determineMovementHeading(coords, newPos, now) {
     appState.isWalking = true;
   }
   appState.lastWalkTimestamp = now;
+  if (movementHeading !== null) appState.lastMovementHeadingTimestamp = now;
   return heading;
 }
 
@@ -2564,8 +2577,11 @@ function onDeviceOrientation(e) {
   appState.compassSource = source;
   appState.lastCompassHeading = appState.filteredCompassHeading;
   updateStoppedState(now);
-  // Keep the compass filter warm during movement for a quick handoff at stops.
-  if (appState.isWalking) return;
+  // Prefer the travel direction while fresh; otherwise follow a reliable compass.
+  if (appState.isWalking && (appState.lastMovementHeadingTimestamp !== null &&
+      now - appState.lastMovementHeadingTimestamp < 3000)) return;
+  if (appState.isWalking && appState.compassAccuracy !== null &&
+      appState.compassAccuracy > 35) return;
   const smoothed = appState.filteredCompassHeading;
   if (Math.abs(headingDelta(smoothed, appState.currentHeading)) < 0.6) return;
   appState.currentHeading = smoothed;
@@ -2897,13 +2913,26 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   }
 }
 
-function showConditionToast(message) {
+function showConditionToast(message, showSensorDiagram = false) {
   hideOtherSettingToasts('condition-mode-toast');
   const toast = document.getElementById('condition-mode-toast');
   toast.textContent = message;
+  toast.classList.toggle('has-sensor-diagram', showSensorDiagram);
+  document.getElementById('sensor-explanation-diagram')?.remove();
+  if (showSensorDiagram) {
+    const image = document.createElement('img');
+    image.id = 'sensor-explanation-diagram';
+    image.className = 'sensor-explanation-diagram';
+    image.src = appState.sensorDetail === 'standard'
+      ? 'icons/sensor-standard.svg' : 'icons/sensor-detailed.svg';
+    image.alt = currentLang === 'ja'
+      ? (appState.sensorDetail === 'standard' ? '歩行中に反応する5段階センサーの角度と反応強度' : '停止中も反応する9段階センサーの角度と反応強度')
+      : (appState.sensorDetail === 'standard' ? 'Five sensor levels while walking: angles and signal strength' : 'Nine sensor levels, also while stopped: angles and signal strength');
+    document.getElementById('app-container').appendChild(image);
+  }
   toast.classList.add('show');
   clearTimeout(conditionToastTimer);
-  conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+  conditionToastTimer = setTimeout(() => toast.classList.remove('show'), showSensorDiagram ? 8000 : 4500);
 }
 
 function updateRadiusAccess() {
@@ -3749,8 +3778,8 @@ function conditionDescription(kind) {
     all: 'All: react to all search results without locking'
   })[appState.targetMode];
   return ja
-    ? (appState.sensorDetail === 'standard' ? 'NORMAL SENS：通常の5段階で反応します' : 'HI-SENS：反応を9段階に細分化し、距離の変化を細かく伝えます')
-    : (appState.sensorDetail === 'standard' ? 'NORMAL SENS: five reaction levels' : 'HI-SENS: nine reaction levels, with finer distance feedback');
+    ? (appState.sensorDetail === 'standard' ? 'NORMAL SENS：歩行中に5段階で反応します' : 'HI-SENS：停止中も9段階で反応します')
+    : (appState.sensorDetail === 'standard' ? 'NORMAL SENS: five reaction levels while walking' : 'HI-SENS: nine reaction levels, also while stopped');
 }
 
 function updateConditionButtons() {
@@ -3775,7 +3804,7 @@ for (const kind of ['target', 'sensor-detail']) {
     if (appState.activeChallenge || !(target ? challengeProgress().target : challengeProgress().sensor)) {
       showConditionToast(conditionDescription(kind) + '\n' + (appState.activeChallenge
         ? (currentLang === 'ja' ? 'チャレンジ中は変更できません。変更するにはチャレンジを停止してください。' : 'Stop the challenge to change this setting.')
-        : (currentLang === 'ja' ? 'チャレンジ条件クリアで機能が開放されます' : 'Complete challenge requirements to unlock this feature.')));
+        : (currentLang === 'ja' ? 'チャレンジ条件クリアで機能が開放されます' : 'Complete challenge requirements to unlock this feature.')), !target);
       return;
     }
     const key = target ? 'targetMode' : 'sensorDetail';
@@ -3783,12 +3812,7 @@ for (const kind of ['target', 'sensor-detail']) {
     appState[key] = modes[(modes.indexOf(appState[key]) + 1) % modes.length];
     localStorage.setItem(`sheikah_${target ? 'target_mode' : 'sensor_detail'}`, appState[key]);
     updateConditionButtons();
-    hideOtherSettingToasts('condition-mode-toast');
-    const toast = document.getElementById('condition-mode-toast');
-    toast.textContent = conditionDescription(kind);
-    toast.classList.add('show');
-    clearTimeout(conditionToastTimer);
-    conditionToastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+    showConditionToast(conditionDescription(kind), !target);
     if (target && !appState.pinpointTarget) {
       resetKeywordSearch();
       executeSearch();

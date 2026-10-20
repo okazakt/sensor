@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "96";
+  --css-rev: "97";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2092,3 +2092,31 @@ body {
 .pwa-step-content .pwa-home-example { margin-bottom: 0; }
 
 .pwa-home-picture { margin: 0 auto; }
+
+/* Keep sensor help outside the scrolling controls so it can overlay the map. */
+.sensor-explanation-diagram {
+  display: none;
+  position: absolute;
+  z-index: 1000;
+  top: clamp(70px, 20dvh, 230px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px));
+  height: auto;
+  max-height: 35dvh;
+  object-fit: contain;
+  border: 1px solid var(--sheikah-cyan);
+  border-radius: 8px;
+  background: var(--sheikah-bg);
+  pointer-events: none;
+}
+#app-container:has(#condition-mode-toast.show.has-sensor-diagram) > .sensor-explanation-diagram {
+  display: block;
+}
+@media (orientation: landscape) {
+  .sensor-explanation-diagram {
+    left: 22%;
+    top: 28%;
+    width: 40%;
+  }
+}
