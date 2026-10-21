@@ -120,3 +120,18 @@ test('保存した5%刻みの値と以前の10%刻みの値を読み込める', 
     assert.equal(c.loaded, expected);
   }
 });
+
+test('センサー説明の閉じる操作は図と説明文を同時に消し、探索状態は変えない', () => {
+  const source=fs.readFileSync(path.resolve(__dirname,'../script.js'),'utf8');
+  const classes=new Set(['show','has-sensor-diagram']);let removed=false;const cancelled=[];
+  const state={isTracking:true,isPaused:false};
+  const c={appState:state,conditionToastTimer:91,clearTimeout:id=>cancelled.push(id),
+    document:{getElementById:id=>id==='condition-mode-toast'
+      ? {classList:{remove:(...names)=>names.forEach(name=>classes.delete(name))}}
+      : {remove(){removed=true;}}}};
+  vm.runInNewContext(source.slice(source.indexOf('function dismissSensorExplanation'),source.indexOf('function showConditionToast')),c);
+  c.dismissSensorExplanation();
+  assert.deepEqual([...classes],[]);assert.equal(removed,true);
+  assert.deepEqual(cancelled,[91]);assert.equal(c.conditionToastTimer,null);
+  assert.deepEqual(state,{isTracking:true,isPaused:false});
+});

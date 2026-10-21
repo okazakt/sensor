@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "97";
+  --css-rev: "98";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2119,4 +2119,34 @@ body {
     top: 28%;
     width: 40%;
   }
+}
+
+.sensor-explanation-diagram > img {
+  display: block;
+  width: 100%;
+  max-height: 35dvh;
+  object-fit: contain;
+  border-radius: inherit;
+}
+.sensor-explanation-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--sheikah-cyan);
+  border-radius: 6px;
+  background: var(--sheikah-bg);
+  color: var(--sheikah-cyan);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sensor-explanation-close:focus-visible {
+  outline: 2px solid var(--sheikah-cyan);
+  outline-offset: 2px;
 }

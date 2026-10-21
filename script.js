@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.211246";
+const BASE_JS_VERSION = "v0.26.101.211254";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2944,6 +2944,13 @@ async function executeSearch(refreshCandidates = false, accessGranted = false) {
   }
 }
 
+function dismissSensorExplanation() {
+  clearTimeout(conditionToastTimer);
+  conditionToastTimer = null;
+  document.getElementById('condition-mode-toast')?.classList.remove('show', 'has-sensor-diagram');
+  document.getElementById('sensor-explanation-diagram')?.remove();
+}
+
 function showConditionToast(message, showSensorDiagram = false) {
   hideOtherSettingToasts('condition-mode-toast');
   const toast = document.getElementById('condition-mode-toast');
@@ -2951,15 +2958,23 @@ function showConditionToast(message, showSensorDiagram = false) {
   toast.classList.toggle('has-sensor-diagram', showSensorDiagram);
   document.getElementById('sensor-explanation-diagram')?.remove();
   if (showSensorDiagram) {
+    const diagram = document.createElement('div');
+    diagram.id = 'sensor-explanation-diagram';
+    diagram.className = 'sensor-explanation-diagram';
     const image = document.createElement('img');
-    image.id = 'sensor-explanation-diagram';
-    image.className = 'sensor-explanation-diagram';
     image.src = appState.sensorDetail === 'standard'
       ? 'icons/sensor-standard.svg' : 'icons/sensor-detailed.svg';
     image.alt = currentLang === 'ja'
       ? (appState.sensorDetail === 'standard' ? '歩行中に反応する5段階センサーの角度と反応強度' : '停止中も反応する9段階センサーの角度と反応強度')
       : (appState.sensorDetail === 'standard' ? 'Five sensor levels while walking: angles and signal strength' : 'Nine sensor levels, also while stopped: angles and signal strength');
-    document.getElementById('app-container').appendChild(image);
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'sensor-explanation-close';
+    closeButton.textContent = '×';
+    closeButton.setAttribute('aria-label', currentLang === 'ja' ? 'センサー説明を閉じる' : 'Close sensor guide');
+    closeButton.addEventListener('click', dismissSensorExplanation);
+    diagram.append(image, closeButton);
+    document.getElementById('app-container').appendChild(diagram);
   }
   toast.classList.add('show');
   clearTimeout(conditionToastTimer);
@@ -3620,7 +3635,7 @@ function hideOtherSettingToasts(activeToastId = null) {
 
 // Clear the old toast before the tapped control handles the event and shows a new one.
 function dismissToastsOnOutsideTap(event) {
-  if (event.target.closest?.('.sound-mode-toast, #toast-banner')) return;
+  if (event.target.closest?.('.sound-mode-toast, #toast-banner, .sensor-explanation-diagram')) return;
   const volumeButton = event.target.closest?.('#volume-down-btn, #volume-up-btn');
   hideOtherSettingToasts(volumeButton && !volumeButton.disabled ? 'volume-mode-toast' : null);
 }
