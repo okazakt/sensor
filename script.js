@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.211240";
+const BASE_JS_VERSION = "v0.26.101.211246";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -2308,6 +2308,12 @@ function scheduleRadarSound(interval, isDoubleBeep = false) {
 async function handleArrival(target) {
   if (arrivalInProgressId !== null) return;
   arrivalInProgressId = target.id;
+  // Arrival takes priority over sensor help, including while storage is pending.
+  appState.initialDetectionNoticePending = false;
+  clearTimeout(initialDetectionNoticeTimer);
+  initialDetectionNoticeTimer = null;
+  hideOtherSettingToasts();
+  document.getElementById('sensor-explanation-diagram')?.remove();
   const generation = searchGeneration;
   const challenge = appState.activeChallenge;
   appState.isPaused = true;

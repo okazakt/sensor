@@ -13,19 +13,19 @@ function fixture(challenge = null) {
   const target = {id:'place', name:'Arrival', lat:35, lng:139};
   const c = {
     appState:{isTracking:true, isPaused:false, activeKeyword:'search', activeChallenge:challenge},
-    arrivalInProgressId:null, searchGeneration:0, radarTimer:42, scheduledInterval:500,
+    arrivalInProgressId:null, searchGeneration:0, radarTimer:42, scheduledInterval:500, initialDetectionNoticeTimer:84,
     currentLang:'ja', traceArrivalStage: phase => actions.push(phase),
-    clearTimeout(id) { assert.equal(id,42); actions.push('radar-stopped'); },
+    clearTimeout(id) { assert.ok(id === 42 || id === 84); actions.push(id === 42 ? 'radar-stopped' : 'notice-timer-stopped'); },
     loadSavedData:() => db,
     recordArrivalAssociation() {},
     saveAppData() { actions.push('save-requested'); return committed; },
     stopSearchAndReset() { actions.push('stop'); c.searchGeneration++; c.arrivalInProgressId = null; c.appState.isTracking = false; c.appState.activeChallenge = null; },
-    redrawMarkersWithFade() { actions.push('markers'); }, hideOtherSettingToasts() {},
+    redrawMarkersWithFade() { actions.push('markers'); }, hideOtherSettingToasts() { actions.push('toasts-hidden'); },
     checkMainInputClearState() {}, renderChallenges() {}, navigateToMain() {},
     showChallengePresentation(ch, done) { actions.push(ch && done ? 'challenge-fanfare' : 'banner'); },
     playTreasureFanfare() { actions.push('treasure-fanfare'); },
     updateButtonStateUI() {}, showToast() { actions.push('failure-notice'); },
-    document:{getElementById() {return {value:'', classList:{remove(){}, add(){actions.push('flash');}}};}}
+    document:{getElementById() {return {value:'', remove(){actions.push('diagram-removed');}, classList:{remove(){}, add(){actions.push('flash');}}};}}
   };
   vm.createContext(c);
   vm.runInContext(source.slice(source.indexOf('async function handleArrival('), source.indexOf('let mapRotationFrame')), c);
@@ -130,3 +130,22 @@ test('キーワード到達で複数カテゴリを保持し、再到達で更�
   await c.updateArrivalRecordWithDetails(db, target, '2026-10-18');
   assert.deepEqual(Array.from(db.arrivals[0].categories), ['commercial', 'commercial.food_and_drink']);
 });
+
+for (const challenge of [null, {id:'challenge',name:'Challenge'}]) {
+  test(`到着判定の直後に案内と図を消し、保存待ち中も再表示しない（${challenge ? 'チャレンジ' : '通常'}）`, async () => {
+    const {c,actions,target,resolveSave}=fixture(challenge);
+    c.appState.initialDetectionNoticePending=true;
+    const pending=c.handleArrival(target);
+    assert.equal(c.appState.initialDetectionNoticePending,false);
+    assert.equal(c.initialDetectionNoticeTimer,null);
+    assert.ok(actions.indexOf('toasts-hidden') < actions.indexOf('save-requested'));
+    assert.ok(actions.indexOf('diagram-removed') < actions.indexOf('save-requested'));
+    assert.ok(actions.includes('notice-timer-stopped'));
+    assert.ok(!actions.includes('banner'));
+    assert.ok(!actions.includes('challenge-fanfare'));
+    resolveSave(); await pending;
+    assert.ok(actions.includes(challenge ? 'challenge-fanfare' : 'banner'));
+    assert.ok(actions.includes('flash'));
+    assert.ok(!actions.includes('failure-notice'));
+  });
+}
