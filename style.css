@@ -6,7 +6,7 @@
  * ============================================================
  */
 :root {
-  --css-rev: "98";
+  --css-rev: "99";
   --top-control-size: 40px;
   --setting-control-height: 48px;
   --footer-bottom-space: env(safe-area-inset-bottom, 0px);
@@ -2103,7 +2103,9 @@ body {
   transform: translateX(-50%);
   width: min(460px, calc(100% - 32px));
   height: auto;
-  max-height: 35dvh;
+  max-height: calc(35dvh + 62px);
+  box-sizing: border-box;
+  padding: 48px 0 12px;
   object-fit: contain;
   border: 1px solid var(--sheikah-cyan);
   border-radius: 8px;
@@ -2130,8 +2132,8 @@ body {
 }
 .sensor-explanation-close {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 6px;
+  right: 6px;
   width: 40px;
   height: 40px;
   padding: 0;
