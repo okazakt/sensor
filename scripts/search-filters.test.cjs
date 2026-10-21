@@ -404,3 +404,17 @@ test('通常は停止中に反応せず、移動再開とHI-SENSで反応する'
   c.evaluateSensorCycle();
   assert.equal(arrived, 'target');
 });
+
+test('探索開始後の初捕捉でセンサー図を案内し、到着直後は案内しない', () => {
+  const {context:c}=sensorFixture();
+  const notices=[];c.showConditionToast=(...args)=>notices.push(args);
+  c.appState.initialDetectionNoticePending=true;
+  c.evaluateSensorCycle();assert.equal(notices.length,0);
+  c.appState.places=[{id:'far',lat:500,lng:0}];
+  c.evaluateSensorCycle();c.evaluateSensorCycle();
+  assert.equal(notices.length,1);assert.equal(notices[0][1],true);
+  c.appState.initialDetectionNoticePending=true;
+  c.appState.places=[{id:'arrived',lat:10,lng:0}];
+  c.appState.randomTarget=null;c.evaluateSensorCycle();
+  assert.equal(notices.length,1);
+});

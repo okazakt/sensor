@@ -6,7 +6,7 @@
  * - 更新方法: node scripts/update-js-version.cjs（実行環境のタイムゾーンに依存しない）
  * ============================================================
  */
-const BASE_JS_VERSION = "v0.26.101.210854";
+const BASE_JS_VERSION = "v0.26.101.211240";
 // Opt-in, in-memory diagnostics. Coordinates and API keys are never recorded.
 (function initializeDiagnostics(global) {
   if (new URLSearchParams(location.search).get('diagnostics') !== '1') return;
@@ -1493,6 +1493,7 @@ if (savedWakeLockActive === null) {
 
 let appState = {
   explorationId: null,
+  initialDetectionNoticePending: false,
   explorationStartedAt: 0,
   explorationPhase: "waiting",
   accessCommitPending: false,
@@ -1552,6 +1553,7 @@ let compassPermissionPending = false;
 
 let isSearchInProgress = false;
 let searchGeneration = 0;
+let initialDetectionNoticeTimer = null;
 let initialSearchAccessGranted = false;
 let arrivalInProgressId = null;
 let detailMinimapInstance = null;
@@ -2146,6 +2148,28 @@ function updateDetectionLabel() {
   label.textContent = notice || (locked ? I18N[currentLang].detectingLocked : I18N[currentLang].detecting);
 }
 
+function maybeShowInitialDetection(activeTargetCount) {
+  if (!appState.initialDetectionNoticePending || !appState.isTracking ||
+      appState.isPaused || !appState.currentPos || activeTargetCount === 0) return;
+  // Let the challenge introduction finish before showing the sensor guide.
+  if (document.getElementById('challenge-presentation')?.classList.contains('is-visible')) {
+    if (initialDetectionNoticeTimer === null) {
+      const explorationId = appState.explorationId;
+      initialDetectionNoticeTimer = setTimeout(() => {
+        initialDetectionNoticeTimer = null;
+        if (appState.explorationId === explorationId && appState.initialDetectionNoticePending) {
+          evaluateSensorCycle();
+        }
+      }, 300);
+    }
+    return;
+  }
+  appState.initialDetectionNoticePending = false;
+  showConditionToast(currentLang === 'ja'
+    ? '対象を探知しました。センサー反応を確認して到達を目指してください。'
+    : 'Target detected. Follow the sensor signals to reach your destination.', true);
+}
+
 function evaluateSensorCycle() {
   updateStoppedState(Date.now());
   globalThis.SensorRuntimeDiagnostics?.count('sensor.cycle');
@@ -2221,6 +2245,7 @@ function evaluateSensorCycle() {
     handleArrival(arrival.target);
     return;
   }
+  maybeShowInitialDetection(activeTargets.length);
   // Every candidate participates; the strongest reaction drives the shared ring and sound.
   const reaction = readings.reduce((best, reading) =>
     reading.interval !== null && (best.interval === null || reading.interval < best.interval) ? reading : best);
@@ -3826,6 +3851,9 @@ updateConditionButtons();
 function stopSearchAndReset() {
   stopSelectedSounds('radar');
   appState.explorationId = null;
+  appState.initialDetectionNoticePending = false;
+  clearTimeout(initialDetectionNoticeTimer);
+  initialDetectionNoticeTimer = null;
   if (!appState.accessCommitPending) globalThis.SensorExplorationRecovery?.clear();
   releaseChallengeSettings();
   resetKeywordSearch();
@@ -4794,6 +4822,9 @@ window.SensorRuntimeDiagnostics?.setSnapshotProvider(() => ({
   silentAudioPlaying: Boolean(silentAudioElement && !silentAudioElement.paused)
 }));
 function beginExplorationRecovery(phase) {
+  clearTimeout(initialDetectionNoticeTimer);
+  initialDetectionNoticeTimer = null;
+  appState.initialDetectionNoticePending = true;
   appState.explorationId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   appState.explorationStartedAt = Date.now();
   appState.explorationPhase = phase;
@@ -4847,6 +4878,7 @@ function restoreExploration(snapshot) {
   appState.randomTargetOrigin = snapshot.randomTargetOrigin;
   appState.randomTargetArrivalFallback = snapshot.randomTargetArrivalFallback;
   const ready = snapshot.phase === 'ready';
+  appState.initialDetectionNoticePending = !ready;
   appState.lastSearchedPos = ready ? snapshot.searchOrigin : null;
   initialSearchAccessGranted = !ready;
   const state = requestDestinationGeometry.state ||= {cache:new Map(),queue:[],running:0};
